@@ -4,14 +4,24 @@
  * @todo Need methods for creating tokenizers from a raw UTF-8 corpus.
  */
 
-#include "logger.h"
-#include "map.h"
-
-#include <stdio.h>
+#include "memory.h" // posix allocators
+#include "logger.h" // logging macros LOG_ERROR, etc.
+#include "map.h" // HashMap* map
+#include "utf8/raw.h"
+#include <stdio.h> // IO
 #include <sys/types.h>  // ssize_t
+#include <sys/mman.h> // mmap/munmap
+
+/**
+ * Tokenizer Blueprint
+ * @{
+ */
 
 #define VTKN_MAGIC 0x56544B4E
 #define VTKN_VERSION 1
+#define VTKN_META "\u2581" // UTF-8 marker '▁'
+#define VTKN_PRE \
+    "('s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+)"
 
 typedef struct TokenEntry {
     char* token;
@@ -27,15 +37,16 @@ typedef struct TokenSpecial {
 typedef struct Tokenizer {
     int magic;
     int version;
-    int vox_len;  // Max UTF-8 length of any token
-    size_t vox_size;  // vocab size
+    ssize_t vocab_size;  // vocab size
     TokenSpecial special;
     HashMap* token_to_id;
     HashMap* id_to_token;
 } Tokenizer;
 
-// @brief Read a corpus from plaintext for training.
-char* tokenizer_corpus_read(const char* filepath);
+// @brief Map a corpus from plaintext to memory for training.
+char* tokenizer_corpus_mmap(const char* filepath, ssize_t* out_size);
+// @brief Free mapped corpus from memory.
+void tokenizer_corpus_unmap(char* corpus, ssize_t size);
 
 // @brief Calculate frequencies of pairs of adjacent symbols in the vocabulary.
 HashMap* tokenizer_vocab_score(HashMap* vocab);
@@ -55,7 +66,77 @@ char* tokenizer_id_to_token(Tokenizer* t, const int id);
 // @brief Encode a UTF-8 string into a sequence of token ids using greedy BPE.
 int* tokenizer_prompt(Tokenizer* t, char* text, int* out_size);
 
-int main(void) {
-    printf("Hello, world!");
+/** @} */
+
+/**
+ * Map Corpus to memory
+ * @{
+ */
+
+char* tokenizer_corpus_mmap(const char* filepath, ssize_t* out_size) {
+    FILE* file = fopen(filepath, "r");
+    if (!file) {
+        LOG_ERROR("[Tokenizer] Failed to read corpus: '%s'", filepath);
+        return NULL;
+    }
+
+    if (-1 == fseek(file, 0, SEEK_END)) {
+        LOG_ERROR("[Tokenizer] Failed to seek end of corpus.");
+        fclose(file);
+        return NULL;
+    }
+
+    *out_size = ftell(file);
+    if (-1 == *out_size) {
+        LOG_ERROR("[Tokenizer] Failed to get corpus file size.");
+        fclose(file);
+        return NULL;
+    }
+    rewind(file);
+
+    char* data = mmap(NULL, *out_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fileno(file), 0);
+    if (!data || MAP_FAILED == data) {
+        LOG_ERROR("[Tokenizer] Failed to map %ld bytes of corpus to memory", *out_size);
+        fclose(file);
+        return NULL;
+    }
+
+    fclose(file);
+    return data;
+}
+
+void tokenizer_corpus_unmap(char* corpus, ssize_t size) {
+    if (corpus && 0 < size) {
+        munmap(corpus, size);
+    }
+}
+
+/** @} */
+
+/**
+ * Command Line Interface
+ * @{
+ */
+
+void tokenizer_usage(const char* argv) {
+    fprintf(stderr, "Usage: %s path/to/corpus.md path/to/tokenizer.model\n", argv);
+}
+
+/** @} */
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        tokenizer_usage(argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    char* corpus_path = argv[1];
+    // char* model_path = argv[2];
+
+    ssize_t corpus_size = 0;
+    char* corpus = tokenizer_corpus_mmap(corpus_path, &corpus_size);
+    printf("%s", corpus);
+    tokenizer_corpus_unmap(corpus, corpus_size);
+
     return 0;
 }
