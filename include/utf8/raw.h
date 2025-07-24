@@ -87,6 +87,7 @@ char** utf8_raw_split_push_range(const char* start, const char* end, char** part
 char** utf8_raw_split(const char* start, const char* delimiter, uint64_t* capacity);
 char** utf8_raw_split_char(const char* start, uint64_t* capacity);
 char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* capacity);
+char* utf8_raw_split_join(char** parts, const char* delimiter, uint64_t capacity);
 void utf8_raw_split_free(char** parts, uint64_t capacity);
 
 #endif // UTF8_RAW_H

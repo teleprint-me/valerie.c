@@ -6,6 +6,7 @@
  */
 
 #include "logger.h"
+#include "memory.h"
 #include "utf8/byte.h"
 #include "utf8/raw.h"
 
@@ -267,6 +268,12 @@ int32_t utf8_raw_compare(const char* a, const char* b) {
     return UTF8_RAW_COMPARE_EQUAL;
 }
 
+/// @todo Add utf8_raw_concat_n(a, b, n)
+///       where a is the buffer to write to,
+///       b is the input to read from,
+///       and n is the buffer size.
+/// @note This function should mitigate awkward scenarios for N-way joins.
+
 // --- UTF-8 Raw Split ---
 
 char** utf8_raw_split_push(const char* start, char** parts, uint64_t* capacity) {
@@ -429,6 +436,39 @@ fail:
     pcre2_code_free(code);
     utf8_raw_split_free(parts, *capacity);
     return NULL;
+}
+
+char* utf8_raw_split_join(char** parts, const char* delimiter, uint64_t capacity) {
+    if (!parts || 0 == capacity) {
+        return NULL;
+    }
+
+    uint64_t total = 1; // add null
+    uint64_t sep_len = delimiter ? utf8_raw_byte_count(delimiter) : 0;
+    for (uint64_t i = 0; i < capacity; i++) {
+        total += utf8_raw_byte_count(parts[i]);
+    }
+    total += sep_len * (capacity > 1 ? capacity - 1 : 0);
+
+    char* buffer = memory_alloc(total, alignof(char));
+    if (!buffer) {
+        return NULL;
+    }
+    buffer[0] = '\0';
+
+    char* previous = NULL;
+    for (uint64_t i = 0; i < capacity; i++) {
+        if (i > 0 && sep_len) {
+            previous = buffer;
+            buffer = utf8_raw_concat(buffer, delimiter);
+            memory_free(previous);
+        }
+        previous = buffer;
+        buffer = utf8_raw_concat(buffer, parts[i]);
+        memory_free(previous);
+    }
+
+    return buffer;
 }
 
 void utf8_raw_split_free(char** parts, uint64_t capacity) {
