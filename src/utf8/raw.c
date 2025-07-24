@@ -341,6 +341,28 @@ char** utf8_raw_split(const char* start, const char* delimiter, uint64_t* capaci
     return split.parts;
 }
 
+char** utf8_raw_split_char(const char* start, uint64_t* capacity) {
+    if (!start || !capacity) {
+        return NULL;
+    }
+
+    *capacity = 0;
+    char** parts = malloc(sizeof(char*)); // Start empty array
+    const uint8_t* ptr = (const uint8_t*) start;
+
+    while (*ptr) {
+        int8_t width = utf8_byte_width(ptr);
+        if (width <= 0) {
+            break;
+        }
+
+        parts = utf8_raw_split_push_n((const char*) ptr, width, parts, capacity);
+        ptr += width;
+    }
+
+    return parts;
+}
+
 char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* capacity) {
     if (!start || !pattern || !capacity) return NULL;
     *capacity = 0;

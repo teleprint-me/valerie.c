@@ -85,6 +85,7 @@ char** utf8_raw_split_push_n(const char* start, const uint64_t length, char** pa
 char** utf8_raw_split_push_range(const char* start, const char* end, char** parts, uint64_t* capacity);
 
 char** utf8_raw_split(const char* start, const char* delimiter, uint64_t* capacity);
+char** utf8_raw_split_char(const char* start, uint64_t* capacity);
 char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* capacity);
 void utf8_raw_split_free(char** parts, uint64_t capacity);
 
