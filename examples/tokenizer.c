@@ -1,4 +1,6 @@
 /**
+ * Copyright © 2023 Austin Berrio
+ *
  * @file examples/tokenizer.c
  * @brief Valerie uses a custom BPE tokenizer built from scratch in pure C.
  * @todo Need methods for creating tokenizers from a raw UTF-8 corpus.
@@ -133,21 +135,36 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Read the input corpus from a plaintext file
     char* corpus_path = argv[1];
-    // char* model_path = argv[2];
-
     ssize_t corpus_size = 0;
     char* corpus = tokenizer_corpus_mmap(corpus_path, &corpus_size);
 
+    // @todo Prepare the write the tokenizer model to a binary format
+    //       matching it's outlined structure.
+    // char* model_path = argv[2];
+
+    // Pre-tokenize the input corpus
     uint64_t split_count = 0;
     char** corpus_split = utf8_raw_split_regex(corpus, VTKN_PRE, &split_count);
-    printf("Split corpus into %lu tokens\n", split_count);
+    printf("Pre-tokenized corpus into %lu tokens.\n", split_count);
+
+    // Build the vocab
+    HashMap* vocab = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
     for (uint64_t i = 0; i < split_count; i++) {
-        printf("token: [%s]\n", corpus_split[i]);
-        utf8_byte_dump((uint8_t*) corpus_split[i]);
-        printf("\n");
+        char* token = corpus_split[i];
+
+        uint64_t cpts_count = 0;
+        char** cpts = utf8_raw_split_char(token, &cpts_count);
+        for (uint64_t j = 0; j < cpts_count; j++) {
+            printf("[%s]", cpts[j]);
+        }
+
+        utf8_raw_split_free(cpts, cpts_count);
     }
 
+    // Clean up
+    hash_map_free(vocab);
     utf8_raw_split_free(corpus_split, split_count);
     tokenizer_corpus_unmap(corpus, corpus_size);
     return EXIT_SUCCESS;
