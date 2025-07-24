@@ -129,11 +129,11 @@ void utf8_byte_dump(const uint8_t* start) {
     while (start[i]) {
         int8_t width = utf8_byte_width(&start[i]);
         if (-1 == width) {
-            printf("Invalid byte width detected!\n");
+            LOG_ERROR("Invalid byte width detected!\n");
             break;
         }
         if (!utf8_byte_is_valid(&start[i])) {
-            printf("Invalid byte detected!\n");
+            LOG_ERROR("Invalid byte detected!\n");
             break;
         }
 
