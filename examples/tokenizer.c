@@ -6,14 +6,11 @@
  * @todo Need methods for creating tokenizers from a raw UTF-8 corpus.
  */
 
-#include "memory.h" // posix allocators
 #include "logger.h" // logging macros LOG_ERROR, etc.
 #include "map.h" // HashMap* map
-#include "utf8/byte.h"
-#include "utf8/raw.h"
+#include "utf8/raw.h" // Process UTF-8 strings as char*
 #include <stdint.h>
 #include <stdio.h> // IO
-#include <stdlib.h>
 #include <sys/types.h>  // ssize_t
 #include <sys/mman.h> // mmap/munmap
 
