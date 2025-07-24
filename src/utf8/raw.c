@@ -380,30 +380,38 @@ char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* ca
         return NULL;
     }
 
-    const char* cursor = start;
-    int64_t remaining = utf8_raw_byte_count(start);
+    const char* subject = start;
+    int64_t total_bytes = utf8_raw_byte_count(start);
+    int64_t remaining = total_bytes;
 
     while (remaining > 0) {
-        int result = pcre2_match(code, (PCRE2_SPTR) cursor, remaining, 0, 0, match, NULL);
-        if (0 >= result) {
-            break; // No matches left
-        }
+        int rc = pcre2_match(code, (PCRE2_SPTR)subject, remaining, 0, 0, match, NULL);
+        if (rc < 0) break;
 
         PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match);
-        const char* begin = (const char*) cursor; // Don't shadow start
-        const char* end = (const char*) (cursor + ovector[0]);
-        parts = utf8_raw_split_push_range(begin, end, parts, capacity);
-        if (!parts) {
-            utf8_raw_split_free(parts, *capacity);
-            break;
+        size_t match_start = ovector[0]; // offset from 'subject'
+        size_t match_end   = ovector[1];
+
+        // Text before match
+        if (match_start > 0) {
+            parts = utf8_raw_split_push_n(subject, match_start, parts, capacity);
+            if (!parts) {
+                utf8_raw_split_free(parts, *capacity);
+                return NULL;
+            }
         }
 
-        cursor += ovector[1];
-        remaining -= ovector[1];
+        // (Required) Push the match itself
+        parts = utf8_raw_split_push_n(subject + match_start, match_end - match_start, parts, capacity);
+
+        // Advance
+        subject += match_end;
+        remaining -= match_end;
     }
 
+    // Push trailing text after last match
     if (remaining > 0) {
-        parts = utf8_raw_split_push_n(cursor, remaining, parts, capacity);
+        parts = utf8_raw_split_push_n(subject, remaining, parts, capacity);
         if (!parts) {
             utf8_raw_split_free(parts, *capacity);
             return NULL;

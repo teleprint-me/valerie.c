@@ -7,8 +7,11 @@
 #include "memory.h" // posix allocators
 #include "logger.h" // logging macros LOG_ERROR, etc.
 #include "map.h" // HashMap* map
+#include "utf8/byte.h"
 #include "utf8/raw.h"
+#include <stdint.h>
 #include <stdio.h> // IO
+#include <stdlib.h>
 #include <sys/types.h>  // ssize_t
 #include <sys/mman.h> // mmap/munmap
 
@@ -135,8 +138,17 @@ int main(int argc, char* argv[]) {
 
     ssize_t corpus_size = 0;
     char* corpus = tokenizer_corpus_mmap(corpus_path, &corpus_size);
-    printf("%s", corpus);
-    tokenizer_corpus_unmap(corpus, corpus_size);
 
-    return 0;
+    uint64_t split_count = 0;
+    char** corpus_split = utf8_raw_split_regex(corpus, VTKN_PRE, &split_count);
+    printf("Split corpus into %lu tokens\n", split_count);
+    for (uint64_t i = 0; i < split_count; i++) {
+        printf("token: [%s]\n", corpus_split[i]);
+        utf8_byte_dump((uint8_t*) corpus_split[i]);
+        printf("\n");
+    }
+
+    utf8_raw_split_free(corpus_split, split_count);
+    tokenizer_corpus_unmap(corpus, corpus_size);
+    return EXIT_SUCCESS;
 }
