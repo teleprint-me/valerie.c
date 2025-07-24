@@ -4,6 +4,7 @@
  * @file examples/tokenizer.c
  * @brief Valerie uses a custom BPE tokenizer built from scratch in pure C.
  * @todo Need methods for creating tokenizers from a raw UTF-8 corpus.
+ * @ref arXiv:1508.07909v5 [cs.CL] 10 Jun 2016
  */
 
 #include "memory.h"
@@ -51,12 +52,17 @@ char* tokenizer_corpus_mmap(const char* filepath, ssize_t* out_size);
 // @brief Free mapped corpus from memory.
 void tokenizer_corpus_unmap(char* corpus, ssize_t size);
 
-// @brief Calculate frequencies of pairs of adjacent symbols in the vocabulary.
-HashMap* tokenizer_vocab_score(char** tokens, uint64_t token_count);
-// @brief Merge a given pair of symbols in the vocabulary.
-HashMap* tokenizer_vocab_merge(HashMap* vocab, char* pair);
+// @brief Create a base vocab from the corpus
+HashMap* tokenizer_vocab_create(char** tokens, uint64_t token_count);
 // @brief Free vocab resources
 void tokenizer_vocab_free(HashMap* vocab);
+
+// @brief Calculate frequencies of pairs of adjacent symbols in the vocabulary.
+HashMap* tokenizer_pairs_create(HashMap* vocab);
+void tokenizer_pairs_free(HashMap* pairs);
+
+// @brief Merge a given pair of symbols in the vocabulary.
+HashMap* tokenizer_vocab_merge(HashMap* vocab, char* pair);
 
 // @brief Load a tokenizer from a binary model file.
 Tokenizer* tokenizer_create(const char* filepath);
@@ -119,11 +125,11 @@ void tokenizer_corpus_unmap(char* corpus, ssize_t size) {
 /** @} */
 
 /**
- * Score the corpus vocabulary
+ * Create the tokenizer vocab
  * @{
  */
 
-HashMap* tokenizer_vocab_score(char** tokens, uint64_t token_count) {
+HashMap* tokenizer_vocab_create(char** tokens, uint64_t token_count) {
     HashMap* vocab = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
     for (uint64_t i = 0; i < token_count; i++) {
         // Get the tokens codepoints
@@ -145,16 +151,16 @@ HashMap* tokenizer_vocab_score(char** tokens, uint64_t token_count) {
         for (uint64_t j = 0; j < cpts_count; j++) {
             char* prev = key;
             key = utf8_raw_concat(key, cpts[j]);
-            free(prev);
+            memory_free(prev);
 
             prev = key;
             key = utf8_raw_concat(key, " ");
-            free(prev);
+            memory_free(prev);
         }
 
         char* prev = key;
         key = utf8_raw_concat(key, "</w>");
-        free(prev);
+        memory_free(prev);
 
         // Insert key-value pairs into map
         int* frequency = hash_map_search(vocab, key);
@@ -164,7 +170,7 @@ HashMap* tokenizer_vocab_score(char** tokens, uint64_t token_count) {
             hash_map_insert(vocab, key, value);
         } else {
             (*frequency)++;
-            free(key); // key already exists
+            memory_free(key); // key already exists
         }
 
         utf8_raw_split_free(cpts, cpts_count);
@@ -177,11 +183,65 @@ void tokenizer_vocab_free(HashMap* vocab) {
         HashMapIterator it = hash_map_iter(vocab);
         HashMapEntry* entry;
         while ((entry = hash_map_next(&it))) {
-            free(entry->key);
-            free(entry->value);
+            memory_free(entry->key);
+            memory_free(entry->value);
         }
         hash_map_free(vocab);
     }
+}
+
+/** @} */
+
+/**
+ * Create the vocab frequency pairs
+ * @{
+ */
+
+HashMap* tokenizer_pairs_create(HashMap* vocab) {
+    HashMap* pairs = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
+    HashMapIterator it = hash_map_iter(vocab);
+    HashMapEntry* entry;
+
+    while ((entry = hash_map_next(&it))) {
+        char* word = (char*) entry->key;
+        int frequency = *(int*) entry->value;
+
+        uint64_t symbol_count = 0;
+        char** symbols = utf8_raw_split(word, " ", &symbol_count);
+        if (symbol_count < 2) {
+            utf8_raw_split_free(symbols, symbol_count);
+            continue;
+        }
+
+        for (uint64_t i = 0; i < symbol_count - 1; i++) {
+            // Join symbols[i] + " " + symbols[i+1] as new string
+            char* pair = utf8_raw_split_join((char*[]){symbols[i], symbols[i + 1]}, " ", 2);
+            int* pair_freq = hash_map_search(pairs, pair);
+            if (!pair_freq) {
+                int* value = memory_alloc(sizeof(int), alignof(int));
+                *value = frequency;
+                hash_map_insert(pairs, pair, value);
+            } else {
+                *pair_freq += frequency;
+                memory_free(pair); // Already exists
+            }
+        }
+
+        utf8_raw_split_free(symbols, symbol_count);
+    }
+
+    return pairs;
+}
+
+void tokenizer_pairs_free(HashMap* pairs) {
+    if (!pairs) return;
+    HashMapIterator it = hash_map_iter(pairs);
+    HashMapEntry* ent;
+    while ((ent = hash_map_next(&it))) {
+        memory_free(ent->key);
+        memory_free(ent->value);
+    }
+    hash_map_free(pairs);
 }
 
 /** @} */
@@ -218,14 +278,18 @@ int main(int argc, char* argv[]) {
     printf("Pre-tokenized corpus into %lu tokens.\n", split_count);
 
     // Build the vocab
-    HashMap* vocab = tokenizer_vocab_score(corpus_split, split_count);
-    HashMapIterator it = hash_map_iter(vocab);
+    HashMap* vocab = tokenizer_vocab_create(corpus_split, split_count);
+    // Pair frequent scores
+    HashMap* pairs = tokenizer_pairs_create(vocab);
+
+    HashMapIterator it = hash_map_iter(pairs);
     HashMapEntry* ent;
     while ((ent = hash_map_next(&it))) {
         printf("'%s': %d\n", (char*)ent->key, *(int*)ent->value);
     }
 
     // Clean up
+    tokenizer_pairs_free(pairs);
     tokenizer_vocab_free(vocab);
     utf8_raw_split_free(corpus_split, split_count);
     tokenizer_corpus_unmap(corpus, corpus_size);
