@@ -6,6 +6,7 @@
  * @todo Need methods for creating tokenizers from a raw UTF-8 corpus.
  */
 
+#include "memory.h"
 #include "logger.h" // logging macros LOG_ERROR, etc.
 #include "map.h" // HashMap* map
 #include "utf8/raw.h" // Process UTF-8 strings as char*
@@ -51,9 +52,11 @@ char* tokenizer_corpus_mmap(const char* filepath, ssize_t* out_size);
 void tokenizer_corpus_unmap(char* corpus, ssize_t size);
 
 // @brief Calculate frequencies of pairs of adjacent symbols in the vocabulary.
-HashMap* tokenizer_vocab_score(HashMap* vocab);
+HashMap* tokenizer_vocab_score(char** tokens, uint64_t token_count);
 // @brief Merge a given pair of symbols in the vocabulary.
 HashMap* tokenizer_vocab_merge(HashMap* vocab, char* pair);
+// @brief Free vocab resources
+void tokenizer_vocab_free(HashMap* vocab);
 
 // @brief Load a tokenizer from a binary model file.
 Tokenizer* tokenizer_create(const char* filepath);
@@ -116,6 +119,74 @@ void tokenizer_corpus_unmap(char* corpus, ssize_t size) {
 /** @} */
 
 /**
+ * Score the corpus vocabulary
+ * @{
+ */
+
+HashMap* tokenizer_vocab_score(char** tokens, uint64_t token_count) {
+    HashMap* vocab = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
+    for (uint64_t i = 0; i < token_count; i++) {
+        // Get the tokens codepoints
+        char* token = tokens[i];
+        uint64_t cpts_count = 0;
+        char** cpts = utf8_raw_split_char(token, &cpts_count);
+
+        // Compute the buffer size
+        size_t buf_size = 0;
+        for (uint64_t j = 0; j < cpts_count; j++) {
+            buf_size += utf8_raw_byte_count(cpts[j]) + 1; // add space
+        }
+        buf_size += utf8_raw_byte_count("</w>") + 2; // space + null
+
+        // Join codepoints with spaces and append stop token
+        char* key = memory_alloc(buf_size, alignof(char));
+        key[0] = '\0';
+
+        for (uint64_t j = 0; j < cpts_count; j++) {
+            char* prev = key;
+            key = utf8_raw_concat(key, cpts[j]);
+            free(prev);
+
+            prev = key;
+            key = utf8_raw_concat(key, " ");
+            free(prev);
+        }
+
+        char* prev = key;
+        key = utf8_raw_concat(key, "</w>");
+        free(prev);
+
+        // Insert key-value pairs into map
+        int* frequency = hash_map_search(vocab, key);
+        if(!frequency) {
+            int* value = memory_alloc(sizeof(int), alignof(int));
+            *value = 1;
+            hash_map_insert(vocab, key, value);
+        } else {
+            (*frequency)++;
+            free(key); // key already exists
+        }
+
+        utf8_raw_split_free(cpts, cpts_count);
+    }
+    return vocab;
+}
+
+void tokenizer_vocab_free(HashMap* vocab) {
+    if (vocab) {
+        HashMapIterator it = hash_map_iter(vocab);
+        HashMapEntry* entry;
+        while ((entry = hash_map_next(&it))) {
+            free(entry->key);
+            free(entry->value);
+        }
+        hash_map_free(vocab);
+    }
+}
+
+/** @} */
+
+/**
  * Command Line Interface
  * @{
  */
@@ -147,21 +218,15 @@ int main(int argc, char* argv[]) {
     printf("Pre-tokenized corpus into %lu tokens.\n", split_count);
 
     // Build the vocab
-    HashMap* vocab = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
-    for (uint64_t i = 0; i < split_count; i++) {
-        char* token = corpus_split[i];
-
-        uint64_t cpts_count = 0;
-        char** cpts = utf8_raw_split_char(token, &cpts_count);
-        for (uint64_t j = 0; j < cpts_count; j++) {
-            printf("[%s]", cpts[j]);
-        }
-
-        utf8_raw_split_free(cpts, cpts_count);
+    HashMap* vocab = tokenizer_vocab_score(corpus_split, split_count);
+    HashMapIterator it = hash_map_iter(vocab);
+    HashMapEntry* ent;
+    while ((ent = hash_map_next(&it))) {
+        printf("'%s': %d\n", (char*)ent->key, *(int*)ent->value);
     }
 
     // Clean up
-    hash_map_free(vocab);
+    tokenizer_vocab_free(vocab);
     utf8_raw_split_free(corpus_split, split_count);
     tokenizer_corpus_unmap(corpus, corpus_size);
     return EXIT_SUCCESS;
