@@ -49,6 +49,8 @@ add_library(valerie SHARED
 target_include_directories(valerie PUBLIC include)
 target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
 
+add_subdirectory(examples)
+
 # enable_testing()
 # add_subdirectory(tests)
 # add_custom_target(run_tests
