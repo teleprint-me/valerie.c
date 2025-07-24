@@ -342,22 +342,18 @@ char** utf8_raw_split(const char* start, const char* delimiter, uint64_t* capaci
 }
 
 char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* capacity) {
-    if (!start || !pattern || !capacity) {
-        return NULL;
-    }
-
+    if (!start || !pattern || !capacity) return NULL;
     *capacity = 0;
+
     char** parts = malloc(sizeof(char*));
     if (!parts) {
         LOG_ERROR("Failed to create parts");
         return NULL;
     }
 
-    // Compile regex
     int error_code;
     PCRE2_SIZE error_offset;
     PCRE2_UCHAR8 error_message[256];
-
     pcre2_code* code = pcre2_compile(
         (PCRE2_SPTR) pattern,
         PCRE2_ZERO_TERMINATED,
@@ -366,7 +362,6 @@ char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* ca
         &error_offset,
         NULL
     );
-
     if (!code) {
         pcre2_get_error_message(error_code, error_message, sizeof(error_message));
         LOG_ERROR("PCRE2 compile error at offset %zu: %s", error_offset, error_message);
@@ -380,48 +375,38 @@ char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* ca
         return NULL;
     }
 
-    const char* subject = start;
+    int64_t offset = 0;
     int64_t total_bytes = utf8_raw_byte_count(start);
-    int64_t remaining = total_bytes;
+    if (0 == total_bytes || -1 == total_bytes) {
+        goto fail;
+    }
 
-    while (remaining > 0) {
-        int rc = pcre2_match(code, (PCRE2_SPTR)subject, remaining, 0, 0, match, NULL);
+    while (offset < total_bytes) {
+        int rc = pcre2_match(code, (PCRE2_SPTR)(start + offset), total_bytes - offset, 0, 0, match, NULL);
         if (rc < 0) break;
 
         PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match);
-        size_t match_start = ovector[0]; // offset from 'subject'
+        size_t match_start = ovector[0];
         size_t match_end   = ovector[1];
 
-        // Text before match
-        if (match_start > 0) {
-            parts = utf8_raw_split_push_n(subject, match_start, parts, capacity);
-            if (!parts) {
-                utf8_raw_split_free(parts, *capacity);
-                return NULL;
-            }
+        // Only push the matched region (GPT-2 style)
+        if (match_end > match_start) {
+            parts = utf8_raw_split_push_n(start + offset + match_start, match_end - match_start, parts, capacity);
+            if (!parts) goto fail;
         }
-
-        // (Required) Push the match itself
-        parts = utf8_raw_split_push_n(subject + match_start, match_end - match_start, parts, capacity);
-
-        // Advance
-        subject += match_end;
-        remaining -= match_end;
+        offset += match_end;
     }
 
-    // Push trailing text after last match
-    if (remaining > 0) {
-        parts = utf8_raw_split_push_n(subject, remaining, parts, capacity);
-        if (!parts) {
-            utf8_raw_split_free(parts, *capacity);
-            return NULL;
-        }
-    }
-
+    // No trailing text push: GPT-2 pattern is designed to consume everything
     pcre2_match_data_free(match);
     pcre2_code_free(code);
-
     return parts;
+
+fail:
+    pcre2_match_data_free(match);
+    pcre2_code_free(code);
+    utf8_raw_split_free(parts, *capacity);
+    return NULL;
 }
 
 void utf8_raw_split_free(char** parts, uint64_t capacity) {
