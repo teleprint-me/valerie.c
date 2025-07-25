@@ -26,8 +26,7 @@
 #define VTKN_VERSION 1
 #define VTKN_META "\u2581"  // UTF-8 marker '▁'
 #define VTKN_PRE \
-    "('s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| " \
-    "?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+)"
+    "('s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+)"
 
 typedef struct TokenEntry {
     char* token;
@@ -318,9 +317,7 @@ HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
  */
 
 void tokenizer_usage(const char* argv) {
-    fprintf(
-        stderr, "Usage: %s path/to/corpus.md path/to/tokenizer.model\n", argv
-    );
+    fprintf(stderr, "Usage: %s [input.txt] [num merges]>\n", argv);
 }
 
 /** @} */
@@ -348,6 +345,9 @@ int main(int argc, char* argv[]) {
     HashMap* vocab = tokenizer_vocab_create(corpus_split, split_count);
 
     uint64_t num_merges = 2;
+    if (argc == 3) {
+        num_merges = atoi(argv[2]);
+    }
     for (uint64_t i = 0; i < num_merges; i++) {
         // 1. Get all pairs and their frequencies
         HashMap* pairs = tokenizer_pairs_create(vocab);
@@ -369,6 +369,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (!best_pair) {
+            memory_free(best_pair);
+            tokenizer_pairs_free(pairs);
             break;  // No more pairs to merge
         }
 
