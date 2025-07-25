@@ -43,7 +43,7 @@ add_library(valerie SHARED
     "src/xorshift.c" # numeric psuedo random number generator
     "src/type.c" # numeric data types, focusing on numeric precision
     "src/utf8/byte.c" # unicode codepoint utilities
-    "src/utf8/raw.c" # unicode string (char*) processing
+    "src/utf8/string.c" # unicode string (char*) processing
     "src/path.c"
 )
 target_include_directories(valerie PUBLIC include)
