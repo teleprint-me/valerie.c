@@ -10,7 +10,7 @@
 #include "utf8/byte.h"
 #include "utf8/string.h"
 
-// --- UTF-8 Raw Validator ---
+// --- UTF-8 Validator ---
 
 void* utf8_iter_is_valid(const uint8_t* start, const int8_t width, void* context) {
     UTF8Validator* validator = (UTF8Validator*) context;
@@ -26,7 +26,7 @@ void* utf8_iter_is_valid(const uint8_t* start, const int8_t width, void* context
     return NULL; // Continue iteration
 }
 
-// --- UTF-8 Raw Counter ---
+// --- UTF-8 Counter ---
 
 void* utf8_iter_count(const uint8_t* start, const int8_t width, void* context) {
     (void) start;
@@ -36,7 +36,7 @@ void* utf8_iter_count(const uint8_t* start, const int8_t width, void* context) {
     return NULL; // Continue iteration as long as the source is valid
 }
 
-// --- UTF-8 Raw Splitter ---
+// --- UTF-8 Splitter ---
 
 void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context) {
     UTF8Splitter* split = (UTF8Splitter*) context;
@@ -58,7 +58,7 @@ void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context) {
     return NULL;
 }
 
-// --- UTF-8 Raw Operations ---
+// --- UTF-8 Operations ---
 
 bool utf8_is_valid(const char* start) {
     if (!start) {
@@ -224,7 +224,7 @@ char* utf8_concat(const char* dst, const char* src) {
     return output;
 }
 
-// --- UTF-8 Raw Compare ---
+// --- UTF-8 Compare ---
 
 int32_t utf8_compare(const char* a, const char* b) {
     if (!a || !b) {
@@ -274,7 +274,7 @@ int32_t utf8_compare(const char* a, const char* b) {
 ///       and n is the buffer size.
 /// @note This function should mitigate awkward scenarios for N-way joins.
 
-// --- UTF-8 Raw Split ---
+// --- UTF-8 Split ---
 
 char** utf8_split_push(const char* start, char** parts, uint64_t* capacity) {
     if (!start || !parts || !capacity) {

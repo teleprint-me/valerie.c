@@ -22,18 +22,16 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-// --- UTF-8 Raw Validator ---
+// --- UTF-8 Validator ---
 
 typedef struct UTF8Validator {
     bool is_valid;
     const uint8_t* error_at;
 } UTF8Validator;
 
-void* utf8_iter_is_valid(
-    const uint8_t* start, const int8_t width, void* context
-);
+void* utf8_iter_is_valid(const uint8_t* start, const int8_t width, void* context);
 
-// --- UTF-8 Raw Counter ---
+// --- UTF-8 Counter ---
 
 typedef struct UTF8Counter {
     int64_t value;
@@ -41,7 +39,7 @@ typedef struct UTF8Counter {
 
 void* utf8_iter_count(const uint8_t* start, const int8_t width, void* context);
 
-// --- UTF-8 Raw Splitter ---
+// --- UTF-8 Splitter ---
 
 typedef struct UTF8Splitter {
     const char* delimiter;
@@ -52,7 +50,7 @@ typedef struct UTF8Splitter {
 
 void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context);
 
-// --- UTF-8 Raw Operations ---
+// --- UTF-8 Operations ---
 
 bool utf8_is_valid(const char* start);
 
@@ -69,7 +67,7 @@ char* utf8_copy_range(const char* start, const char* end);
  */
 char* utf8_concat(const char* dst, const char* src);
 
-// --- UTF-8 Raw Compare ---
+// --- UTF-8 Compare ---
 
 typedef enum UTF8Compare {
     UTF8_COMPARE_INVALID = -2,
@@ -80,7 +78,7 @@ typedef enum UTF8Compare {
 
 int32_t utf8_compare(const char* a, const char* b);
 
-// --- UTF-8 Raw Split ---
+// --- UTF-8 Split ---
 
 /**
  * @note Caller must always assign the return value back to parts.
@@ -95,6 +93,7 @@ char** utf8_split_push_range(const char* start, const char* end, char** parts, u
 char** utf8_split(const char* start, const char* delimiter, uint64_t* capacity);
 char** utf8_split_char(const char* start, uint64_t* capacity);
 char** utf8_split_regex(const char* start, const char* pattern, uint64_t* capacity);
+
 char* utf8_split_join(char** parts, const char* delimiter, uint64_t capacity);
 void utf8_split_free(char** parts, uint64_t capacity);
 
