@@ -12,8 +12,8 @@
 
 // --- UTF-8 Raw Validator ---
 
-void* utf8_raw_iter_is_valid(const uint8_t* start, const int8_t width, void* context) {
-    UTF8RawValidator* validator = (UTF8RawValidator*) context;
+void* utf8_iter_is_valid(const uint8_t* start, const int8_t width, void* context) {
+    UTF8Validator* validator = (UTF8Validator*) context;
 
     if (width == -1) {
         // Invalid UTF-8 sequence detected
@@ -28,25 +28,25 @@ void* utf8_raw_iter_is_valid(const uint8_t* start, const int8_t width, void* con
 
 // --- UTF-8 Raw Counter ---
 
-void* utf8_raw_iter_count(const uint8_t* start, const int8_t width, void* context) {
+void* utf8_iter_count(const uint8_t* start, const int8_t width, void* context) {
     (void) start;
     (void) width;
-    UTF8RawCounter* counter = (UTF8RawCounter*) context;
+    UTF8Counter* counter = (UTF8Counter*) context;
     counter->value++;
     return NULL; // Continue iteration as long as the source is valid
 }
 
 // --- UTF-8 Raw Splitter ---
 
-void* utf8_raw_iter_split(const uint8_t* start, const int8_t width, void* context) {
-    UTF8RawSplitter* split = (UTF8RawSplitter*) context;
+void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context) {
+    UTF8Splitter* split = (UTF8Splitter*) context;
 
     const uint8_t* delimiter = (const uint8_t*) split->delimiter;
     while (*delimiter) {
         uint8_t d_length = utf8_byte_width(delimiter);
         if (utf8_byte_is_equal(start, delimiter)) {
             // offset = start, start = end
-            split->parts = utf8_raw_split_push_range(
+            split->parts = utf8_split_push_range(
                 split->offset, (char*) start, split->parts, &split->capacity
             );
             split->offset = (char*) (start + width); // set next segment start
@@ -60,7 +60,7 @@ void* utf8_raw_iter_split(const uint8_t* start, const int8_t width, void* contex
 
 // --- UTF-8 Raw Operations ---
 
-bool utf8_raw_is_valid(const char* start) {
+bool utf8_is_valid(const char* start) {
     if (!start) {
         return false;
     }
@@ -70,12 +70,12 @@ bool utf8_raw_is_valid(const char* start) {
         return true;
     }
 
-    UTF8RawValidator validator = {
+    UTF8Validator validator = {
         .is_valid = false, // Invalid at start
         .error_at = NULL, // Location unknown
     };
 
-    utf8_byte_iterate(start, utf8_raw_iter_is_valid, &validator);
+    utf8_byte_iterate(start, utf8_iter_is_valid, &validator);
     if (!validator.is_valid && validator.error_at) {
         LOG_ERROR(
             "Invalid UTF-8 sequence detected at byte offset: %ld",
@@ -86,8 +86,8 @@ bool utf8_raw_is_valid(const char* start) {
     return validator.is_valid;
 }
 
-int64_t utf8_raw_byte_count(const char* start) {
-    if (!start || !utf8_raw_is_valid(start)) {
+int64_t utf8_len_bytes(const char* start) {
+    if (!start || !utf8_is_valid(start)) {
         return -1; // Invalid string
     }
 
@@ -105,8 +105,8 @@ int64_t utf8_raw_byte_count(const char* start) {
     return byte_length;
 }
 
-int64_t utf8_raw_char_count(const char* start) {
-    if (!start || !utf8_raw_is_valid(start)) {
+int64_t utf8_len_codepoints(const char* start) {
+    if (!start || !utf8_is_valid(start)) {
         return -1; // Invalid string
     }
 
@@ -114,20 +114,20 @@ int64_t utf8_raw_char_count(const char* start) {
         return 0; // Empty string
     }
 
-    UTF8RawCounter counter = {.value = 0};
-    if (utf8_byte_iterate(start, utf8_raw_iter_count, &counter) == NULL) {
+    UTF8Counter counter = {.value = 0};
+    if (utf8_byte_iterate(start, utf8_iter_count, &counter) == NULL) {
         return counter.value;
     }
 
     return -1;
 }
 
-char* utf8_raw_copy(const char* start) {
-    if (!start || !utf8_raw_is_valid(start)) {
+char* utf8_copy(const char* start) {
+    if (!start || !utf8_is_valid(start)) {
         return NULL;
     }
 
-    size_t length = utf8_raw_byte_count(start);
+    size_t length = utf8_len_bytes(start);
     if (0 == length) {
         char* output = malloc(1);
         if (!output) {
@@ -148,7 +148,7 @@ char* utf8_raw_copy(const char* start) {
     return segment;
 }
 
-char* utf8_raw_copy_n(const char* start, const uint64_t length) {
+char* utf8_copy_n(const char* start, const uint64_t length) {
     if (!start) {
         return NULL;
     }
@@ -173,7 +173,7 @@ char* utf8_raw_copy_n(const char* start, const uint64_t length) {
     return segment;
 }
 
-char* utf8_raw_copy_range(const char* start, const char* end) {
+char* utf8_copy_range(const char* start, const char* end) {
     if (!start || !end) {
         return NULL;
     }
@@ -183,31 +183,31 @@ char* utf8_raw_copy_range(const char* start, const char* end) {
         return NULL;
     }
 
-    return utf8_raw_copy_n(start, (const uint64_t) length);
+    return utf8_copy_n(start, (const uint64_t) length);
 }
 
-char* utf8_raw_concat(const char* head, const char* tail) {
+char* utf8_concat(const char* dst, const char* src) {
     // Check for null pointers
-    if (!head || !tail) {
-        LOG_ERROR("Invalid head or tail parameter");
+    if (!dst || !src) {
+        LOG_ERROR("Invalid dst or src parameter");
         return NULL;
     }
 
     // Validate the left and right operands, but allow empty strings
-    if ('\0' != *head && !utf8_raw_is_valid(head)) {
-        LOG_ERROR("Invalid head operand");
+    if ('\0' != *dst && !utf8_is_valid(dst)) {
+        LOG_ERROR("Invalid dst operand");
         return NULL;
     }
 
-    if ('\0' != *tail && !utf8_raw_is_valid(tail)) {
-        LOG_ERROR("Invalid tail operand");
+    if ('\0' != *src && !utf8_is_valid(src)) {
+        LOG_ERROR("Invalid src operand");
         return NULL;
     }
 
     // Concatenate the right operand to the left operand
-    size_t head_length = utf8_raw_byte_count(head);
-    size_t tail_length = utf8_raw_byte_count(tail);
-    size_t output_length = head_length + tail_length;
+    size_t dst_length = utf8_len_bytes(dst);
+    size_t src_length = utf8_len_bytes(src);
+    size_t output_length = dst_length + src_length;
 
     // Add 1 for null terminator
     char* output = (char*) malloc(output_length + 1);
@@ -217,8 +217,8 @@ char* utf8_raw_concat(const char* head, const char* tail) {
     }
 
     // Copy string bytes into output
-    memcpy(output, head, head_length);
-    memcpy(output + head_length, tail, tail_length);
+    memcpy(output, dst, dst_length);
+    memcpy(output + dst_length, src, src_length);
     output[output_length] = '\0'; // Null-terminate the string
 
     return output;
@@ -226,20 +226,20 @@ char* utf8_raw_concat(const char* head, const char* tail) {
 
 // --- UTF-8 Raw Compare ---
 
-int32_t utf8_raw_compare(const char* a, const char* b) {
+int32_t utf8_compare(const char* a, const char* b) {
     if (!a || !b) {
         LOG_ERROR("One or both source strings are NULL.");
-        return UTF8_RAW_COMPARE_INVALID; // NULL strings are invalid inputs.
+        return UTF8_COMPARE_INVALID; // NULL strings are invalid inputs.
     }
 
-    if (!utf8_raw_is_valid(a)) {
+    if (!utf8_is_valid(a)) {
         LOG_ERROR("First source string is not a valid UTF-8 string.");
-        return UTF8_RAW_COMPARE_INVALID; // Indicate invalid UTF-8 string.
+        return UTF8_COMPARE_INVALID; // Indicate invalid UTF-8 string.
     }
 
-    if (!utf8_raw_is_valid(b)) {
+    if (!utf8_is_valid(b)) {
         LOG_ERROR("Second source string is not a valid UTF-8 string.");
-        return UTF8_RAW_COMPARE_INVALID; // Indicate invalid UTF-8 string.
+        return UTF8_COMPARE_INVALID; // Indicate invalid UTF-8 string.
     }
 
     const uint8_t* a_stream = (const uint8_t*) a;
@@ -247,10 +247,10 @@ int32_t utf8_raw_compare(const char* a, const char* b) {
 
     while (*a_stream && *b_stream) {
         if (*a_stream < *b_stream) {
-            return UTF8_RAW_COMPARE_LESS;
+            return UTF8_COMPARE_LESS;
         }
         if (*a_stream > *b_stream) {
-            return UTF8_RAW_COMPARE_GREATER;
+            return UTF8_COMPARE_GREATER;
         }
         // Both bytes are equal, move to the next
         a_stream++;
@@ -259,16 +259,16 @@ int32_t utf8_raw_compare(const char* a, const char* b) {
 
     // Check if strings are of different lengths
     if (*a_stream) {
-        return UTF8_RAW_COMPARE_GREATER;
+        return UTF8_COMPARE_GREATER;
     }
     if (*b_stream) {
-        return UTF8_RAW_COMPARE_LESS;
+        return UTF8_COMPARE_LESS;
     }
 
-    return UTF8_RAW_COMPARE_EQUAL;
+    return UTF8_COMPARE_EQUAL;
 }
 
-/// @todo Add utf8_raw_concat_n(a, b, n)
+/// @todo Add utf8_concat_n(a, b, n)
 ///       where a is the buffer to write to,
 ///       b is the input to read from,
 ///       and n is the buffer size.
@@ -276,7 +276,7 @@ int32_t utf8_raw_compare(const char* a, const char* b) {
 
 // --- UTF-8 Raw Split ---
 
-char** utf8_raw_split_push(const char* start, char** parts, uint64_t* capacity) {
+char** utf8_split_push(const char* start, char** parts, uint64_t* capacity) {
     if (!start || !parts || !capacity) {
         return NULL;
     }
@@ -291,17 +291,17 @@ char** utf8_raw_split_push(const char* start, char** parts, uint64_t* capacity) 
     return parts;
 }
 
-char** utf8_raw_split_push_n(const char* start, const uint64_t length, char** parts, uint64_t* capacity) {
+char** utf8_split_push_n(const char* start, const uint64_t length, char** parts, uint64_t* capacity) {
     if (!start || !parts || !capacity) {
         return NULL;
     }
 
-    char* segment = utf8_raw_copy_n(start, length);
+    char* segment = utf8_copy_n(start, length);
     if (!segment) {
         return NULL;
     }
 
-    char** temp = utf8_raw_split_push(segment, parts, capacity);
+    char** temp = utf8_split_push(segment, parts, capacity);
     if (!temp) {
         free(segment);
         return NULL;
@@ -310,17 +310,17 @@ char** utf8_raw_split_push_n(const char* start, const uint64_t length, char** pa
     return temp;
 }
 
-char** utf8_raw_split_push_range(const char* start, const char* end, char** parts, uint64_t* capacity) {
+char** utf8_split_push_range(const char* start, const char* end, char** parts, uint64_t* capacity) {
     if (!start || !end || !parts || !capacity) {
         return NULL;
     }
 
-    char* segment = utf8_raw_copy_range(start, end);
+    char* segment = utf8_copy_range(start, end);
     if (!segment) {
         return NULL;
     }
 
-    char** temp = utf8_raw_split_push(segment, parts, capacity);
+    char** temp = utf8_split_push(segment, parts, capacity);
     if (!temp) {
         free(segment);
         return NULL;
@@ -329,26 +329,26 @@ char** utf8_raw_split_push_range(const char* start, const char* end, char** part
     return temp;
 }
 
-char** utf8_raw_split(const char* start, const char* delimiter, uint64_t* capacity) {
-    UTF8RawSplitter split = {
+char** utf8_split(const char* start, const char* delimiter, uint64_t* capacity) {
+    UTF8Splitter split = {
         .offset = (char*) start,
         .delimiter = delimiter,
         .capacity = 0,
         .parts = malloc(sizeof(char*)),
     };
 
-    utf8_byte_iterate(start, utf8_raw_iter_split, &split);
+    utf8_byte_iterate(start, utf8_iter_split, &split);
 
-    const char* end = (const char*) start + utf8_raw_byte_count(start);
+    const char* end = (const char*) start + utf8_len_bytes(start);
     if (split.offset < end) {
-        split.parts = utf8_raw_split_push_range(split.offset, end, split.parts, &split.capacity);
+        split.parts = utf8_split_push_range(split.offset, end, split.parts, &split.capacity);
     }
 
     *capacity = split.capacity;
     return split.parts;
 }
 
-char** utf8_raw_split_char(const char* start, uint64_t* capacity) {
+char** utf8_split_char(const char* start, uint64_t* capacity) {
     if (!start || !capacity) {
         return NULL;
     }
@@ -363,14 +363,14 @@ char** utf8_raw_split_char(const char* start, uint64_t* capacity) {
             break;
         }
 
-        parts = utf8_raw_split_push_n((const char*) ptr, width, parts, capacity);
+        parts = utf8_split_push_n((const char*) ptr, width, parts, capacity);
         ptr += width;
     }
 
     return parts;
 }
 
-char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* capacity) {
+char** utf8_split_regex(const char* start, const char* pattern, uint64_t* capacity) {
     if (!start || !pattern || !capacity) return NULL;
     *capacity = 0;
 
@@ -405,7 +405,7 @@ char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* ca
     }
 
     int64_t offset = 0;
-    int64_t total_bytes = utf8_raw_byte_count(start);
+    int64_t total_bytes = utf8_len_bytes(start);
     if (0 == total_bytes || -1 == total_bytes) {
         goto fail;
     }
@@ -420,7 +420,7 @@ char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* ca
 
         // Only push the matched region (GPT-2 style)
         if (match_end > match_start) {
-            parts = utf8_raw_split_push_n(start + offset + match_start, match_end - match_start, parts, capacity);
+            parts = utf8_split_push_n(start + offset + match_start, match_end - match_start, parts, capacity);
             if (!parts) goto fail;
         }
         offset += match_end;
@@ -434,19 +434,19 @@ char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* ca
 fail:
     pcre2_match_data_free(match);
     pcre2_code_free(code);
-    utf8_raw_split_free(parts, *capacity);
+    utf8_split_free(parts, *capacity);
     return NULL;
 }
 
-char* utf8_raw_split_join(char** parts, const char* delimiter, uint64_t capacity) {
+char* utf8_split_join(char** parts, const char* delimiter, uint64_t capacity) {
     if (!parts || 0 == capacity) {
         return NULL;
     }
 
     uint64_t total = 1; // add null
-    uint64_t sep_len = delimiter ? utf8_raw_byte_count(delimiter) : 0;
+    uint64_t sep_len = delimiter ? utf8_len_bytes(delimiter) : 0;
     for (uint64_t i = 0; i < capacity; i++) {
-        total += utf8_raw_byte_count(parts[i]);
+        total += utf8_len_bytes(parts[i]);
     }
     total += sep_len * (capacity > 1 ? capacity - 1 : 0);
 
@@ -460,18 +460,18 @@ char* utf8_raw_split_join(char** parts, const char* delimiter, uint64_t capacity
     for (uint64_t i = 0; i < capacity; i++) {
         if (i > 0 && sep_len) {
             previous = buffer;
-            buffer = utf8_raw_concat(buffer, delimiter);
+            buffer = utf8_concat(buffer, delimiter);
             memory_free(previous);
         }
         previous = buffer;
-        buffer = utf8_raw_concat(buffer, parts[i]);
+        buffer = utf8_concat(buffer, parts[i]);
         memory_free(previous);
     }
 
     return buffer;
 }
 
-void utf8_raw_split_free(char** parts, uint64_t capacity) {
+void utf8_split_free(char** parts, uint64_t capacity) {
     if (parts) {
         for (uint64_t i = 0; i < capacity; i++) {
             if (parts[i]) {

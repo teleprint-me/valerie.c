@@ -9,6 +9,7 @@
  * - A UTF-8 byte represents a valid ASCII or UTF-8 code point.
  * - Library functions are prefixed with `utf8_`.
  * - Low Level: Byte functions are prefixed with `utf8_byte_`.
+ * - High Level: String functions are prefixed with `utf8_`.
  */
 
 #ifndef UTF8_STRING_H
@@ -23,69 +24,78 @@
 
 // --- UTF-8 Raw Validator ---
 
-typedef struct UTF8RawValidator {
+typedef struct UTF8Validator {
     bool is_valid;
     const uint8_t* error_at;
-} UTF8RawValidator;
+} UTF8Validator;
 
-void* utf8_raw_iter_is_valid(const uint8_t* start, const int8_t width, void* context);
+void* utf8_iter_is_valid(
+    const uint8_t* start, const int8_t width, void* context
+);
 
 // --- UTF-8 Raw Counter ---
 
-typedef struct UTF8RawCounter {
+typedef struct UTF8Counter {
     int64_t value;
-} UTF8RawCounter;
+} UTF8Counter;
 
-void* utf8_raw_iter_count(const uint8_t* start, const int8_t width, void* context);
+void* utf8_iter_count(const uint8_t* start, const int8_t width, void* context);
 
 // --- UTF-8 Raw Splitter ---
 
-typedef struct UTF8RawSplitter {
+typedef struct UTF8Splitter {
     const char* delimiter;
     char* offset;
     char** parts;
     uint64_t capacity;
-} UTF8RawSplitter;
+} UTF8Splitter;
 
-void* utf8_raw_iter_split(const uint8_t* start, const int8_t width, void* context);
+void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context);
 
 // --- UTF-8 Raw Operations ---
 
-bool utf8_raw_is_valid(const char* start);
+bool utf8_is_valid(const char* start);
 
-int64_t utf8_raw_byte_count(const char* start); // Physical byte size
-int64_t utf8_raw_char_count(const char* start); // Logical character count
+int64_t utf8_len_bytes(const char* start);  // Physical byte size
+int64_t utf8_len_codepoints(const char* start);  // Logical character count
 
-char* utf8_raw_copy(const char* start);
-char* utf8_raw_copy_n(const char* start, const uint64_t length);
-char* utf8_raw_copy_range(const char* start, const char* end);
+char* utf8_copy(const char* start);
+char* utf8_copy_n(const char* start, const uint64_t length);
+char* utf8_copy_range(const char* start, const char* end);
 
-char* utf8_raw_concat(const char* head, const char* tail);
+/**
+ * @note dst is **not** modified in-place.
+ * @returns A new buffer where src is copied to dst.
+ */
+char* utf8_concat(const char* dst, const char* src);
 
 // --- UTF-8 Raw Compare ---
 
-typedef enum UTF8RawCompare {
-    UTF8_RAW_COMPARE_INVALID = -2,
-    UTF8_RAW_COMPARE_LESS = -1,
-    UTF8_RAW_COMPARE_EQUAL = 0,
-    UTF8_RAW_COMPARE_GREATER = 1
-} UTF8RawCompare;
+typedef enum UTF8Compare {
+    UTF8_COMPARE_INVALID = -2,
+    UTF8_COMPARE_LESS = -1,
+    UTF8_COMPARE_EQUAL = 0,
+    UTF8_COMPARE_GREATER = 1
+} UTF8Compare;
 
-int32_t utf8_raw_compare(const char* a, const char* b);
+int32_t utf8_compare(const char* a, const char* b);
 
 // --- UTF-8 Raw Split ---
 
 /**
  * @note Caller must always assign the return value back to parts.
  */
-char** utf8_raw_split_push(const char* start, char** parts, uint64_t* capacity);
-char** utf8_raw_split_push_n(const char* start, const uint64_t length, char** parts, uint64_t* capacity);
-char** utf8_raw_split_push_range(const char* start, const char* end, char** parts, uint64_t* capacity);
+char** utf8_split_push(const char* start, char** parts, uint64_t* capacity);
+char** utf8_split_push_n(const char* start, const uint64_t length, char** parts, uint64_t* capacity);
+char** utf8_split_push_range(const char* start, const char* end, char** parts, uint64_t* capacity);
 
-char** utf8_raw_split(const char* start, const char* delimiter, uint64_t* capacity);
-char** utf8_raw_split_char(const char* start, uint64_t* capacity);
-char** utf8_raw_split_regex(const char* start, const char* pattern, uint64_t* capacity);
-char* utf8_raw_split_join(char** parts, const char* delimiter, uint64_t capacity);
-void utf8_raw_split_free(char** parts, uint64_t capacity);
+/**
+ * @note Delimiters must be valid. Passing NULL as a delimiter cancels the operation.
+ */
+char** utf8_split(const char* start, const char* delimiter, uint64_t* capacity);
+char** utf8_split_char(const char* start, uint64_t* capacity);
+char** utf8_split_regex(const char* start, const char* pattern, uint64_t* capacity);
+char* utf8_split_join(char** parts, const char* delimiter, uint64_t capacity);
+void utf8_split_free(char** parts, uint64_t capacity);
 
-#endif // UTF8_STRING_H
+#endif  // UTF8_STRING_H
