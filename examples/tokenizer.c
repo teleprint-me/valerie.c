@@ -216,9 +216,7 @@ HashMap* tokenizer_pairs_create(HashMap* vocab) {
 
         for (uint64_t i = 0; i < symbol_count - 1; i++) {
             // Join symbols[i] + " " + symbols[i+1] as new string
-            char* pair = utf8_split_join(
-                (char*[]) {symbols[i], symbols[i + 1]}, " ", 2
-            );
+            char* pair = utf8_split_join((char*[]) {symbols[i], symbols[i + 1]}, " ", 2);
             int* pair_freq = hash_map_search(pairs, pair);
             if (!pair_freq) {
                 int* value = memory_alloc(sizeof(int), alignof(int));
@@ -271,14 +269,17 @@ HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
         uint64_t new_count = 0;
 
         for (uint64_t i = 0; i < sym_count;) {
+            // @note We have to step forward n bytes, we can't just +1 to step forward
+            //       Otherwise, the byte alignment is offset incorrectly, and it crashes.
             // Try to merge at this position
-            if (i + 1 < sym_count && strcmp(syms[i], pair_syms[0]) == 0
-                && strcmp(syms[i + 1], pair_syms[1]) == 0) {
+            if (i + 1 < sym_count 
+                && 0 == utf8_compare(syms[i], pair_syms[0])
+                && 0 == utf8_compare(syms[i + 1], pair_syms[1])) {
                 // Merge the pair
                 new_syms[new_count++] = utf8_concat(syms[i], syms[i + 1]);
                 i += 2;
             } else {
-                new_syms[new_count++] = strdup(syms[i]);
+                new_syms[new_count++] = utf8_copy(syms[i]);
                 i += 1;
             }
         }
