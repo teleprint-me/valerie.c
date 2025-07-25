@@ -268,12 +268,6 @@ int32_t utf8_compare(const char* a, const char* b) {
     return UTF8_COMPARE_EQUAL;
 }
 
-/// @todo Add utf8_concat_n(a, b, n)
-///       where a is the buffer to write to,
-///       b is the input to read from,
-///       and n is the buffer size.
-/// @note This function should mitigate awkward scenarios for N-way joins.
-
 // --- UTF-8 Split ---
 
 char** utf8_split_push(const char* start, char** parts, uint64_t* capacity) {
