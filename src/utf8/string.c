@@ -2,13 +2,13 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file src/utf8/raw.c
- * @brief Mid-level API for handling raw UTF-8 pointer-to-char processing.
+ * @brief String API for handling UTF-8 pointer-to-char processing.
  */
 
-#include "logger.h"
 #include "memory.h"
+#include "logger.h"
 #include "utf8/byte.h"
-#include "utf8/raw.h"
+#include "utf8/string.h"
 
 // --- UTF-8 Raw Validator ---
 
