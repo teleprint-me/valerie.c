@@ -9,8 +9,7 @@
  * - A UTF-8 byte represents a valid ASCII or UTF-8 code point.
  * - Library functions are prefixed with `utf8_`.
  * - Low Level: Byte functions are prefixed with `utf8_byte_`.
- * - Mid Level: Raw pointer-to-char functions are prefixed with `utf8_raw_`.
- * - High Level: interface functions are prefixed with `utf8_string_`.
+ * - High Level: String functions are prefixed with `utf8_`.
  */
 
 #ifndef UTF8_BYTE_H
