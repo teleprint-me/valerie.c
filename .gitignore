@@ -8,6 +8,8 @@ papers/
 # files
 .clangd
 .clang-format
+.prettierignore
+.prettierrc
 
 #
 # C ignore rules
