@@ -402,6 +402,21 @@ HashMapEntry* hash_map_next(HashMapIterator* iter) {
     return NULL;
 }
 
+void hash_map_iter_free(HashMap* table, void (*value_free)(void*)) {
+    if (table) {
+        HashMaptEntry* entry;
+        HashMapIterator it = hash_map_iter(table);
+        while ((entry = hash_map_next(&it))) {
+            memory_free(entry->key); // keys are restricted
+            if (value_free) {
+                value_free(entry->value); // custom allocation
+            } else {
+                memory_free(entry->value); // allocated segment
+            }
+        }
+    }
+}
+
 /** @} */
 
 /**

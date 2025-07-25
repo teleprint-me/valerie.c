@@ -168,6 +168,8 @@ HashMapIterator hash_map_iter(HashMap* table);
  */
 HashMapEntry* hash_map_next(HashMapIterator* iter);
 
+void hash_map_iter_free(HashMap* map, void (*value)(void*));
+
 /** @} */
 
 /**
