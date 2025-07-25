@@ -404,7 +404,7 @@ HashMapEntry* hash_map_next(HashMapIterator* iter) {
 
 void hash_map_iter_free(HashMap* table, void (*value_free)(void*)) {
     if (table) {
-        HashMaptEntry* entry;
+        HashMapEntry* entry;
         HashMapIterator it = hash_map_iter(table);
         while ((entry = hash_map_next(&it))) {
             memory_free(entry->key); // keys are restricted
