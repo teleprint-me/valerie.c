@@ -57,6 +57,18 @@ bool utf8_is_valid(const char* start);
 int64_t utf8_len_bytes(const char* start);  // Physical byte size
 int64_t utf8_len_codepoints(const char* start);  // Logical character count
 
+/**
+ * @brief Returns a newly allocated UTF-8 codepoint at the given index.
+ *
+ * @param src A valid UTF-8 string.
+ * @param index Codepoint index (0-based).
+ * @return char* A null-terminated UTF-8 codepoint, or NULL if out-of-range or invalid.
+ * @note Caller must free the returned string.
+ */
+char* utf8_codepoint_index(const char* src, uint64_t index);
+// @todo Not implemented
+char* utf8_codepoint_range(const char* src, uint64_t start, uint64_t end);
+
 char* utf8_copy(const char* start);
 char* utf8_copy_n(const char* start, const uint64_t length);
 char* utf8_copy_range(const char* start, const char* end);

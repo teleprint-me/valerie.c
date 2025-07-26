@@ -122,6 +122,31 @@ int64_t utf8_len_codepoints(const char* start) {
     return -1;
 }
 
+char* utf8_codepoint_index(const char* src, uint64_t index) {
+    if (!src) {
+        return NULL;
+    }
+
+    const uint8_t* dst = (const uint8_t*) src;
+    uint64_t count = 0;
+
+    while (*dst) {
+        int8_t width = utf8_byte_width(dst);
+        if (width <= 0) {
+            return NULL;  // invalid sequence
+        }
+
+        if (count == index) {
+            return utf8_copy_n((const char*) dst, width);  // already null-terminated
+        }
+
+        dst += width;
+        count++;
+    }
+
+    return NULL;  // index out-of-range
+}
+
 char* utf8_copy(const char* start) {
     if (!start || !utf8_is_valid(start)) {
         return NULL;
