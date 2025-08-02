@@ -31,6 +31,7 @@ typedef enum GraphemeClass {
     GCB_EMOJI_MODIFIER_BASE = 15,
     GCB_EMOJI_COMPONENT = 16,
     GCB_EXTENDED_PICTOGRAPHIC = 17,
+    GCB_DIACRITIC = 18,
 } GraphemeClass;
 
 typedef struct Grapheme {

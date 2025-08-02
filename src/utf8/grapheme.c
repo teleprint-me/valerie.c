@@ -65,13 +65,17 @@ bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp) {
         return false;
     }
 
+    // GB9: × Spacing Mark
+    if (curr == GCB_SPACINGMARK) {
+        return false;
+    }
+
     // GB9: × Prepend
     if (curr == GCB_PREPEND || prev == GCB_PREPEND) {
         return false;
     }
 
-    // GB9: × Spacing Mark
-    if (curr == GCB_SPACINGMARK) {
+    if (curr == GCB_DIACRITIC) {
         return false;
     }
 
@@ -237,5 +241,15 @@ void utf8_gcb_split_free(char** parts, size_t capacity) {
 }
 
 void utf8_gcb_split_dump(char** parts, size_t capacity) {
-    utf8_byte_split_dump((uint8_t**) parts, capacity);
+    for (uint32_t i = 0; i < capacity; i++) {
+        const uint8_t* cluster = (const uint8_t*) parts[i];
+        int8_t w = utf8_byte_width(cluster);
+        printf("%s | U+%04X | width: %d\n", cluster, utf8_byte_decode(cluster), w);
+
+        while(*cluster) {
+            int8_t width = utf8_byte_width(cluster);
+            printf("    U+%04X | width: %d\n", utf8_byte_decode(cluster), width);
+            cluster += width;
+        }
+    }
 }

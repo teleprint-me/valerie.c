@@ -32,6 +32,8 @@ class GraphemeType:
     GCB_EMOJI_MODIFIER_BASE = 15
     GCB_EMOJI_COMPONENT = 16
     GCB_EXTENDED_PICTOGRAPHIC = 17
+    # PropList.txt
+    GCB_DIACRITIC = 18
 
 
 GraphemeMap = {
@@ -55,6 +57,8 @@ GraphemeMap = {
     "Emoji_Modifier_Base": GraphemeType.GCB_EMOJI_MODIFIER_BASE,
     "Emoji_Component": GraphemeType.GCB_EMOJI_COMPONENT,
     "Extended_Pictographic": GraphemeType.GCB_EXTENDED_PICTOGRAPHIC,
+    # PropList.txt
+    "Diacritic": GraphemeType.GCB_DIACRITIC,
 }
 
 # filter unicode data by category type
@@ -79,31 +83,45 @@ GRAPHEMES = [
     "Emoji_Modifier_Base",
     "Emoji_Component",  # includes regionals
     "Extended_Pictographic",
+    # PropList.txt
+    "Diacritic",
 ]
 
 
+def unicode_data_fetch(url: str, path: str) -> list[str]:
+    # Read from local cache
+    if os.path.isfile(path):
+        with open(path, "r") as file:
+            return file.read().splitlines()
+    # Write to local cache
+    lines = requests.get(url).text.splitlines()
+    with open(path, "w") as file:
+        for line in lines:
+            file.write(line + "\n")
+    return lines
+
+
 def unicode_data_cache() -> list[str]:
+    base_dir = "data"
+    base_url = "https://www.unicode.org/Public/UCD/latest/ucd"
+    os.makedirs(base_dir, exist_ok=True)
+    files = {
+        "grapheme": (
+            f"{base_url}/auxiliary/GraphemeBreakProperty.txt",
+            f"{base_dir}/GraphemeBreakProperty.txt",
+        ),
+        "emoji": (
+            f"{base_url}/emoji/emoji-data.txt",
+            f"{base_dir}/emoji-data.txt",
+        ),
+        "prop": (
+            f"{base_url}/PropList.txt",
+            f"{base_dir}/PropList.txt",
+        ),
+    }
     lines = []
-    filename = "data/classifiers.txt"
-    os.makedirs("data", exist_ok=True)  # ensure dir exists
-    if not os.path.isfile(filename):
-        # set the unicode data urls
-        BASE_URL = "https://www.unicode.org/Public/UCD/latest/ucd"
-        GRAPHEME_URL = f"{BASE_URL}/auxiliary/GraphemeBreakProperty.txt"
-        EMOJI_URL = f"{BASE_URL}/emoji/emoji-data.txt"
-        # get the unicode data tables
-        GRAPHEME_LINES = requests.get(GRAPHEME_URL).text.splitlines()
-        EMOJI_LINES = requests.get(EMOJI_URL).text.splitlines()
-        # unify the unicode data tables
-        lines = GRAPHEME_LINES + EMOJI_LINES
-        # write the unicode data to a file
-        with open(filename, "w") as file:
-            for line in lines:
-                file.write(line + "\n")
-    else:
-        # read cached data from a file
-        with open(filename, "r") as file:
-            lines = file.read().splitlines()
+    for _, (url, path) in files.items():
+        lines.extend(unicode_data_fetch(url, path))
     return lines
 
 
