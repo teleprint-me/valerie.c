@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-// --- UTF-8 Byte Operations ---
+// --- UTF-8 Codepoint Operations ---
 
 int8_t utf8_byte_width(const uint8_t* start);
 int32_t utf8_byte_decode(const uint8_t* start);
@@ -31,7 +31,7 @@ uint8_t* utf8_byte_copy(const uint8_t* start);
 uint8_t* utf8_byte_index(const uint8_t* start, uint32_t index);
 void utf8_byte_dump(const uint8_t* start);
 
-// --- UTF-8 Byte Types ---
+// --- UTF-8 Codepoint Types ---
 
 bool utf8_byte_is_char(const uint8_t* start);
 bool utf8_byte_is_digit(const uint8_t* start);
@@ -41,7 +41,7 @@ bool utf8_byte_is_lower(const uint8_t* start);
 bool utf8_byte_is_space(const uint8_t* start);
 bool utf8_byte_is_punct(const uint8_t* start);
 
-// --- UTF-8 Byte Visitor ---
+// --- UTF-8 Codepoint Visitor ---
 
 const uint8_t* utf8_byte_next(const uint8_t* current);
 const uint8_t* utf8_byte_next_width(const uint8_t* current, int8_t* out_width);
@@ -51,7 +51,7 @@ const uint8_t* utf8_byte_prev_width(
 );
 const uint8_t* utf8_byte_peek(const uint8_t* current, const size_t ahead);
 
-// --- UTF-8 Byte Split ---
+// --- UTF-8 Codepoint Split ---
 
 uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity);
 void utf8_byte_split_free(uint8_t** parts, size_t capacity);
