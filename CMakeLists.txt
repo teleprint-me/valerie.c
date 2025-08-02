@@ -7,7 +7,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-# Required for clangd support in Zeditor (Zed Editor)
+# Required for clangd support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
@@ -21,7 +21,7 @@ set(COMMON "-D_FILE_OFFSET_BITS=64 ${OpenMP_C_FLAGS} ${WARN}")
 set(DEBUG "${COMMON} -g3 ${EXTRA_WARN} ${SANITIZE} ${ANALYSIS}")
 set(RELEASE "${COMMON} -Ofast -march=native")
 
-# Apply flags conditionally based on build type
+find_package(OpenMP REQUIRED)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEBUG}")
 else()
@@ -43,8 +43,11 @@ add_library(valerie SHARED
     "src/xorshift.c" # numeric psuedo random number generator
     "src/type.c" # numeric data types, focusing on numeric precision
     "src/utf8/byte.c" # unicode codepoint utilities
+    "src/utf8/iterator.c"
+    "src/utf8/grapheme-data.c"
+    "src/utf8/grapheme.c"
     "src/utf8/string.c" # unicode string (char*) processing
-    "src/path.c"
+    "src/utf8/path.c"
 )
 target_include_directories(valerie PUBLIC include)
 target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
