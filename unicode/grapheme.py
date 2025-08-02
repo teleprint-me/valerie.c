@@ -1,6 +1,46 @@
 """
-@file unicode.grapheme
-@ref https://www.unicode.org/Public/UCD/latest/ucd
+unicode.grapheme — Unicode Grapheme Cluster Data Generator
+==========================================================
+
+Auto-generates C header/source files containing structured Unicode
+grapheme cluster break properties for use in dependency-free
+text-processing libraries (e.g., for grapheme cluster detection in C).
+
+Features
+--------
+- Downloads and caches the latest Unicode property data files:
+    - GraphemeBreakProperty.txt
+    - emoji-data.txt
+    - PropList.txt
+- Maps codepoint ranges to compact enums for efficient lookup.
+- Emits C code with deduplicated, extendable grapheme break categories.
+
+Output
+------
+- include/utf8/grapheme-data.h    # Grapheme type enum + lookup struct
+- src/utf8/grapheme-data.c        # Data array of Unicode codepoint ranges
+
+Usage
+-----
+Run directly as a module (no arguments):
+
+    python -m unicode.grapheme
+
+On success, generates/updates the above files in-place.
+Exit status 0 = success; 1 = failure. No output is emitted on success.
+
+Notes
+-----
+- Files are cached to `data/` on first run; only re-fetched if absent.
+- The C interface is designed for inclusion in portable, dependency-free code.
+- Grapheme categories are based on the latest Unicode UCD and emoji data.
+- Output files are overwritten on each invocation.
+
+References
+----------
+- Unicode Standard Annex #29: Unicode Text Segmentation
+- https://www.unicode.org/reports/tr29/
+- https://www.unicode.org/Public/UCD/latest/ucd/
 """
 
 import os
@@ -71,34 +111,38 @@ GraphemeMap = {
     "Modifier_Combining_Mark": GraphemeType.GCB_MODIFIER_COMBINING_MARK,
 }
 
-# filter unicode data by category type
-# note that some of these may overlap, interleave, or duplicate
-# for example, extend, extender, and diacritic may share some values, but not all.
-# due to the unique values introduced, theyre still worth including.
-# it is non-trivial to sort the singletons, tuples, and ranges.
-# even with the collation algorithm, each language will present unique challenges.
+# List of supported grapheme classes for Unicode segmentation.
+#
+# Note:
+# - Some classes (e.g., Hangul: L, V, T, LV, LVT) are included for completeness, but are not required for most non-Korean text processing.
+# - Many categories overlap (e.g., Extend, Extender, Diacritic) and may assign the same codepoint to multiple classes.
+# - The Emoji-related classes are required for correct grapheme break behavior in modern Unicode text (e.g., flags, keycap sequences, skin tone modifiers).
+# - PropList-only properties (Diacritic, Other_Grapheme_Extend) are rarely used, but included for edge cases.
+# - Regional indicator sequences are classified under "Emoji" and "Emoji_Component".
+# - This list is processed in order; matching is greedy and first-match-wins.
 GRAPHEMES = [
-    "Undefined",  # undefined
+    "Undefined",  # fallback/unclassified codepoints
     # GraphemeBreakProperty.txt
-    "CR",
-    "LF",
+    "CR",  # Carriage Return
+    "LF",  # Line Feed
     "Control",
     "Extend",
     "Prepend",
     "SpacingMark",
+    # Hangul Syllable Types (rarely used outside Korean)
     "L",
     "V",
     "T",
     "LV",
     "LVT",
-    "ZWJ",
-    # emoji-data.txt
-    "Emoji",  # includes regionals
-    "Emoji_Presentation",  # includes regionals
-    "Emoji_Modifier_Base",
-    "Emoji_Component",  # includes regionals
-    "Extended_Pictographic",
-    # PropList.txt
+    "ZWJ",  # Zero Width Joiner
+    # emoji-data.txt (Emoji-related properties)
+    "Emoji",  # includes regional indicators
+    "Emoji_Presentation",  # emoji by default
+    "Emoji_Modifier_Base",  # base for skin tone, hair modifiers
+    "Emoji_Component",  # sub-components, includes regionals
+    "Extended_Pictographic",  # broad pictographic class
+    # PropList.txt (rare; covers obscure edge cases)
     "Bidi_Control",
     "Extender",
     "Other_Grapheme_Extend",
