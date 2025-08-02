@@ -10,6 +10,7 @@
 #include "memory.h"
 #include "logger.h"  // logging macros LOG_ERROR, etc.
 #include "map.h"  // HashMap* map
+#include "utf8/byte.h"
 #include "utf8/string.h"  // Process UTF-8 strings as char*
 #include <stdint.h>
 #include <stdio.h>  // IO
@@ -141,14 +142,14 @@ HashMap* tokenizer_vocab_create(char** tokens, uint64_t token_count) {
         // Get the tokens codepoints
         char* token = tokens[i];
         uint64_t cpts_count = 0;
-        char** cpts = utf8_split_char(token, &cpts_count);
+        char** cpts = utf8_split(token, &cpts_count);
 
         // Compute the buffer size
         size_t buf_size = 0;
         for (uint64_t j = 0; j < cpts_count; j++) {
-            buf_size += utf8_len_bytes(cpts[j]) + 1;  // add space
+            buf_size += utf8_byte_count((const uint8_t*) cpts[j]) + 1;  // add space
         }
-        buf_size += utf8_len_bytes("</w>") + 2;  // space + null
+        buf_size += utf8_byte_count((const uint8_t*) "</w>") + 2;  // space + null
 
         // Join codepoints with spaces and append stop token
         char* key = memory_alloc(buf_size, alignof(char));
@@ -208,7 +209,7 @@ HashMap* tokenizer_pairs_create(HashMap* vocab) {
         int frequency = *(int*) entry->value;
 
         uint64_t symbol_count = 0;
-        char** symbols = utf8_split(word, " ", &symbol_count);
+        char** symbols = utf8_split_delim(word, " ", &symbol_count);
         if (symbol_count < 2) {
             utf8_split_free(symbols, symbol_count);
             continue;
@@ -249,9 +250,15 @@ void tokenizer_pairs_free(HashMap* pairs) {
  */
 
 HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
+    printf("pair='%s'\n", pair);
     // Split the pair (e.g., "l l" => ["l", "l"])
     uint64_t pair_len = 0;
-    char** pair_syms = utf8_split(pair, " ", &pair_len);
+    char** pair_syms = NULL;
+    if (utf8_byte_count((const uint8_t*) pair) > 1 && strchr(pair, ' ')) {
+        pair_syms = utf8_split_delim(pair, " ", &pair_len);
+    } else {
+        pair_syms = utf8_split(pair, &pair_len);
+    }
 
     HashMap* new_vocab = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
 
@@ -260,7 +267,7 @@ HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
     while ((entry = hash_map_next(&it))) {
         // Split word into symbols
         uint64_t sym_count = 0;
-        char** syms = utf8_split(entry->key, " ", &sym_count);
+        char** syms = utf8_split_delim(entry->key, " ", &sym_count);
 
         // Build new symbol array after merging
         char** new_syms = malloc(
@@ -269,8 +276,6 @@ HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
         uint64_t new_count = 0;
 
         for (uint64_t i = 0; i < sym_count;) {
-            // @note We have to step forward n bytes, we can't just +1 to step forward
-            //       Otherwise, the byte alignment is offset incorrectly, and it crashes.
             // Try to merge at this position
             if (i + 1 < sym_count 
                 && 0 == utf8_compare(syms[i], pair_syms[0])
@@ -333,6 +338,7 @@ int main(int argc, char* argv[]) {
     char* corpus_path = argv[1];
     ssize_t corpus_size = 0;
     char* corpus = tokenizer_corpus_mmap(corpus_path, &corpus_size);
+    printf("[corpus start]\n%s\n[corpus end]\n", corpus);
 
     // @todo Prepare the write the tokenizer model to a binary format
     //       matching it's outlined structure.
@@ -342,8 +348,21 @@ int main(int argc, char* argv[]) {
     uint64_t split_count = 0;
     char** corpus_split = utf8_split_regex(corpus, VTKN_PRE, &split_count);
 
+    printf("split_count=%lu\n", split_count);
+    for (uint64_t i = 0; i < split_count; i++) {
+        printf("corpus_split[%lu]='%s'\n", i, corpus_split[i]);
+    }
+
     // Build the vocab
     HashMap* vocab = tokenizer_vocab_create(corpus_split, split_count);
+    HashMapEntry* entry = NULL;
+    HashMapIterator it = hash_map_iter(vocab);
+
+    printf("vocab=%p, split_count=%lu\n", (void*) vocab, split_count);
+    while ((entry = hash_map_next(&it))) {
+        printf("entry[%lu], entry->key='%s', entry->value=%d\n", 
+            it.index, (char*) entry->key, *(int*) entry->value);
+    }
 
     uint64_t num_merges = 2;
     if (argc == 3) {
@@ -356,8 +375,7 @@ int main(int argc, char* argv[]) {
         // 2. Find the best (most frequent) pair
         int best_freq = 0;
         char* best_pair = NULL;
-        HashMapIterator it = hash_map_iter(pairs);
-        HashMapEntry* entry;
+        it = hash_map_iter(pairs);
         while ((entry = hash_map_next(&it))) {
             int freq = *(int*) entry->value;
             if (freq > best_freq) {
