@@ -186,7 +186,7 @@ def unicode_data_source(ranges: list[tuple[int, int, int]]) -> str:
 
     lines = unicode_data_comments()
 
-    lines.append('#include "utf8/grapheme_data.h"\n')
+    lines.append('#include "utf8/grapheme-data.h"\n')
 
     lines.append("const Grapheme graphemes[] = {")
     for lo, hi, t in ranges:
