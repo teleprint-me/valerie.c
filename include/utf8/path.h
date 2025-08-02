@@ -1,13 +1,13 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/path.h
+ * @file include/interface/path.h
  *
  * @brief Path manipulation interface for C.
  */
 
-#ifndef PATH_H
-#define PATH_H
+#ifndef UTF8_PATH_H
+#define UTF8_PATH_H
 
 #include <asm/unistd.h>
 #include <dirent.h>
@@ -121,4 +121,4 @@ char* path_dirname(const char* path); // Gets the directory part of a path
 char* path_basename(const char* path); // Gets the basename of a path
 char* path_join(const char* base, const char* sub); // Joins two paths
 
-#endif // PATH_H
+#endif // UTF8_PATH_H

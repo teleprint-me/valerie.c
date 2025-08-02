@@ -1,13 +1,13 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/path.c
+ * @file src/interface/path.c
  *
  * @brief
  */
 
 #include "logger.h"
-#include "path.h"
+#include "utf8/path.h"
 
 // PathInfo lifecycle
 
