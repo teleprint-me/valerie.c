@@ -6,10 +6,9 @@
  *
  * Low-level API for handling core UTF-8 codepoint pre-processing.
  *
- * - A UTF-8 byte represents a valid ASCII or UTF-8 code point.
- * - Library functions are prefixed with `utf8_`.
- * - Low Level: Byte functions are prefixed with `utf8_byte_`.
- * - High Level: String functions are prefixed with `utf8_`.
+ * - A UTF-8 byte represents a valid ASCII or UTF-8 codepoint.
+ * - All Library functions are prefixed with `utf8_`.
+ * - Byte-level operations are prefixed with `utf8_byte_`.
  */
 
 #ifndef UTF8_BYTE_H
@@ -27,6 +26,9 @@ int32_t utf8_byte_decode(const uint8_t* start);
 bool utf8_byte_is_valid(const uint8_t* start);
 bool utf8_byte_is_equal(const uint8_t* a, const uint8_t* b);
 ptrdiff_t utf8_byte_range(const uint8_t* start, const uint8_t* end);
+int64_t utf8_byte_count(const uint8_t* start);
+uint8_t* utf8_byte_copy(const uint8_t* start);
+uint8_t* utf8_byte_index(const uint8_t* start, uint32_t index);
 void utf8_byte_dump(const uint8_t* start);
 
 // --- UTF-8 Byte Types ---
@@ -35,7 +37,6 @@ bool utf8_byte_is_char(const uint8_t* start);
 bool utf8_byte_is_digit(const uint8_t* start);
 bool utf8_byte_is_alpha(const uint8_t* start);
 bool utf8_byte_is_alnum(const uint8_t* start);
-bool utf8_byte_is_upper(const uint8_t* start);
 bool utf8_byte_is_lower(const uint8_t* start);
 bool utf8_byte_is_space(const uint8_t* start);
 bool utf8_byte_is_punct(const uint8_t* start);
@@ -44,19 +45,16 @@ bool utf8_byte_is_punct(const uint8_t* start);
 
 const uint8_t* utf8_byte_next(const uint8_t* current);
 const uint8_t* utf8_byte_next_width(const uint8_t* current, int8_t* out_width);
-
 const uint8_t* utf8_byte_prev(const uint8_t* start, const uint8_t* current);
-const uint8_t* utf8_byte_prev_width(const uint8_t* start, const uint8_t* current, int8_t* out_width);
-
-/**
- * Peek `ahead` valid codepoints from `current`, skipping invalid bytes.
- * Returns a pointer to the codepoint, or NULL if out of bounds or invalid.
- */
+const uint8_t* utf8_byte_prev_width(
+    const uint8_t* start, const uint8_t* current, int8_t* out_width
+);
 const uint8_t* utf8_byte_peek(const uint8_t* current, const size_t ahead);
 
-// --- UTF-8 Byte Iterator ---
+// --- UTF-8 Byte Split ---
 
-typedef void* (*UTF8ByteIterator)(const uint8_t* start, const int8_t width, void* context);
-void* utf8_byte_iterate(const char* start, UTF8ByteIterator callback, void* context);
+uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity);
+void utf8_byte_split_free(uint8_t** parts, size_t capacity);
+void utf8_byte_split_dump(uint8_t** parts, size_t capacity);
 
 #endif // UTF8_BYTE_H

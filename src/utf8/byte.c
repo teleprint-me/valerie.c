@@ -2,11 +2,19 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file src/utf8/byte.c
- * @brief Low-level API for handling core UTF-8 codepoint pre-processing.
+ * @brief ASCII and UTF-8 Codepoint API.
+ *
+ * Low-level API for handling core UTF-8 codepoint pre-processing.
+ *
+ * - A UTF-8 byte represents a valid ASCII or UTF-8 codepoint.
+ * - All Library functions are prefixed with `utf8_`.
+ * - Byte-level operations are prefixed with `utf8_byte_`.
  */
 
+#include "memory.h"
 #include "logger.h"
 #include "utf8/byte.h"
+#include <string.h>  // memcpy and friends
 
 // --- UTF-8 Byte Operations ---
 
@@ -26,7 +34,7 @@ int8_t utf8_byte_width(const uint8_t* start) {
         return 4;
     }
 
-    return -1; // Invalid lead byte
+    return -1;  // Invalid lead byte
 }
 
 // Decode a UTF-8 byte sequence into a codepoint without validation.
@@ -53,7 +61,7 @@ bool utf8_byte_is_valid(const uint8_t* start) {
 
     int8_t width = utf8_byte_width(start);
     if (width == -1) {
-        return false; // Early exit
+        return false;  // Early exit
     }
 
     if (width == 1) {
@@ -68,28 +76,28 @@ bool utf8_byte_is_valid(const uint8_t* start) {
     // Validate continuation bytes for multi-byte characters
     for (int8_t i = 1; i < width; i++) {
         if ((start[i] & 0xC0) != 0x80) {
-            return false; // Invalid continuation byte
+            return false;  // Invalid continuation byte
         }
     }
 
     // Additional checks for overlongs, surrogates, and invalid ranges
     if (width == 2) {
         if (start[0] < 0xC2) {
-            return false; // Overlong encoding
+            return false;  // Overlong encoding
         }
     } else if (width == 3) {
         if (start[0] == 0xE0 && start[1] < 0xA0) {
-            return false; // Overlong encoding
+            return false;  // Overlong encoding
         }
         if (start[0] == 0xED && start[1] >= 0xA0) {
-            return false; // Surrogate halves
+            return false;  // Surrogate halves
         }
     } else if (width == 4) {
         if (start[0] == 0xF0 && start[1] < 0x90) {
-            return false; // Overlong encoding
+            return false;  // Overlong encoding
         }
         if (start[0] == 0xF4 && start[1] > 0x8F) {
-            return false; // Above U+10FFFF
+            return false;  // Above U+10FFFF
         }
     }
 
@@ -122,6 +130,86 @@ ptrdiff_t utf8_byte_range(const uint8_t* start, const uint8_t* end) {
         return -1;
     }
     return end - start;
+}
+
+int64_t utf8_byte_count(const uint8_t* start) {
+    if (!start) {
+        return -1;  // Invalid string
+    }
+
+    if ('\0' == *start) {
+        return 0;  // Empty string
+    }
+
+    int64_t count = 0;
+    const uint8_t* dst = start;
+    while (*dst) {
+        if (!utf8_byte_is_valid(dst)) {
+            return -1;
+        }
+
+        int8_t width = utf8_byte_width(dst);
+        if (1 > width) {
+            return -1;
+        }
+
+        count++;
+        dst += width;
+    }
+
+    return count;
+}
+
+uint8_t* utf8_byte_copy(const uint8_t* start) {
+    int8_t width = utf8_byte_width((const uint8_t*) start);
+    if (-1 == width) {
+        return NULL;
+    }
+
+    uint8_t* dst = memory_alloc(sizeof(uint8_t) * width + 1, alignof(uint8_t));
+    if (!dst) {
+        return NULL;
+    }
+
+    /// @note Zero-width inputs are valid UTF-8
+    if (0 < width) {
+        memcpy(dst, start, width);
+    }
+
+    dst[width] = '\0';
+    return dst;
+}
+
+// get the current codepoint for a given index
+/// @note There's probably a simpler way to do this.
+uint8_t* utf8_byte_index(const uint8_t* start, uint32_t index) {
+    if (!start) {
+        return NULL;
+    }
+
+    uint32_t count = 0;
+    const uint8_t* dst = start;
+
+    while (*dst) {
+        if (!utf8_byte_is_valid(dst)) {
+            return NULL;  // invalid sequence
+        }
+
+        // -1 on error, else a valid width
+        int8_t width = utf8_byte_width(dst);
+        if (-1 == width) {
+            return NULL;  // invalid sequence
+        }
+
+        if (count == index) {
+            return utf8_byte_copy(dst);
+        }
+
+        dst += width;
+        count++;
+    }
+
+    return NULL;  // index out-of-range
 }
 
 void utf8_byte_dump(const uint8_t* start) {
@@ -241,10 +329,10 @@ bool utf8_byte_is_space(const uint8_t* start) {
     }
 
     switch (codepoint) {
-        case 0x20: // ' '
-        case 0x09: // '\t'
-        case 0x0A: // '\n'
-        case 0x0D: // '\r'
+        case 0x20:  // ' '
+        case 0x09:  // '\t'
+        case 0x0A:  // '\n'
+        case 0x0D:  // '\r'
             return true;
         default:
             return false;
@@ -262,11 +350,11 @@ bool utf8_byte_is_punct(const uint8_t* start) {
     }
 
     // Punctuation ranges and single points (based on ASCII table)
-    if ((codepoint >= 0x21 && codepoint <= 0x2F) || // !"#$%&'()*+,-./
-        (codepoint >= 0x3A && codepoint <= 0x3F) || // :;<=>?@
-        (codepoint >= 0x5B && codepoint <= 0x5D) || // [\]
-        (codepoint == 0x5F) ||                     // _
-        (codepoint >= 0x7B && codepoint <= 0x7E)) { // {|}~
+    if ((codepoint >= 0x21 && codepoint <= 0x2F) ||  // !"#$%&'()*+,-./
+        (codepoint >= 0x3A && codepoint <= 0x3F) ||  // :;<=>?@
+        (codepoint >= 0x5B && codepoint <= 0x5D) ||  // [\]
+        (codepoint == 0x5F) ||  // _
+        (codepoint >= 0x7B && codepoint <= 0x7E)) {  // {|}~
         return true;
     }
 
@@ -297,7 +385,7 @@ const uint8_t* utf8_byte_next_width(const uint8_t* current, int8_t* out_width) {
     int8_t width = utf8_byte_width(current);
     if (-1 == width || !utf8_byte_is_valid(current)) {
         *out_width = -1;
-        return current + 1; // Skip bad byte
+        return current + 1;  // Skip bad byte
     }
 
     *out_width = width;
@@ -321,7 +409,9 @@ const uint8_t* utf8_byte_prev(const uint8_t* start, const uint8_t* current) {
     return NULL;
 }
 
-const uint8_t* utf8_byte_prev_width(const uint8_t* start, const uint8_t* current, int8_t* out_width) {
+const uint8_t* utf8_byte_prev_width(
+    const uint8_t* start, const uint8_t* current, int8_t* out_width
+) {
     if (!start || !current || current <= start || !out_width) {
         return NULL;
     }
@@ -332,7 +422,7 @@ const uint8_t* utf8_byte_prev_width(const uint8_t* start, const uint8_t* current
         int8_t width = utf8_byte_width(prev);
 
         if (1 > width) {
-            continue; // Not a valid lead byte
+            continue;  // Not a valid lead byte
         }
 
         // Check if this forms a valid sequence ending exactly at current
@@ -354,35 +444,68 @@ const uint8_t* utf8_byte_peek(const uint8_t* current, const size_t ahead) {
     return ptr;
 }
 
-// --- UTF-8 Byte Iterator ---
+// --- UTF-8 Byte Split ---
 
-void* utf8_byte_iterate(const char* start, UTF8ByteIterator callback, void* context) {
-    if (!start || !callback) {
-        return NULL; // Invalid source or callback
+uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity) {
+    if (!start || !capacity) {
+        return NULL;
     }
 
+    *capacity = 0;
+    uint8_t** parts = memory_alloc(sizeof(char*), alignof(char*));
     const uint8_t* stream = (const uint8_t*) start;
+
     while (*stream) {
-        // Determine the width of the current UTF-8 character
         int8_t width = utf8_byte_width(stream);
-        if (width == -1 || !utf8_byte_is_valid(stream)) {
-            // Notify the callback of an invalid sequence and allow it to decide
-            void* result = callback(stream, -1, context);
-            if (result) {
-                return result; // Early return based on callback result
-            }
-            stream++; // Move past the invalid byte to prevent infinite loops
-            continue;
+        if (-1 == width) {
+            goto fail;
         }
 
-        // Invoke the callback with the current character
-        void* result = callback(stream, width, context);
-        if (result) {
-            return result; // Early return based on callback result
+        uint8_t* byte = utf8_byte_copy(stream);
+        if (!byte) {
+            goto fail;
         }
 
-        stream += width; // Advance to the next character
+        uint8_t** temp = memory_realloc(
+            parts,
+            sizeof(uint8_t*) * (*capacity),  // old_size
+            sizeof(uint8_t*) * (*capacity + 1),  // new_size
+            alignof(uint8_t*)
+        );
+
+        if (!temp) {
+            free(byte);
+            goto fail;
+        }
+
+        parts = temp;
+        parts[(*capacity)++] = byte;
+        stream += width;
     }
 
-    return NULL; // Completed iteration without finding a result
+    return parts;
+
+fail:
+    utf8_byte_split_free(parts, *capacity);
+    return NULL;
+}
+
+void utf8_byte_split_free(uint8_t** parts, size_t capacity) {
+    if (parts) {
+        for (size_t i = 0; i < capacity; i++) {
+            if (parts[i]) {
+                free(parts[i]);
+            }
+        }
+        free(parts);
+    }
+}
+
+void utf8_byte_split_dump(uint8_t** parts, size_t capacity) {
+    for (uint32_t i = 0; i < capacity; i++) {
+        const uint8_t* cp = parts[i];
+        int8_t width = utf8_byte_width((const uint8_t*) cp);
+        int32_t value = utf8_byte_decode((const uint8_t*) cp);
+        printf("%s | U+%04X | width: %d\n", cp, value, width);
+    }
 }
