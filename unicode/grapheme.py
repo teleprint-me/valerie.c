@@ -33,7 +33,12 @@ class GraphemeType:
     GCB_EMOJI_COMPONENT = 16
     GCB_EXTENDED_PICTOGRAPHIC = 17
     # PropList.txt
-    GCB_DIACRITIC = 18
+    GCB_BIDI_CONTROL = 18
+    GCB_EXTENDER = 19
+    GCB_OTHER_GRAPHEME_EXTEND = 20
+    GCB_DIACRITIC = 21
+    GCB_PREPENDED_CONCATENATION_MARK = 22
+    GCB_MODIFIER_COMBINING_MARK = 23
 
 
 GraphemeMap = {
@@ -58,10 +63,20 @@ GraphemeMap = {
     "Emoji_Component": GraphemeType.GCB_EMOJI_COMPONENT,
     "Extended_Pictographic": GraphemeType.GCB_EXTENDED_PICTOGRAPHIC,
     # PropList.txt
+    "Bidi_Control": GraphemeType.GCB_BIDI_CONTROL,
+    "Extender": GraphemeType.GCB_EXTENDER,
+    "Other_Grapheme_Extend": GraphemeType.GCB_OTHER_GRAPHEME_EXTEND,
     "Diacritic": GraphemeType.GCB_DIACRITIC,
+    "Prepended_Concatenation_Mark": GraphemeType.GCB_PREPENDED_CONCATENATION_MARK,
+    "Modifier_Combining_Mark": GraphemeType.GCB_MODIFIER_COMBINING_MARK,
 }
 
 # filter unicode data by category type
+# note that some of these may overlap, interleave, or duplicate
+# for example, extend, extender, and diacritic may share some values, but not all.
+# due to the unique values introduced, theyre still worth including.
+# it is non-trivial to sort the singletons, tuples, and ranges.
+# even with the collation algorithm, each language will present unique challenges.
 GRAPHEMES = [
     "Undefined",  # undefined
     # GraphemeBreakProperty.txt
@@ -84,7 +99,12 @@ GRAPHEMES = [
     "Emoji_Component",  # includes regionals
     "Extended_Pictographic",
     # PropList.txt
+    "Bidi_Control",
+    "Extender",
+    "Other_Grapheme_Extend",
     "Diacritic",
+    "Prepended_Concatenation_Mark",
+    "Modifier_Combining_Mark",
 ]
 
 
