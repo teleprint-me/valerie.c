@@ -1,0 +1,75 @@
+---
+BasedOnStyle: Google
+Language: Cpp
+
+SortIncludes: false
+
+ColumnLimit: 100
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Right
+
+IndentWidth: 4
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Before
+SpaceBeforeAssignmentOperators: true
+SpacesInAngles: Never
+InsertNewlineAtEOF: true
+
+# Warn: Setting InsertBraces to true could break code
+InsertBraces: true
+SeparateDefinitionBlocks: Always
+BraceWrapping:
+  AfterFunction: true
+  AfterEnum: true
+  AfterStruct: true
+  AfterUnion: true
+
+  AfterControlStatement: true
+
+  BeforeElse: true
+  BeforeCatch: true
+
+  IndentBraces: false
+
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveAssignments:
+  Enabled: false
+  AcrossComments: true
+  AlignCompound: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+  AcrossComments: true
+AlignConsecutiveMacros:
+  Enabled: false
+  AcrossEmptyLines: true
+  AcrossComments: true
+AlignEscapedNewlines: DontAlign
+MaxEmptyLinesToKeep: 1
+AlignTrailingComments:
+  Kind: Never
+  OverEmptyLines: 0  # Is set to 1 if MaxEmptyLinesToKeep is 2
+AlignArrayOfStructures: None
+AlignOperands: Align
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Empty
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+BinPackParameters: false
+BinPackArguments: false
+
+PenaltyBreakAssignment: 100
+PenaltyBreakString: 100
+PenaltyBreakBeforeMemberAccess: 100
+PenaltyBreakComment: 100
+
+BreakBeforeBinaryOperators: true
+BreakStringLiterals: false
+BreakAdjacentStringLiterals: false
+
+---
