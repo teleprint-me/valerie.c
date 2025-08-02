@@ -26,6 +26,8 @@ GraphemeClass utf8_gcb_class(uint32_t cp);
 bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp);
 void utf8_gcb_buffer_push(GraphemeBuffer* gb, uint32_t cp);
 
+int64_t utf8_gcb_count(const char* src);
+
 char** utf8_gcb_split(const char* src, size_t* capacity);
 void utf8_gcb_split_free(char** parts, size_t capacity);
 void utf8_gcb_split_dump(char** parts, size_t capacity);

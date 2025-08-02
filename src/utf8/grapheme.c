@@ -65,12 +65,18 @@ bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp) {
         return false;
     }
 
-    // GB9a: × ZWJ
-    if (prev == GCB_ZWJ || curr == GCB_ZWJ) {
+    // GB9: × Prepend
+    if (curr == GCB_PREPEND || prev == GCB_PREPEND) {
         return false;
     }
 
-    if (curr == GCB_PREPEND || curr == GCB_SPACINGMARK) {
+    // GB9: × Spacing Mark
+    if (curr == GCB_SPACINGMARK) {
+        return false;
+    }
+
+    // GB9a: × ZWJ
+    if (curr == GCB_ZWJ || prev == GCB_ZWJ) {
         return false;
     }
 
@@ -125,6 +131,44 @@ void utf8_gcb_buffer_push(GraphemeBuffer* gb, uint32_t cp) {
         gb->cp[i] = gb->cp[i - 1];
     }
     gb->cp[0] = cp;
+}
+
+int64_t utf8_gcb_count(const char* src) {
+    if (!src) {
+        return -1;
+    }
+
+    if (!*src) {
+        return 0;
+    }
+
+    const uint8_t* stream = (const uint8_t*) src;
+
+    int64_t count = 0;
+    GraphemeBuffer gb = {0};
+    bool first = true;
+
+    while (*stream) {
+        if (!utf8_byte_is_valid(stream)) {
+            return -1;
+        }
+
+        int8_t width = utf8_byte_width(stream);
+        if (1 > width) {
+            return -1;
+        }
+
+        uint32_t cp = utf8_byte_decode(stream);
+        if (first || utf8_gcb_is_break(&gb, cp)) {
+            first = false;
+            count++;
+        }
+
+        utf8_gcb_buffer_push(&gb, cp);
+        stream += width;
+    }
+
+    return count;
 }
 
 char** utf8_gcb_split(const char* src, size_t* capacity) {
