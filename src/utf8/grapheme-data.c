@@ -2704,6 +2704,10 @@ const Grapheme graphemes[] = {
     {0x01FAF7, 0x01FAF8, GCB_EXTENDED_PICTOGRAPHIC}, // Extended_Pictographic
     {0x01FAF9, 0x01FAFF, GCB_EXTENDED_PICTOGRAPHIC}, // Extended_Pictographic
     {0x01FC00, 0x01FFFD, GCB_EXTENDED_PICTOGRAPHIC}, // Extended_Pictographic
+    {0x00061C, 0x00061C, GCB_BIDI_CONTROL}, // Bidi_Control
+    {0x00200E, 0x00200F, GCB_BIDI_CONTROL}, // Bidi_Control
+    {0x00202A, 0x00202E, GCB_BIDI_CONTROL}, // Bidi_Control
+    {0x002066, 0x002069, GCB_BIDI_CONTROL}, // Bidi_Control
     {0x00005E, 0x00005E, GCB_DIACRITIC}, // Diacritic
     {0x000060, 0x000060, GCB_DIACRITIC}, // Diacritic
     {0x0000A8, 0x0000A8, GCB_DIACRITIC}, // Diacritic
@@ -2964,6 +2968,113 @@ const Grapheme graphemes[] = {
     {0x01E8D0, 0x01E8D6, GCB_DIACRITIC}, // Diacritic
     {0x01E944, 0x01E946, GCB_DIACRITIC}, // Diacritic
     {0x01E948, 0x01E94A, GCB_DIACRITIC}, // Diacritic
+    {0x0000B7, 0x0000B7, GCB_EXTENDER}, // Extender
+    {0x0002D0, 0x0002D1, GCB_EXTENDER}, // Extender
+    {0x000640, 0x000640, GCB_EXTENDER}, // Extender
+    {0x0007FA, 0x0007FA, GCB_EXTENDER}, // Extender
+    {0x000A71, 0x000A71, GCB_EXTENDER}, // Extender
+    {0x000AFB, 0x000AFB, GCB_EXTENDER}, // Extender
+    {0x000B55, 0x000B55, GCB_EXTENDER}, // Extender
+    {0x000E46, 0x000E46, GCB_EXTENDER}, // Extender
+    {0x000EC6, 0x000EC6, GCB_EXTENDER}, // Extender
+    {0x00180A, 0x00180A, GCB_EXTENDER}, // Extender
+    {0x001843, 0x001843, GCB_EXTENDER}, // Extender
+    {0x001AA7, 0x001AA7, GCB_EXTENDER}, // Extender
+    {0x001C36, 0x001C36, GCB_EXTENDER}, // Extender
+    {0x001C7B, 0x001C7B, GCB_EXTENDER}, // Extender
+    {0x003005, 0x003005, GCB_EXTENDER}, // Extender
+    {0x003031, 0x003035, GCB_EXTENDER}, // Extender
+    {0x00309D, 0x00309E, GCB_EXTENDER}, // Extender
+    {0x0030FC, 0x0030FE, GCB_EXTENDER}, // Extender
+    {0x00A015, 0x00A015, GCB_EXTENDER}, // Extender
+    {0x00A60C, 0x00A60C, GCB_EXTENDER}, // Extender
+    {0x00A9CF, 0x00A9CF, GCB_EXTENDER}, // Extender
+    {0x00A9E6, 0x00A9E6, GCB_EXTENDER}, // Extender
+    {0x00AA70, 0x00AA70, GCB_EXTENDER}, // Extender
+    {0x00AADD, 0x00AADD, GCB_EXTENDER}, // Extender
+    {0x00AAF3, 0x00AAF4, GCB_EXTENDER}, // Extender
+    {0x00FF70, 0x00FF70, GCB_EXTENDER}, // Extender
+    {0x010781, 0x010782, GCB_EXTENDER}, // Extender
+    {0x010D4E, 0x010D4E, GCB_EXTENDER}, // Extender
+    {0x010D6A, 0x010D6A, GCB_EXTENDER}, // Extender
+    {0x010D6F, 0x010D6F, GCB_EXTENDER}, // Extender
+    {0x011237, 0x011237, GCB_EXTENDER}, // Extender
+    {0x01135D, 0x01135D, GCB_EXTENDER}, // Extender
+    {0x0113D2, 0x0113D2, GCB_EXTENDER}, // Extender
+    {0x0113D3, 0x0113D3, GCB_EXTENDER}, // Extender
+    {0x0115C6, 0x0115C8, GCB_EXTENDER}, // Extender
+    {0x011A98, 0x011A98, GCB_EXTENDER}, // Extender
+    {0x016B42, 0x016B43, GCB_EXTENDER}, // Extender
+    {0x016FE0, 0x016FE1, GCB_EXTENDER}, // Extender
+    {0x016FE3, 0x016FE3, GCB_EXTENDER}, // Extender
+    {0x01E13C, 0x01E13D, GCB_EXTENDER}, // Extender
+    {0x01E5EF, 0x01E5EF, GCB_EXTENDER}, // Extender
+    {0x01E944, 0x01E946, GCB_EXTENDER}, // Extender
+    {0x0009BE, 0x0009BE, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0009D7, 0x0009D7, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000B3E, 0x000B3E, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000B57, 0x000B57, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000BBE, 0x000BBE, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000BD7, 0x000BD7, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000CC0, 0x000CC0, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000CC2, 0x000CC2, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000CC7, 0x000CC8, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000CCA, 0x000CCB, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000CD5, 0x000CD6, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000D3E, 0x000D3E, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000D57, 0x000D57, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000DCF, 0x000DCF, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000DDF, 0x000DDF, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001715, 0x001715, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001734, 0x001734, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001B35, 0x001B35, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001B3B, 0x001B3B, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001B3D, 0x001B3D, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001B43, 0x001B44, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001BAA, 0x001BAA, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x001BF2, 0x001BF3, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x00200C, 0x00200C, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x00302E, 0x00302F, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x00A953, 0x00A953, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x00A9C0, 0x00A9C0, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x00FF9E, 0x00FF9F, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0111C0, 0x0111C0, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x011235, 0x011235, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x01133E, 0x01133E, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x01134D, 0x01134D, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x011357, 0x011357, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0113B8, 0x0113B8, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0113C2, 0x0113C2, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0113C5, 0x0113C5, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0113C7, 0x0113C9, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0113CF, 0x0113CF, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0114B0, 0x0114B0, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0114BD, 0x0114BD, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0115AF, 0x0115AF, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0116B6, 0x0116B6, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x011930, 0x011930, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x01193D, 0x01193D, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x011F41, 0x011F41, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x016FF0, 0x016FF1, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x01D165, 0x01D166, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x01D16D, 0x01D172, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x0E0020, 0x0E007F, GCB_OTHER_GRAPHEME_EXTEND}, // Other_Grapheme_Extend
+    {0x000600, 0x000605, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x0006DD, 0x0006DD, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x00070F, 0x00070F, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x000890, 0x000891, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x0008E2, 0x0008E2, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x0110BD, 0x0110BD, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x0110CD, 0x0110CD, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x000654, 0x000655, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x000658, 0x000658, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0006DC, 0x0006DC, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0006E3, 0x0006E3, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0006E7, 0x0006E8, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0008CA, 0x0008CB, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0008CD, 0x0008CF, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0008D3, 0x0008D3, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
+    {0x0008F3, 0x0008F3, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
 };
 
 const size_t GRAPHEME_SIZE = sizeof(graphemes) / sizeof(Grapheme);
