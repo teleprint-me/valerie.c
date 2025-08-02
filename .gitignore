@@ -1,15 +1,10 @@
 # directories
 .vscode/
-model/
-docs/
-corpus/
 papers/
-
-# files
-.clangd
-.clang-format
-.prettierignore
-.prettierrc
+data/
+corpus/
+docs/
+model/
 
 #
 # C ignore rules
