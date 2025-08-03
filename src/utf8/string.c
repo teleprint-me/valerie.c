@@ -24,8 +24,8 @@ bool utf8_is_valid(const char* start) {
     }
 
     UTF8IterValidator validator = {
-        .is_valid = false, // Invalid at start
-        .error_at = NULL, // Location unknown
+        .is_valid = false,  // Invalid at start
+        .error_at = NULL,  // Location unknown
     };
 
     utf8_iter_byte(start, utf8_iter_is_valid, &validator);
@@ -41,18 +41,18 @@ bool utf8_is_valid(const char* start) {
 
 int64_t utf8_byte_len(const char* start) {
     if (!start || !utf8_is_valid(start)) {
-        return -1; // Invalid string
+        return -1;  // Invalid string
     }
 
     if ('\0' == *start) {
-        return 0; // Empty string
+        return 0;  // Empty string
     }
 
     uint64_t byte_length = 0;
     const char* stream = start;
     while (*stream) {
-        byte_length++; // increment the byte length counter
-        stream++; // move to the next byte in the string
+        byte_length++;  // increment the byte length counter
+        stream++;  // move to the next byte in the string
     }
 
     return byte_length;
@@ -155,7 +155,7 @@ char* utf8_concat(const char* dst, const char* src) {
     // Copy string bytes into output
     memcpy(output, dst, dst_length);
     memcpy(output + dst_length, src, src_length);
-    output[output_length] = '\0'; // Null-terminate the string
+    output[output_length] = '\0';  // Null-terminate the string
 
     return output;
 }
@@ -165,17 +165,17 @@ char* utf8_concat(const char* dst, const char* src) {
 int32_t utf8_compare(const char* a, const char* b) {
     if (!a || !b) {
         LOG_ERROR("One or both source strings are NULL.");
-        return UTF8_COMPARE_INVALID; // NULL strings are invalid inputs.
+        return UTF8_COMPARE_INVALID;  // NULL strings are invalid inputs.
     }
 
     if (!utf8_is_valid(a)) {
         LOG_ERROR("First source string is not a valid UTF-8 string.");
-        return UTF8_COMPARE_INVALID; // Indicate invalid UTF-8 string.
+        return UTF8_COMPARE_INVALID;  // Indicate invalid UTF-8 string.
     }
 
     if (!utf8_is_valid(b)) {
         LOG_ERROR("Second source string is not a valid UTF-8 string.");
-        return UTF8_COMPARE_INVALID; // Indicate invalid UTF-8 string.
+        return UTF8_COMPARE_INVALID;  // Indicate invalid UTF-8 string.
     }
 
     const uint8_t* a_stream = (const uint8_t*) a;
@@ -221,7 +221,9 @@ char** utf8_split_push(const char* start, char** parts, uint64_t* capacity) {
     return parts;
 }
 
-char** utf8_split_push_n(const char* start, const uint64_t length, char** parts, uint64_t* capacity) {
+char** utf8_split_push_n(
+    const char* start, const uint64_t length, char** parts, uint64_t* capacity
+) {
     if (!start || !parts || !capacity) {
         return NULL;
     }
@@ -267,7 +269,7 @@ char** utf8_split(const char* src, uint64_t* capacity) {
     }
 
     *capacity = 0;
-    char** parts = malloc(sizeof(char*)); // Start empty array
+    char** parts = malloc(sizeof(char*));  // Start empty array
     const uint8_t* ptr = (const uint8_t*) src;
 
     while (*ptr) {
@@ -307,7 +309,9 @@ char** utf8_split_delim(const char* src, const char* delimiter, uint64_t* capaci
 }
 
 char** utf8_split_regex(const char* start, const char* pattern, uint64_t* capacity) {
-    if (!start || !pattern || !capacity) return NULL;
+    if (!start || !pattern || !capacity) {
+        return NULL;
+    }
     *capacity = 0;
 
     char** parts = malloc(sizeof(char*));
@@ -347,17 +351,25 @@ char** utf8_split_regex(const char* start, const char* pattern, uint64_t* capaci
     }
 
     while (offset < total_bytes) {
-        int rc = pcre2_match(code, (PCRE2_SPTR)(start + offset), total_bytes - offset, 0, 0, match, NULL);
-        if (rc < 0) break;
+        int rc = pcre2_match(
+            code, (PCRE2_SPTR) (start + offset), total_bytes - offset, 0, 0, match, NULL
+        );
+        if (rc < 0) {
+            break;
+        }
 
         PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match);
         size_t match_start = ovector[0];
-        size_t match_end   = ovector[1];
+        size_t match_end = ovector[1];
 
         // Only push the matched region (GPT-2 style)
         if (match_end > match_start) {
-            parts = utf8_split_push_n(start + offset + match_start, match_end - match_start, parts, capacity);
-            if (!parts) goto fail;
+            parts = utf8_split_push_n(
+                start + offset + match_start, match_end - match_start, parts, capacity
+            );
+            if (!parts) {
+                goto fail;
+            }
         }
         offset += match_end;
     }
@@ -379,7 +391,7 @@ char* utf8_split_join(char** parts, const char* delimiter, uint64_t capacity) {
         return NULL;
     }
 
-    uint64_t total = 1; // add null
+    uint64_t total = 1;  // add null
     uint64_t sep_len = delimiter ? utf8_byte_len(delimiter) : 0;
     for (uint64_t i = 0; i < capacity; i++) {
         total += utf8_byte_len(parts[i]);
