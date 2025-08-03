@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-xc, -I./include, -I./include/utf8]
+  Add: [-xc, -I./include, -ferror-limit=0]
