@@ -16,7 +16,7 @@
 #include "utf8/byte.h"
 #include <string.h>  // memcpy and friends
 
-// --- UTF-8 Byte Operations ---
+// --- UTF-8 Codepoint Operations ---
 
 int8_t utf8_byte_width(const uint8_t* start) {
     if (!start) {
@@ -235,7 +235,7 @@ void utf8_byte_dump(const uint8_t* start) {
     }
 }
 
-// --- UTF-8 Byte Types ---
+// --- UTF-8 Codepoint Types ---
 
 bool utf8_byte_is_char(const uint8_t* start) {
     if (!utf8_byte_is_valid(start)) {
@@ -361,7 +361,7 @@ bool utf8_byte_is_punct(const uint8_t* start) {
     return false;
 }
 
-// --- UTF-8 Byte Visitor ---
+// --- UTF-8 Codepoint Visitor ---
 
 const uint8_t* utf8_byte_next(const uint8_t* current) {
     if (!current || '\0' == *current) {
@@ -444,7 +444,36 @@ const uint8_t* utf8_byte_peek(const uint8_t* current, const size_t ahead) {
     return ptr;
 }
 
-// --- UTF-8 Byte Split ---
+// --- UTF-8 Codepoint Iterator ---
+
+UTF8ByteIter utf8_byte_iter(const uint8_t* start) {
+    return (UTF8ByteIter) {
+        .current = start,
+        .buffer = {0},
+    };
+}
+
+const char* utf8_byte_iter_next(UTF8ByteIter* it) {
+    if (!it || !it->current || !*it->current) {
+        return NULL;
+    }
+
+    int8_t width = utf8_byte_width(it->current);
+    if (-1 == width || !utf8_byte_is_valid(it->current)) {
+        return NULL; // invalid or corrupt
+    }
+
+    // Copy this codepoint into buffer
+    for (int i = 0; i < width; i++) {
+        it->buffer[i] = (char) it->current[i];
+    }
+    it->buffer[width] = '\0'; // null terminate
+
+    it->current += width; // advance current position
+    return it->buffer;
+}
+
+// --- UTF-8 Codepoint Split ---
 
 uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity) {
     if (!start || !capacity) {

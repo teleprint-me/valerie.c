@@ -51,6 +51,18 @@ const uint8_t* utf8_byte_prev_width(
 );
 const uint8_t* utf8_byte_peek(const uint8_t* current, const size_t ahead);
 
+// --- UTF-8 Codepoint Iterator
+
+typedef struct UTF8ByteIter {
+    const uint8_t* current; // Current position in string
+    char buffer[5]; // UTF-8 codepoint (4 bytes max + null)
+} UTF8ByteIter;
+
+// Initialize iterator from string start
+UTF8ByteIter utf8_byte_iter(const uint8_t* start);
+// Get next codepoint (returns pointer to buffer, advances position)
+const char* utf8_byte_iter_next(UTF8ByteIter* it);
+
 // --- UTF-8 Codepoint Split ---
 
 uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity);
