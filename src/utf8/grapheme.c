@@ -67,13 +67,8 @@ bool utf8_gcb_is_break(UTF8GraphemeBuffer* gb, int32_t cp) {
         return true;
     }
 
-    // GB9: × Spacing Mark
-    if (curr == GCB_SPACINGMARK) {
-        return false;
-    }
-
-    // GB9: × Prepend
-    if (curr == GCB_PREPEND || curr == GCB_EXTEND || curr == GCB_DIACRITIC) {
+    // GB9: × Extend
+    if (curr == GCB_EXTEND) {
         return false;
     }
 
@@ -82,40 +77,23 @@ bool utf8_gcb_is_break(UTF8GraphemeBuffer* gb, int32_t cp) {
         return false;
     }
 
-    // GB11: EP_1 × ZWJ × EP_2 × ZWJ × ... × EP_N
-    // Only apply GB11 if current is Extended_Pictographic
-    if (curr == GCB_EXTENDED_PICTOGRAPHIC) {
-        // Scan back through gb->cp[1]..gb->cp[GRAPHEME_BUF_MAX-1]
+    // GB12/13: Do not break between pairs of Regional_Indicator
+    if (prev == GCB_REGIONAL_INDICATOR && curr == GCB_REGIONAL_INDICATOR) {
+        // Count how many previous consecutive RIs, including prev
+        size_t ri_count = 0;
         for (size_t i = 1; i < gb->count; i++) {
             UTF8GraphemeClass c = utf8_gcb_class(gb->cp[i]);
-            if (c == GCB_ZWJ || c == GCB_EXTEND) {
-                continue;
-            }
-            if (c == GCB_EXTENDED_PICTOGRAPHIC) {
-                return false;
-            }
-            break;
-        }
-    }
-
-    // GB12/GB13: Do not break between emoji indicators (includes regional)
-    // Only apply if prev and current are GCB_EMOJI
-    if (prev == GCB_EMOJI && curr == GCB_EMOJI) {
-        // Scan back through gb->cp[1]..gb->cp[GRAPHEME_BUF_MAX-1]
-        size_t ri = 0;  // count consecutive pairs
-        for (size_t i = 1; i < gb->count; i++) {
-            // emojis may be a literal, component, or presentation
-            UTF8GraphemeClass c = utf8_gcb_class(gb->cp[i]);
-            if (c == GCB_EMOJI || c == GCB_EMOJI_PRESENTATION || c == GCB_EMOJI_COMPONENT) {
-                ri++;
+            if (c == GCB_REGIONAL_INDICATOR) {
+                ri_count++;
             } else {
                 break;
             }
         }
-        if (ri % 2 != 0) {
-            return true;  // break on odd count (starting new flag)
+        // Glue as pairs (even count = glue, odd = break)
+        if (ri_count % 2 == 0) {
+            return false;  // glue two RIs as a flag
         }
-        return false;  // glue as a pair
+        return true;  // break between flags
     }
 
     // GB999: break everywhere else
@@ -193,7 +171,9 @@ const char* utf8_gcb_iter_next(UTF8GraphemeIter* it) {
 
     while (stream[offset]) {
         int8_t width = utf8_byte_width(&stream[offset]);
-        if (width < 1) break; // invalid byte
+        if (width < 1) {
+            break;  // invalid byte
+        }
 
         uint32_t cp = utf8_byte_decode(&stream[offset]);
         if (offset != 0 && utf8_gcb_is_break(&it->gb, cp)) {
@@ -204,14 +184,16 @@ const char* utf8_gcb_iter_next(UTF8GraphemeIter* it) {
             memcpy(&it->buffer[cluster_len], &stream[offset], width);
             cluster_len += width;
         } else {
-            break; // overflow and truncate
+            break;  // overflow and truncate
         }
 
         utf8_gcb_buffer_push(&it->gb, cp);
         offset += width;
     }
 
-    if (cluster_len == 0) return NULL;
+    if (cluster_len == 0) {
+        return NULL;
+    }
 
     it->buffer[cluster_len] = '\0';
     it->current += offset;
@@ -232,7 +214,10 @@ char** utf8_gcb_split(const char* src, size_t* capacity) {
     const uint8_t* stream = (const uint8_t*) src;
 
     // Get the literal byte length
-    size_t len = utf8_byte_count(stream);
+    size_t len = 0;
+    while (stream[len]) {
+        len++;
+    }
 
     *capacity = 0;
     char** parts = memory_alloc(sizeof(char*), alignof(char*));

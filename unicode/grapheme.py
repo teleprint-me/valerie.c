@@ -60,25 +60,26 @@ class GraphemeType:
     GCB_CONTROL = 4
     GCB_EXTEND = 5
     GCB_SPACING_MARK = 6
-    GCB_L = 7
-    GCB_V = 8
-    GCB_T = 9
-    GCB_LV = 10
-    GCB_LVT = 11
-    GCB_ZJW = 12
+    GCB_REGIONAL_INDICATOR = 7
+    GCB_L = 8
+    GCB_V = 9
+    GCB_T = 10
+    GCB_LV = 11
+    GCB_LVT = 12
+    GCB_ZJW = 13
     # emoji-data.txt
-    GCB_EMOJI = 13
-    GCB_EMOJI_PRESENTATION = 14
-    GCB_EMOJI_MODIFIER_BASE = 15
-    GCB_EMOJI_COMPONENT = 16
-    GCB_EXTENDED_PICTOGRAPHIC = 17
+    GCB_EMOJI = 14
+    GCB_EMOJI_PRESENTATION = 15
+    GCB_EMOJI_MODIFIER_BASE = 16
+    GCB_EMOJI_COMPONENT = 17
+    GCB_EXTENDED_PICTOGRAPHIC = 18
     # PropList.txt
-    GCB_BIDI_CONTROL = 18
-    GCB_EXTENDER = 19
-    GCB_OTHER_GRAPHEME_EXTEND = 20
-    GCB_DIACRITIC = 21
-    GCB_PREPENDED_CONCATENATION_MARK = 22
-    GCB_MODIFIER_COMBINING_MARK = 23
+    GCB_BIDI_CONTROL = 19
+    GCB_EXTENDER = 20
+    GCB_OTHER_GRAPHEME_EXTEND = 21
+    GCB_DIACRITIC = 22
+    GCB_PREPENDED_CONCATENATION_MARK = 23
+    GCB_MODIFIER_COMBINING_MARK = 24
 
 
 GraphemeMap = {
@@ -90,6 +91,7 @@ GraphemeMap = {
     "Control": GraphemeType.GCB_CONTROL,
     "Extend": GraphemeType.GCB_EXTEND,
     "SpacingMark": GraphemeType.GCB_SPACING_MARK,
+    "Regional_Indicator": GraphemeType.GCB_REGIONAL_INDICATOR,
     "L": GraphemeType.GCB_L,
     "V": GraphemeType.GCB_V,
     "T": GraphemeType.GCB_T,
@@ -129,6 +131,7 @@ GRAPHEMES = [
     "Extend",
     "Prepend",
     "SpacingMark",
+    "Regional_Indicator",
     # Hangul Syllable Types (rarely used outside Korean)
     "L",
     "V",

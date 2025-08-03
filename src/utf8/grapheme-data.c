@@ -465,6 +465,7 @@ const UTF8Grapheme graphemes[] = {
     {0x01F3FB, 0x01F3FF, GCB_EXTEND}, // Prepend
     {0x0E0020, 0x0E007F, GCB_EXTEND}, // Prepend
     {0x0E0100, 0x0E01EF, GCB_EXTEND}, // Prepend
+    {0x01F1E6, 0x01F1FF, GCB_REGIONAL_INDICATOR}, // Regional_Indicator
     {0x000903, 0x000903, GCB_SPACINGMARK}, // SpacingMark
     {0x00093B, 0x00093B, GCB_SPACINGMARK}, // SpacingMark
     {0x00093E, 0x000940, GCB_SPACINGMARK}, // SpacingMark
@@ -3066,6 +3067,7 @@ const UTF8Grapheme graphemes[] = {
     {0x0008E2, 0x0008E2, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
     {0x0110BD, 0x0110BD, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
     {0x0110CD, 0x0110CD, GCB_PREPENDED_CONCATENATION_MARK}, // Prepended_Concatenation_Mark
+    {0x01F1E6, 0x01F1FF, GCB_REGIONAL_INDICATOR}, // Regional_Indicator
     {0x000654, 0x000655, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
     {0x000658, 0x000658, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
     {0x0006DC, 0x0006DC, GCB_MODIFIER_COMBINING_MARK}, // Modifier_Combining_Mark
