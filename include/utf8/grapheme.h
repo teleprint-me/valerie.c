@@ -20,11 +20,12 @@
 #include <string.h> // only for mem*() functions
 #include <stdio.h>
 
-#define UTF8_GRAPHEME_BUFFER_MAX 8
+#define UTF8_GCB_COUNT 8 // 32 bytes = 4 bytes * 8 bytes/codepoint
+#define UTF8_GCB_SIZE UTF8_GCB_COUNT * 4 + 1 // max 4 bytes/codepoint + NULL char
 
 // sliding window of seen codepoints
 typedef struct UTF8GraphemeBuffer {
-    uint32_t cp[UTF8_GRAPHEME_BUFFER_MAX]; // previous codepoints
+    uint32_t cp[UTF8_GCB_COUNT]; // previous codepoints
     size_t count; // number of valid codepoints
 } UTF8GraphemeBuffer;
 
@@ -35,9 +36,14 @@ void utf8_gcb_buffer_push(UTF8GraphemeBuffer* gb, uint32_t cp);
 int64_t utf8_gcb_count(const char* src);
 
 typedef struct UTF8GraphemeIter {
-    const uint8_t* current;
-    char buffer[UTF8_GRAPHEME_BUFFER_MAX];
+    const char* current;  // Current input pointer
+    UTF8GraphemeBuffer gb; // codepoint history
+    char buffer[UTF8_GCB_SIZE]; // current cluster
+    bool first; // init cluster sequence
 } UTF8GraphemeIter;
+
+UTF8GraphemeIter utf8_gcb_iter(const char* start);
+const char* utf8_gcb_iter_next(UTF8GraphemeIter* it);
 
 char** utf8_gcb_split(const char* src, size_t* capacity);
 void utf8_gcb_split_free(char** parts, size_t capacity);

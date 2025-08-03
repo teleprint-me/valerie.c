@@ -67,22 +67,13 @@ bool utf8_gcb_is_break(UTF8GraphemeBuffer* gb, int32_t cp) {
         return true;
     }
 
-    // GB9: × Extend
-    if (curr == GCB_EXTEND) {
-        return false;
-    }
-
     // GB9: × Spacing Mark
     if (curr == GCB_SPACINGMARK) {
         return false;
     }
 
     // GB9: × Prepend
-    if (curr == GCB_PREPEND || prev == GCB_PREPEND) {
-        return false;
-    }
-
-    if (curr == GCB_DIACRITIC) {
+    if (curr == GCB_PREPEND || curr == GCB_EXTEND || curr == GCB_DIACRITIC) {
         return false;
     }
 
@@ -133,7 +124,7 @@ bool utf8_gcb_is_break(UTF8GraphemeBuffer* gb, int32_t cp) {
 
 // Insert new codepoint at front (shift right)
 void utf8_gcb_buffer_push(UTF8GraphemeBuffer* gb, uint32_t cp) {
-    if (gb->count < UTF8_GRAPHEME_BUFFER_MAX) {
+    if (gb->count < UTF8_GCB_COUNT) {
         gb->count++;
     }
 
@@ -182,6 +173,57 @@ int64_t utf8_gcb_count(const char* src) {
     return count;
 }
 
+UTF8GraphemeIter utf8_gcb_iter(const char* start) {
+    return (UTF8GraphemeIter) {
+        .current = start,
+        .first = true,
+    };
+}
+
+const char* utf8_gcb_iter_next(UTF8GraphemeIter* it) {
+    if (!it || !it->current || !*it->current) {
+        return NULL;
+    }
+
+    const uint8_t* stream = (const uint8_t*) it->current;
+    size_t cluster_len = 0;
+    size_t offset = 0;
+
+    memset(it->buffer, 0, UTF8_GCB_SIZE);
+
+    while (stream[offset]) {
+        int8_t width = utf8_byte_width(&stream[offset]);
+        if (width < 1) break; // invalid byte
+
+        uint32_t cp = utf8_byte_decode(&stream[offset]);
+        if (offset != 0 && utf8_gcb_is_break(&it->gb, cp)) {
+            break;
+        }
+
+        if (cluster_len + width < UTF8_GCB_SIZE) {
+            memcpy(&it->buffer[cluster_len], &stream[offset], width);
+            cluster_len += width;
+        } else {
+            break; // overflow and truncate
+        }
+
+        utf8_gcb_buffer_push(&it->gb, cp);
+        offset += width;
+    }
+
+    if (cluster_len == 0) return NULL;
+
+    it->buffer[cluster_len] = '\0';
+    it->current += offset;
+
+    // end of string
+    if (!*it->current) {
+        it->current = NULL;
+    }
+
+    return it->buffer;
+}
+
 char** utf8_gcb_split(const char* src, size_t* capacity) {
     if (!src || !*src || !capacity) {
         return NULL;
@@ -190,10 +232,7 @@ char** utf8_gcb_split(const char* src, size_t* capacity) {
     const uint8_t* stream = (const uint8_t*) src;
 
     // Get the literal byte length
-    size_t len = 0;
-    while (stream[len]) {
-        len++;
-    }
+    size_t len = utf8_byte_count(stream);
 
     *capacity = 0;
     char** parts = memory_alloc(sizeof(char*), alignof(char*));
