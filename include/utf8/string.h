@@ -19,49 +19,6 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-/** UTF-8 Validator */
-
-typedef struct UTF8Validator {
-    bool is_valid; // Final validation result
-    const uint8_t* error_at; // Location of first invalid sequence
-} UTF8Validator;
-
-// Iteration callback: validates codepoints, stops on invalid
-void* utf8_iter_is_valid(const uint8_t* start, const int8_t width, void* context);
-
-/** UTF-8 Counter */
-
-typedef struct UTF8Counter {
-    int64_t value; // Running count of codepoints
-} UTF8Counter;
-
-// Iteration callback: counts codepoints
-void* utf8_iter_count(const uint8_t* start, const int8_t width, void* context);
-
-/** UTF-8 Splitter */
-
-typedef struct UTF8Splitter {
-    const char* delimiter; // Delimiter string (must be valid UTF-8)
-    char* offset; // Current segment start
-    char** parts; // Accumulated split parts
-    uint64_t capacity; // Number of parts pushed
-} UTF8Splitter;
-
-// Iteration callback: splits into segments at delimiters
-void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context);
-
-/** UTF-8 Iterator */
-
-typedef struct UTF8Iterator {
-    const uint8_t* current; // Current position in string
-    char buffer[5]; // UTF-8 codepoint (4 bytes max + null)
-} UTF8Iterator;
-
-// Initialize iterator from string start
-UTF8Iterator utf8_iter(const char* start);
-// Get next codepoint (returns pointer to buffer, advances position)
-const char* utf8_iter_next(UTF8Iterator* it);
-
 /** UTF-8 Operations */
 
 // Validate entire string (logs on failure)
