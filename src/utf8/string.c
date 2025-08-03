@@ -39,7 +39,7 @@ bool utf8_is_valid(const char* start) {
     return validator.is_valid;
 }
 
-int64_t utf8_byte_len(const char* start) {
+int64_t utf8_cp_len(const char* start) {
     if (!start || !utf8_is_valid(start)) {
         return -1;  // Invalid string
     }
@@ -63,7 +63,7 @@ char* utf8_copy(const char* start) {
         return NULL;
     }
 
-    size_t length = utf8_byte_len(start);
+    size_t length = utf8_cp_len(start);
     if (0 == length) {
         char* output = malloc(1);
         if (!output) {
@@ -114,7 +114,7 @@ char* utf8_copy_range(const char* start, const char* end) {
         return NULL;
     }
 
-    ptrdiff_t length = utf8_byte_range((const uint8_t*) start, (const uint8_t*) end);
+    ptrdiff_t length = utf8_cp_range((const uint8_t*) start, (const uint8_t*) end);
     if (-1 == length) {
         return NULL;
     }
@@ -141,8 +141,8 @@ char* utf8_concat(const char* dst, const char* src) {
     }
 
     // Concatenate the right operand to the left operand
-    size_t dst_length = utf8_byte_len(dst);
-    size_t src_length = utf8_byte_len(src);
+    size_t dst_length = utf8_cp_len(dst);
+    size_t src_length = utf8_cp_len(src);
     size_t output_length = dst_length + src_length;
 
     // Add 1 for null terminator
@@ -273,7 +273,7 @@ char** utf8_split(const char* src, uint64_t* capacity) {
     const uint8_t* ptr = (const uint8_t*) src;
 
     while (*ptr) {
-        int8_t width = utf8_byte_width(ptr);
+        int8_t width = utf8_cp_width(ptr);
         if (width <= 0) {
             break;
         }
@@ -299,7 +299,7 @@ char** utf8_split_delim(const char* src, const char* delimiter, uint64_t* capaci
 
     utf8_iter_byte(src, utf8_iter_split, &split);
 
-    const char* end = (const char*) src + utf8_byte_len(src);
+    const char* end = (const char*) src + utf8_cp_len(src);
     if (split.current < end) {
         split.parts = utf8_split_push_range(split.current, end, split.parts, &split.capacity);
     }
@@ -345,7 +345,7 @@ char** utf8_split_regex(const char* start, const char* pattern, uint64_t* capaci
     }
 
     int64_t offset = 0;
-    int64_t total_bytes = utf8_byte_len(start);
+    int64_t total_bytes = utf8_cp_len(start);
     if (0 == total_bytes || -1 == total_bytes) {
         goto fail;
     }
@@ -392,9 +392,9 @@ char* utf8_split_join(char** parts, const char* delimiter, uint64_t capacity) {
     }
 
     uint64_t total = 1;  // add null
-    uint64_t sep_len = delimiter ? utf8_byte_len(delimiter) : 0;
+    uint64_t sep_len = delimiter ? utf8_cp_len(delimiter) : 0;
     for (uint64_t i = 0; i < capacity; i++) {
-        total += utf8_byte_len(parts[i]);
+        total += utf8_cp_len(parts[i]);
     }
     total += sep_len * (capacity > 1 ? capacity - 1 : 0);
 

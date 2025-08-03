@@ -6,7 +6,7 @@
  *
  * - A UTF-8 byte represents a valid ASCII or UTF-8 code point.
  * - Library functions are prefixed with `utf8_`.
- * - Low Level: Byte functions are prefixed with `utf8_byte_`.
+ * - Low Level: Byte functions are prefixed with `utf8_cp_`.
  * - Low Level: Byte iterators are prefixed with `utf8_iter_`.
  *
  * @note Most iterators are callbacks for utf8_iter_byte().
@@ -33,8 +33,8 @@ void* utf8_iter_byte(const char* start, UTF8IterByte callback, void* context) {
     const uint8_t* stream = (const uint8_t*) start;
     while (*stream) {
         // Determine the width of the current UTF-8 character
-        int8_t width = utf8_byte_width(stream);
-        if (width == -1 || !utf8_byte_is_valid(stream)) {
+        int8_t width = utf8_cp_width(stream);
+        if (width == -1 || !utf8_cp_is_valid(stream)) {
             // Notify the callback of an invalid sequence and allow it to decide
             void* result = callback(stream, -1, context);
             if (result) {
@@ -109,14 +109,14 @@ void* utf8_iter_split(const uint8_t* start, const int8_t width, void* context) {
 
     // check current codepoint
     while (*delimiter) {
-        int8_t d_width = utf8_byte_width(delimiter);
+        int8_t d_width = utf8_cp_width(delimiter);
         if (-1 == d_width) {
             return NULL;
         }
 
-        if (utf8_byte_is_equal(start, delimiter)) {
+        if (utf8_cp_is_equal(start, delimiter)) {
             // current = start, start = end
-            ptrdiff_t range = utf8_byte_range((const uint8_t*) split->current, start);
+            ptrdiff_t range = utf8_cp_range((const uint8_t*) split->current, start);
             if (-1 == range) {
                 return NULL;
             }
@@ -172,8 +172,8 @@ const char* utf8_iter_next_codepoint(UTF8IterCodepoint* it) {
         return NULL;
     }
 
-    int8_t width = utf8_byte_width(it->current);
-    if (-1 == width || !utf8_byte_is_valid(it->current)) {
+    int8_t width = utf8_cp_width(it->current);
+    if (-1 == width || !utf8_cp_is_valid(it->current)) {
         return NULL; // invalid or corrupt
     }
 

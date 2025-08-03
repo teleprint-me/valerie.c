@@ -129,16 +129,16 @@ int64_t utf8_gcb_count(const char* src) {
     bool first = true;
 
     while (*stream) {
-        if (!utf8_byte_is_valid(stream)) {
+        if (!utf8_cp_is_valid(stream)) {
             return -1;
         }
 
-        int8_t width = utf8_byte_width(stream);
+        int8_t width = utf8_cp_width(stream);
         if (1 > width) {
             return -1;
         }
 
-        uint32_t cp = utf8_byte_decode(stream);
+        uint32_t cp = utf8_cp_decode(stream);
         if (first || utf8_gcb_is_break(&gb, cp)) {
             first = false;
             count++;
@@ -170,12 +170,12 @@ const char* utf8_gcb_iter_next(UTF8GraphemeIter* it) {
     memset(it->buffer, 0, UTF8_GCB_SIZE);
 
     while (stream[offset]) {
-        int8_t width = utf8_byte_width(&stream[offset]);
+        int8_t width = utf8_cp_width(&stream[offset]);
         if (width < 1) {
             break;  // invalid byte
         }
 
-        uint32_t cp = utf8_byte_decode(&stream[offset]);
+        uint32_t cp = utf8_cp_decode(&stream[offset]);
         if (offset != 0 && utf8_gcb_is_break(&it->gb, cp)) {
             break;
         }
@@ -226,12 +226,12 @@ char** utf8_gcb_split(const char* src, size_t* capacity) {
 
     size_t cluster_start = 0;
     for (size_t i = 0; i < len;) {
-        int8_t width = utf8_byte_width(&stream[i]);
+        int8_t width = utf8_cp_width(&stream[i]);
         if (width < 1) {
             break;
         }
 
-        uint32_t curr_cp = utf8_byte_decode(&stream[i]);
+        uint32_t curr_cp = utf8_cp_decode(&stream[i]);
 
         if (i != 0 && utf8_gcb_is_break(&gb, curr_cp)) {
             // End of previous cluster
@@ -268,7 +268,7 @@ char** utf8_gcb_split(const char* src, size_t* capacity) {
 }
 
 void utf8_gcb_split_free(char** parts, size_t capacity) {
-    utf8_byte_split_free((uint8_t**) parts, capacity);
+    utf8_cp_split_free((uint8_t**) parts, capacity);
 }
 
 void utf8_gcb_split_dump(char** parts, size_t capacity) {
@@ -281,11 +281,11 @@ void utf8_gcb_split_dump(char** parts, size_t capacity) {
         int total_len = 0;
 
         while (*c) {
-            int8_t width = utf8_byte_width(c);
+            int8_t width = utf8_cp_width(c);
             if (width < 1) {
                 break;
             }
-            printf("[U+%04X | %d] ", utf8_byte_decode(c), width);
+            printf("[U+%04X | %d] ", utf8_cp_decode(c), width);
             c += width;
             total_len += width;
         }

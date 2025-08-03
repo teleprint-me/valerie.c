@@ -6,7 +6,7 @@
  *
  * - A UTF-8 byte represents a valid ASCII or UTF-8 code point.
  * - Library functions are prefixed with `utf8_`.
- * - Low Level: Byte functions are prefixed with `utf8_byte_`.
+ * - Low Level: Byte functions are prefixed with `utf8_cp_`.
  * - Low Level: Byte iterators are prefixed with `utf8_iter_`.
  * - Low Level: Codepoint functions are prefixed with `utf8_cpt_`.
  * - Low Level: Grapheme clusters are prefixed with `utf8_gph_`.
@@ -23,13 +23,13 @@
 #include <stdint.h>
 
 /**
- * @defgroup utf8_byte_iterator UTF-8 Byte Iterator
+ * @defgroup utf8_cp_iterator UTF-8 Byte Iterator
  * @brief Iteration helper for processing UTF-8 sequences with callbacks.
  * @{
  */
 
 /**
- * @brief Iterator callback signature for utf8_byte_iterate().
+ * @brief Iterator callback signature for utf8_cp_iterate().
  *
  * @param start Pointer to the current sequence.
  * @param width Width of the sequence, or -1 if invalid.

@@ -147,9 +147,9 @@ HashMap* tokenizer_vocab_create(char** tokens, uint64_t token_count) {
         // Compute the buffer size
         size_t buf_size = 0;
         for (uint64_t j = 0; j < cpts_count; j++) {
-            buf_size += utf8_byte_count((const uint8_t*) cpts[j]) + 1;  // add space
+            buf_size += utf8_cp_count((const uint8_t*) cpts[j]) + 1;  // add space
         }
-        buf_size += utf8_byte_count((const uint8_t*) "</w>") + 2;  // space + null
+        buf_size += utf8_cp_count((const uint8_t*) "</w>") + 2;  // space + null
 
         // Join codepoints with spaces and append stop token
         char* key = memory_alloc(buf_size, alignof(char));
@@ -254,7 +254,7 @@ HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
     // Split the pair (e.g., "l l" => ["l", "l"])
     uint64_t pair_len = 0;
     char** pair_syms = NULL;
-    if (utf8_byte_count((const uint8_t*) pair) > 1 && strchr(pair, ' ')) {
+    if (utf8_cp_count((const uint8_t*) pair) > 1 && strchr(pair, ' ')) {
         pair_syms = utf8_split_delim(pair, " ", &pair_len);
     } else {
         pair_syms = utf8_split(pair, &pair_len);

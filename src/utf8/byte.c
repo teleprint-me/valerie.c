@@ -1,14 +1,18 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/utf8/byte.c
+ * @file src/utf8/codepoint.c
  * @brief ASCII and UTF-8 Codepoint API.
  *
- * Low-level API for handling core UTF-8 codepoint pre-processing.
+ * Low-level API for core UTF-8 codepoint operations.
  *
- * - A UTF-8 byte represents a valid ASCII or UTF-8 codepoint.
- * - All Library functions are prefixed with `utf8_`.
- * - Byte-level operations are prefixed with `utf8_byte_`.
+ * - A **code point** is a single Unicode value (e.g., U+0041 for 'A').
+ * - A **code unit** is an 8-bit byte in UTF-8.
+ *   Each code point is encoded as 1 to 4 code units (bytes).
+ * - A `char*` or `uint8_t*` points to a sequence of UTF-8 encoded code units,
+ *   representing one or more code points.
+ * - All library functions are prefixed with `utf8_`.
+ * - Codepoint-level operations are prefixed with `utf8_cp_`.
  */
 
 #include "memory.h"
@@ -18,7 +22,7 @@
 
 // --- UTF-8 Codepoint Operations ---
 
-int8_t utf8_byte_width(const uint8_t* start) {
+int8_t utf8_cp_width(const uint8_t* start) {
     if (!start) {
         return -1;
     }
@@ -38,8 +42,8 @@ int8_t utf8_byte_width(const uint8_t* start) {
 }
 
 // Decode a UTF-8 byte sequence into a codepoint without validation.
-int32_t utf8_byte_decode(const uint8_t* start) {
-    switch (utf8_byte_width(start)) {
+int32_t utf8_cp_decode(const uint8_t* start) {
+    switch (utf8_cp_width(start)) {
         case 1:
             return start[0];
         case 2:
@@ -54,12 +58,12 @@ int32_t utf8_byte_decode(const uint8_t* start) {
     }
 }
 
-bool utf8_byte_is_valid(const uint8_t* start) {
+bool utf8_cp_is_valid(const uint8_t* start) {
     if (!start) {
         return false;
     }
 
-    int8_t width = utf8_byte_width(start);
+    int8_t width = utf8_cp_width(start);
     if (width == -1) {
         return false;  // Early exit
     }
@@ -105,13 +109,13 @@ bool utf8_byte_is_valid(const uint8_t* start) {
     return true;
 }
 
-bool utf8_byte_is_equal(const uint8_t* a, const uint8_t* b) {
+bool utf8_cp_is_equal(const uint8_t* a, const uint8_t* b) {
     if (!a || !b) {
         return false;
     }
 
-    int8_t a_width = utf8_byte_width(a);
-    int8_t b_width = utf8_byte_width(b);
+    int8_t a_width = utf8_cp_width(a);
+    int8_t b_width = utf8_cp_width(b);
     if (-1 == a_width || -1 == b_width || a_width != b_width) {
         return false;
     }
@@ -125,14 +129,14 @@ bool utf8_byte_is_equal(const uint8_t* a, const uint8_t* b) {
     return true;
 }
 
-ptrdiff_t utf8_byte_range(const uint8_t* start, const uint8_t* end) {
+ptrdiff_t utf8_cp_range(const uint8_t* start, const uint8_t* end) {
     if (!start || !end) {
         return -1;
     }
     return end - start;
 }
 
-int64_t utf8_byte_count(const uint8_t* start) {
+int64_t utf8_cp_count(const uint8_t* start) {
     if (!start) {
         return -1;  // Invalid string
     }
@@ -144,11 +148,11 @@ int64_t utf8_byte_count(const uint8_t* start) {
     int64_t count = 0;
     const uint8_t* dst = start;
     while (*dst) {
-        if (!utf8_byte_is_valid(dst)) {
+        if (!utf8_cp_is_valid(dst)) {
             return -1;
         }
 
-        int8_t width = utf8_byte_width(dst);
+        int8_t width = utf8_cp_width(dst);
         if (1 > width) {
             return -1;
         }
@@ -160,8 +164,8 @@ int64_t utf8_byte_count(const uint8_t* start) {
     return count;
 }
 
-uint8_t* utf8_byte_copy(const uint8_t* start) {
-    int8_t width = utf8_byte_width((const uint8_t*) start);
+uint8_t* utf8_cp_copy(const uint8_t* start) {
+    int8_t width = utf8_cp_width((const uint8_t*) start);
     if (-1 == width) {
         return NULL;
     }
@@ -182,7 +186,7 @@ uint8_t* utf8_byte_copy(const uint8_t* start) {
 
 // get the current codepoint for a given index
 /// @note There's probably a simpler way to do this.
-uint8_t* utf8_byte_index(const uint8_t* start, uint32_t index) {
+uint8_t* utf8_cp_index(const uint8_t* start, uint32_t index) {
     if (!start) {
         return NULL;
     }
@@ -191,18 +195,18 @@ uint8_t* utf8_byte_index(const uint8_t* start, uint32_t index) {
     const uint8_t* dst = start;
 
     while (*dst) {
-        if (!utf8_byte_is_valid(dst)) {
+        if (!utf8_cp_is_valid(dst)) {
             return NULL;  // invalid sequence
         }
 
         // -1 on error, else a valid width
-        int8_t width = utf8_byte_width(dst);
+        int8_t width = utf8_cp_width(dst);
         if (-1 == width) {
             return NULL;  // invalid sequence
         }
 
         if (count == index) {
-            return utf8_byte_copy(dst);
+            return utf8_cp_copy(dst);
         }
 
         dst += width;
@@ -212,15 +216,15 @@ uint8_t* utf8_byte_index(const uint8_t* start, uint32_t index) {
     return NULL;  // index out-of-range
 }
 
-void utf8_byte_dump(const uint8_t* start) {
+void utf8_cp_dump(const uint8_t* start) {
     size_t i = 0;
     while (start[i]) {
-        int8_t width = utf8_byte_width(&start[i]);
+        int8_t width = utf8_cp_width(&start[i]);
         if (-1 == width) {
             LOG_ERROR("Invalid byte width detected!\n");
             break;
         }
-        if (!utf8_byte_is_valid(&start[i])) {
+        if (!utf8_cp_is_valid(&start[i])) {
             LOG_ERROR("Invalid byte detected!\n");
             break;
         }
@@ -237,12 +241,12 @@ void utf8_byte_dump(const uint8_t* start) {
 
 // --- UTF-8 Codepoint Types ---
 
-bool utf8_byte_is_char(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_char(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -254,12 +258,12 @@ bool utf8_byte_is_char(const uint8_t* start) {
     return true;
 }
 
-bool utf8_byte_is_digit(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_digit(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -271,12 +275,12 @@ bool utf8_byte_is_digit(const uint8_t* start) {
     return true;
 }
 
-bool utf8_byte_is_alpha(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_alpha(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -288,16 +292,16 @@ bool utf8_byte_is_alpha(const uint8_t* start) {
     return false;
 }
 
-bool utf8_byte_is_alnum(const uint8_t* start) {
-    return utf8_byte_is_alpha(start) || utf8_byte_is_digit(start);
+bool utf8_cp_is_alnum(const uint8_t* start) {
+    return utf8_cp_is_alpha(start) || utf8_cp_is_digit(start);
 }
 
-bool utf8_byte_is_upper(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_upper(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -305,12 +309,12 @@ bool utf8_byte_is_upper(const uint8_t* start) {
     return (codepoint >= 0x41 && codepoint <= 0x5A);
 }
 
-bool utf8_byte_is_lower(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_lower(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -318,12 +322,12 @@ bool utf8_byte_is_lower(const uint8_t* start) {
     return (codepoint >= 0x61 && codepoint <= 0x7A);
 }
 
-bool utf8_byte_is_space(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_space(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -339,12 +343,12 @@ bool utf8_byte_is_space(const uint8_t* start) {
     }
 }
 
-bool utf8_byte_is_punct(const uint8_t* start) {
-    if (!utf8_byte_is_valid(start)) {
+bool utf8_cp_is_punct(const uint8_t* start) {
+    if (!utf8_cp_is_valid(start)) {
         return false;
     }
 
-    int32_t codepoint = utf8_byte_decode(start);
+    int32_t codepoint = utf8_cp_decode(start);
     if (-1 == codepoint) {
         return false;
     }
@@ -363,13 +367,13 @@ bool utf8_byte_is_punct(const uint8_t* start) {
 
 // --- UTF-8 Codepoint Visitor ---
 
-const uint8_t* utf8_byte_next(const uint8_t* current) {
+const uint8_t* utf8_cp_next(const uint8_t* current) {
     if (!current || '\0' == *current) {
         return NULL;
     }
 
-    const int8_t width = utf8_byte_width(current);
-    if (width < 1 || !utf8_byte_is_valid(current)) {
+    const int8_t width = utf8_cp_width(current);
+    if (width < 1 || !utf8_cp_is_valid(current)) {
         return NULL;
     }
 
@@ -377,13 +381,13 @@ const uint8_t* utf8_byte_next(const uint8_t* current) {
     return (*next) ? next : NULL;
 }
 
-const uint8_t* utf8_byte_next_width(const uint8_t* current, int8_t* out_width) {
+const uint8_t* utf8_cp_next_width(const uint8_t* current, int8_t* out_width) {
     if (!current || '\0' == *current) {
         return NULL;
     }
 
-    int8_t width = utf8_byte_width(current);
-    if (-1 == width || !utf8_byte_is_valid(current)) {
+    int8_t width = utf8_cp_width(current);
+    if (-1 == width || !utf8_cp_is_valid(current)) {
         *out_width = -1;
         return current + 1;  // Skip bad byte
     }
@@ -392,7 +396,7 @@ const uint8_t* utf8_byte_next_width(const uint8_t* current, int8_t* out_width) {
     return current + width;
 }
 
-const uint8_t* utf8_byte_prev(const uint8_t* start, const uint8_t* current) {
+const uint8_t* utf8_cp_prev(const uint8_t* start, const uint8_t* current) {
     if (!start || !current || current <= start) {
         return NULL;
     }
@@ -400,8 +404,8 @@ const uint8_t* utf8_byte_prev(const uint8_t* start, const uint8_t* current) {
     // Walk backwards at most 3 bytes to locate lead byte
     const uint8_t* prev = current - 1;
     for (int i = 0; i < 4 && prev >= start; ++i, --prev) {
-        int8_t width = utf8_byte_width(prev);
-        if (width > 0 && prev + width == current && utf8_byte_is_valid(prev)) {
+        int8_t width = utf8_cp_width(prev);
+        if (width > 0 && prev + width == current && utf8_cp_is_valid(prev)) {
             return prev;
         }
     }
@@ -409,7 +413,7 @@ const uint8_t* utf8_byte_prev(const uint8_t* start, const uint8_t* current) {
     return NULL;
 }
 
-const uint8_t* utf8_byte_prev_width(
+const uint8_t* utf8_cp_prev_width(
     const uint8_t* start, const uint8_t* current, int8_t* out_width
 ) {
     if (!start || !current || current <= start || !out_width) {
@@ -419,14 +423,14 @@ const uint8_t* utf8_byte_prev_width(
     // Walk backwards at most 3 bytes to locate lead byte
     const uint8_t* prev = current - 1;
     for (int i = 0; i < 4 && prev >= start; ++i, --prev) {
-        int8_t width = utf8_byte_width(prev);
+        int8_t width = utf8_cp_width(prev);
 
         if (1 > width) {
             continue;  // Not a valid lead byte
         }
 
         // Check if this forms a valid sequence ending exactly at current
-        if (prev + width == current && utf8_byte_is_valid(prev)) {
+        if (prev + width == current && utf8_cp_is_valid(prev)) {
             *out_width = width;
             return prev;
         }
@@ -436,30 +440,30 @@ const uint8_t* utf8_byte_prev_width(
     return NULL;
 }
 
-const uint8_t* utf8_byte_peek(const uint8_t* current, const size_t ahead) {
+const uint8_t* utf8_cp_peek(const uint8_t* current, const size_t ahead) {
     const uint8_t* ptr = current;
     for (size_t i = 0; i < ahead && ptr && *ptr; ++i) {
-        ptr = utf8_byte_next(ptr);
+        ptr = utf8_cp_next(ptr);
     }
     return ptr;
 }
 
 // --- UTF-8 Codepoint Iterator ---
 
-UTF8ByteIter utf8_byte_iter(const uint8_t* start) {
-    return (UTF8ByteIter) {
+UTF8CpIter utf8_cp_iter(const uint8_t* start) {
+    return (UTF8CpIter) {
         .current = start,
         .buffer = {0},
     };
 }
 
-const char* utf8_byte_iter_next(UTF8ByteIter* it) {
+const char* utf8_cp_iter_next(UTF8CpIter* it) {
     if (!it || !it->current || !*it->current) {
         return NULL;
     }
 
-    int8_t width = utf8_byte_width(it->current);
-    if (-1 == width || !utf8_byte_is_valid(it->current)) {
+    int8_t width = utf8_cp_width(it->current);
+    if (-1 == width || !utf8_cp_is_valid(it->current)) {
         return NULL; // invalid or corrupt
     }
 
@@ -475,7 +479,7 @@ const char* utf8_byte_iter_next(UTF8ByteIter* it) {
 
 // --- UTF-8 Codepoint Split ---
 
-uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity) {
+uint8_t** utf8_cp_split(const uint8_t* start, size_t* capacity) {
     if (!start || !capacity) {
         return NULL;
     }
@@ -485,12 +489,12 @@ uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity) {
     const uint8_t* stream = (const uint8_t*) start;
 
     while (*stream) {
-        int8_t width = utf8_byte_width(stream);
+        int8_t width = utf8_cp_width(stream);
         if (-1 == width) {
             goto fail;
         }
 
-        uint8_t* byte = utf8_byte_copy(stream);
+        uint8_t* byte = utf8_cp_copy(stream);
         if (!byte) {
             goto fail;
         }
@@ -515,11 +519,11 @@ uint8_t** utf8_byte_split(const uint8_t* start, size_t* capacity) {
     return parts;
 
 fail:
-    utf8_byte_split_free(parts, *capacity);
+    utf8_cp_split_free(parts, *capacity);
     return NULL;
 }
 
-void utf8_byte_split_free(uint8_t** parts, size_t capacity) {
+void utf8_cp_split_free(uint8_t** parts, size_t capacity) {
     if (parts) {
         for (size_t i = 0; i < capacity; i++) {
             if (parts[i]) {
@@ -530,11 +534,11 @@ void utf8_byte_split_free(uint8_t** parts, size_t capacity) {
     }
 }
 
-void utf8_byte_split_dump(uint8_t** parts, size_t capacity) {
+void utf8_cp_split_dump(uint8_t** parts, size_t capacity) {
     for (uint32_t i = 0; i < capacity; i++) {
         const uint8_t* cp = parts[i];
-        int8_t width = utf8_byte_width((const uint8_t*) cp);
-        int32_t value = utf8_byte_decode((const uint8_t*) cp);
+        int8_t width = utf8_cp_width((const uint8_t*) cp);
+        int32_t value = utf8_cp_decode((const uint8_t*) cp);
         printf("%s | U+%04X | width: %d\n", cp, value, width);
     }
 }

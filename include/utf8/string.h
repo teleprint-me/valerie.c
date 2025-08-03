@@ -5,7 +5,7 @@
  * @brief ASCII and UTF-8 String API.
  *
  * High-level string operations for UTF-8 pointer-to-char processing.
- * - Low Level: Byte functions are prefixed with `utf8_byte_`.
+ * - Low Level: Byte functions are prefixed with `utf8_cp_`.
  * - High Level: String functions are prefixed with `utf8_`.
  */
 
