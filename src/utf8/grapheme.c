@@ -1,9 +1,15 @@
 /**
- * @file examples/grapheme.c
+ * @file src/utf8/grapheme.c
+ * @brief ASCII and UTF-8 Grapheme API.
+ *
+ * Low-level API for handling core UTF-8 grapheme pre-processing.
+ *
+ * - A UTF-8 grapheme represents a valid ASCII or UTF-8 cluster of codepoints.
+ * - All Library functions are prefixed with `utf8_`.
+ * - Grapheme-level operations are prefixed with `utf8_gcb_`.
+ *
  * @ref https://www.unicode.org/reports/
  * @ref https://www.unicode.org/Public/UCD/latest/ucd/
- * @ref https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/
- * @ref https://www.unicode.org/Public/UCD/latest/ucd/emoji/
  */
 
 #include "posix.h"  // IWYU pragma: keep
@@ -31,8 +37,8 @@
  * @todo Attempt to enable O(1) lookup times.
  * @note Collation is required to apply sorting (UTS 10).
  */
-GraphemeClass utf8_gcb_class(uint32_t cp) {
-    for (size_t i = 0; i < GRAPHEME_SIZE; i++) {
+UTF8GraphemeClass utf8_gcb_class(uint32_t cp) {
+    for (size_t i = 0; i < UTF8_GRAPHEME_SIZE; i++) {
         if (cp >= graphemes[i].lo && cp <= graphemes[i].hi) {
             return graphemes[i].cls;
         }
@@ -42,9 +48,9 @@ GraphemeClass utf8_gcb_class(uint32_t cp) {
     return GCB_UNDEFINED;
 }
 
-bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp) {
-    GraphemeClass prev = utf8_gcb_class(gb->cp[0]);
-    GraphemeClass curr = utf8_gcb_class(cp);
+bool utf8_gcb_is_break(UTF8GraphemeBuffer* gb, int32_t cp) {
+    UTF8GraphemeClass prev = utf8_gcb_class(gb->cp[0]);
+    UTF8GraphemeClass curr = utf8_gcb_class(cp);
 
     // GB3: CR × LF
     if (prev == GCB_CR && curr == GCB_LF) {
@@ -90,7 +96,7 @@ bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp) {
     if (curr == GCB_EXTENDED_PICTOGRAPHIC) {
         // Scan back through gb->cp[1]..gb->cp[GRAPHEME_BUF_MAX-1]
         for (size_t i = 1; i < gb->count; i++) {
-            GraphemeClass c = utf8_gcb_class(gb->cp[i]);
+            UTF8GraphemeClass c = utf8_gcb_class(gb->cp[i]);
             if (c == GCB_ZWJ || c == GCB_EXTEND) {
                 continue;
             }
@@ -108,7 +114,7 @@ bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp) {
         size_t ri = 0;  // count consecutive pairs
         for (size_t i = 1; i < gb->count; i++) {
             // emojis may be a literal, component, or presentation
-            GraphemeClass c = utf8_gcb_class(gb->cp[i]);
+            UTF8GraphemeClass c = utf8_gcb_class(gb->cp[i]);
             if (c == GCB_EMOJI || c == GCB_EMOJI_PRESENTATION || c == GCB_EMOJI_COMPONENT) {
                 ri++;
             } else {
@@ -126,8 +132,8 @@ bool utf8_gcb_is_break(GraphemeBuffer* gb, int32_t cp) {
 }
 
 // Insert new codepoint at front (shift right)
-void utf8_gcb_buffer_push(GraphemeBuffer* gb, uint32_t cp) {
-    if (gb->count < GRAPHEME_BUFFER_MAX) {
+void utf8_gcb_buffer_push(UTF8GraphemeBuffer* gb, uint32_t cp) {
+    if (gb->count < UTF8_GRAPHEME_BUFFER_MAX) {
         gb->count++;
     }
 
@@ -150,7 +156,7 @@ int64_t utf8_gcb_count(const char* src) {
     const uint8_t* stream = (const uint8_t*) src;
 
     int64_t count = 0;
-    GraphemeBuffer gb = {0};
+    UTF8GraphemeBuffer gb = {0};
     bool first = true;
 
     while (*stream) {
@@ -192,7 +198,7 @@ char** utf8_gcb_split(const char* src, size_t* capacity) {
     *capacity = 0;
     char** parts = memory_alloc(sizeof(char*), alignof(char*));
 
-    GraphemeBuffer gb = {0};
+    UTF8GraphemeBuffer gb = {0};
 
     size_t cluster_start = 0;
     for (size_t i = 0; i < len;) {

@@ -245,18 +245,18 @@ def unicode_data_include(ranges: list[tuple[int, int, int]]) -> str:
     lines.append("#include <stddef.h>")
     lines.append("#include <stdint.h>\n")
 
-    lines.append("typedef enum GraphemeClass {")
+    lines.append("typedef enum UTF8GraphemeClass {")
     for v in GraphemeMap.values():
         lines.append(f"    {enum_map[v]} = {v},")
-    lines.append("} GraphemeClass;\n")
+    lines.append("} UTF8GraphemeClass;\n")
 
-    lines.append("typedef struct Grapheme {")
+    lines.append("typedef struct UTF8Grapheme {")
     lines.append("    uint32_t lo, hi;")
-    lines.append("    GraphemeClass cls;")
-    lines.append("} Grapheme;\n")
+    lines.append("    UTF8GraphemeClass cls;")
+    lines.append("} UTF8Grapheme;\n")
 
-    lines.append("extern const Grapheme graphemes[];")
-    lines.append("extern const size_t GRAPHEME_SIZE;\n")
+    lines.append("extern const UTF8Grapheme graphemes[];")
+    lines.append("extern const size_t UTF8_GRAPHEME_SIZE;\n")
 
     lines.append("#endif // UTF8_GRAPHEME_DATA_H\n")
 
@@ -270,14 +270,14 @@ def unicode_data_source(ranges: list[tuple[int, int, int]]) -> str:
 
     lines.append('#include "utf8/grapheme-data.h"\n')
 
-    lines.append("const Grapheme graphemes[] = {")
+    lines.append("const UTF8Grapheme graphemes[] = {")
     for lo, hi, t in ranges:
         lines.append(
             f"    {{0x{lo:06X}, 0x{hi:06X}, {enum_map[t]}}}, // {GRAPHEMES[t]}"
         )
     lines.append("};\n")
 
-    lines.append("const size_t GRAPHEME_SIZE = sizeof(graphemes) / sizeof(Grapheme);\n")
+    lines.append("const size_t UTF8_GRAPHEME_SIZE = sizeof(graphemes) / sizeof(UTF8Grapheme);\n")
 
     return "\n".join(lines)
 
