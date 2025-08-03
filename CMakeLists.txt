@@ -42,7 +42,7 @@ add_library(valerie SHARED
     "src/compare.c" # numeric comparisons, including floating-point
     "src/xorshift.c" # numeric psuedo random number generator
     "src/type.c" # numeric data types, focusing on numeric precision
-    "src/utf8/byte.c" # unicode codepoint utilities
+    "src/utf8/codepoint.c" # unicode codepoint utilities
     "src/utf8/iterator.c"
     "src/utf8/grapheme-data.c"
     "src/utf8/grapheme.c"
