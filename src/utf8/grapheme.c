@@ -29,6 +29,7 @@
  *          - Whether a joiner is available as a specific case.
  *          - Etc.
  * @todo Attempt to enable O(1) lookup times.
+ * @note Collation is required to apply sorting (UTS 10).
  */
 GraphemeClass utf8_gcb_class(uint32_t cp) {
     for (size_t i = 0; i < GRAPHEME_SIZE; i++) {
@@ -241,15 +242,25 @@ void utf8_gcb_split_free(char** parts, size_t capacity) {
 }
 
 void utf8_gcb_split_dump(char** parts, size_t capacity) {
-    for (uint32_t i = 0; i < capacity; i++) {
+    for (size_t i = 0; i < capacity; i++) {
         const uint8_t* cluster = (const uint8_t*) parts[i];
-        int8_t w = utf8_byte_width(cluster);
-        printf("%s | U+%04X | width: %d\n", cluster, utf8_byte_decode(cluster), w);
+        printf("%s ", cluster);
 
-        while(*cluster) {
-            int8_t width = utf8_byte_width(cluster);
-            printf("    U+%04X | width: %d\n", utf8_byte_decode(cluster), width);
-            cluster += width;
+        // First pass: Print codepoints
+        const uint8_t* c = cluster;
+        int total_len = 0;
+
+        while (*c) {
+            int8_t width = utf8_byte_width(c);
+            if (width < 1) {
+                break;
+            }
+            printf("[U+%04X | %d] ", utf8_byte_decode(c), width);
+            c += width;
+            total_len += width;
         }
+
+        // Second pass: Print widths
+        printf("[%d bytes]\n", total_len);
     }
 }
