@@ -14,7 +14,7 @@
  */
 
 #include "memory.h"
-#include "utf8/byte.h"
+#include "utf8/codepoint.h"
 #include "utf8/iterator.h"
 
 #include <stdint.h>

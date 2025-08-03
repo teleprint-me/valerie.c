@@ -17,7 +17,7 @@
 
 #include "memory.h"
 #include "logger.h"
-#include "utf8/byte.h"
+#include "utf8/codepoint.h"
 #include <string.h>  // memcpy and friends
 
 // --- UTF-8 Codepoint Operations ---

@@ -7,7 +7,7 @@
 
 #include "memory.h"
 #include "logger.h"
-#include "utf8/byte.h"
+#include "utf8/codepoint.h"
 #include "utf8/iterator.h"
 #include "utf8/string.h"
 

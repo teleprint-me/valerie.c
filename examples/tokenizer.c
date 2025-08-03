@@ -10,7 +10,7 @@
 #include "memory.h"
 #include "logger.h"  // logging macros LOG_ERROR, etc.
 #include "map.h"  // HashMap* map
-#include "utf8/byte.h"
+#include "utf8/codepoint.h"
 #include "utf8/string.h"  // Process UTF-8 strings as char*
 #include <stdint.h>
 #include <stdio.h>  // IO

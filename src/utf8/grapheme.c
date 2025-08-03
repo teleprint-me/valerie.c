@@ -14,7 +14,7 @@
 
 #include "posix.h"  // IWYU pragma: keep
 #include "memory.h"
-#include "utf8/byte.h"
+#include "utf8/codepoint.h"
 #include "utf8/grapheme-data.h"
 #include "utf8/grapheme.h"
 #include <stdint.h>
