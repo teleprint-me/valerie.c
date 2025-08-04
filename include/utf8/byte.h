@@ -82,12 +82,28 @@ uint8_t* utf8_byte_cat(const uint8_t* dst, const uint8_t* src);
 
 // Useful for self documenting code
 typedef enum UTF8ByteCompare {
-    UTF8_COMPARE_INVALID = -2, // Invalid input
+    UTF8_COMPARE_INVALID = -2,
     UTF8_COMPARE_LESS = -1,
     UTF8_COMPARE_EQUAL = 0,
     UTF8_COMPARE_GREATER = 1
 } UTF8ByteCompare;
 
+/**
+ * @brief Compares two null-terminated UTF-8 byte strings lexicographically.
+ *
+ * Performs a byte-wise comparison of the two strings.
+ *
+ * @param a Pointer to the first null-terminated UTF-8 string.
+ * @param b Pointer to the second null-terminated UTF-8 string.
+ * @return
+ *   - UTF8_COMPARE_EQUAL (0) if strings are equal,
+ *   - UTF8_COMPARE_LESS (-1) if a < b,
+ *   - UTF8_COMPARE_GREATER (1) if a > b,
+ *   - UTF8_COMPARE_INVALID (-2) if either input is NULL.
+ *
+ * @note This function compares raw bytes, not Unicode codepoints or grapheme clusters.
+ * @note Comparison stops at the first differing byte or at the null terminator.
+ */
 int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b);
 
 #endif  // UTF8_BYTE_H

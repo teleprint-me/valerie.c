@@ -131,7 +131,7 @@ uint8_t* utf8_byte_cat(const uint8_t* dst, const uint8_t* src) {
 
 int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b) {
     if (!a || !b) {
-        return UTF8_COMPARE_INVALID;  // NULL strings are invalid inputs.
+        return UTF8_COMPARE_INVALID;
     }
 
     const uint8_t* a_stream = a;
