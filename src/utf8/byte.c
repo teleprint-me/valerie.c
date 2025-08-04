@@ -12,6 +12,7 @@
  */
 
 #include "memory.h"
+#include "utf8/regex.h"
 #include "utf8/byte.h"
 #include <stddef.h>
 #include <string.h>
@@ -304,6 +305,54 @@ uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64
         }
     }
 
+    return parts;
+}
+
+uint8_t** utf8_byte_split_regex(const uint8_t* src, const uint8_t* pattern, uint64_t* count) {
+    if (!src || !pattern || !count) {
+        return NULL;
+    }
+    *count = 0;
+
+    pcre2_code* code = NULL;
+    pcre2_match_data* match = NULL;
+    if (!utf8_regex_compile(pattern, &code, &match)) {
+        return NULL;
+    }
+
+    uint8_t** parts = NULL;
+    int64_t total_bytes = utf8_byte_count(src);
+    if (total_bytes <= 0) {
+        utf8_regex_free(code, match);
+        return NULL;
+    }
+
+    int64_t offset = 0;
+    while (offset < total_bytes) {
+        int rc = pcre2_match(
+            code, (PCRE2_SPTR) (src + offset), total_bytes - offset, 0, 0, match, NULL
+        );
+        if (rc < 0) {
+            break;
+        }
+
+        PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match);
+        size_t match_start = ovector[0];
+        size_t match_end = ovector[1];
+
+        if (match_end > match_start) {
+            parts = utf8_byte_append_n(
+                src + offset + match_start, match_end - match_start, parts, count
+            );
+            if (!parts) {
+                utf8_regex_free(code, match);
+                return NULL;
+            }
+        }
+        offset += match_end;
+    }
+
+    utf8_regex_free(code, match);
     return parts;
 }
 
