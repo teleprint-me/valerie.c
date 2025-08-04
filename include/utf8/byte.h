@@ -168,4 +168,18 @@ uint8_t** utf8_byte_append_slice(
 uint8_t** utf8_byte_split(const uint8_t* src, uint64_t* count);
 void utf8_byte_split_free(uint8_t** parts, uint64_t count);
 
+/**
+ * @brief Splits a UTF-8 string by the specified delimiter (literal byte sequence).
+ *
+ * @param src   Null-terminated input string.
+ * @param delim Null-terminated delimiter string (multi-byte supported).
+ * @param count Output: set to the number of parts.
+ * @return      Array of pointers to null-terminated slices (each newly allocated).
+ *              NULL on error. Caller must free each part and the array.
+ *
+ * @note If delim is NULL or empty, splits into individual bytes.
+ * @note Empty substrings between consecutive delimiters are included.
+ */
+uint8_t** utf8_split_delim(const uint8_t* src, const uint8_t* delim, uint64_t* count);
+
 #endif  // UTF8_BYTE_H

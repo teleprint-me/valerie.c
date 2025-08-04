@@ -259,3 +259,50 @@ void utf8_byte_split_free(uint8_t** parts, uint64_t count) {
         memory_free(parts);
     }
 }
+
+uint8_t** utf8_split_delim(const uint8_t* src, const uint8_t* delim, uint64_t* count) {
+    if (!src || !count) {
+        return NULL;
+    }
+
+    int64_t src_len = utf8_byte_count(src);
+    if (src_len < 0) {
+        return NULL;
+    }
+
+    // Empty delimiter means split into bytes
+    int64_t delim_len = utf8_byte_count(delim);
+    if (!delim || *delim == '\0' || delim_len < 1) {
+        return utf8_byte_split(src, count);
+    }
+
+    *count = 0;
+    uint8_t** parts = NULL;
+    const uint8_t* current = src;
+    const uint8_t* scan = src;
+    const uint8_t* end = src + src_len;
+
+    while (scan <= end - delim_len) {
+        if (memcmp(scan, delim, delim_len) == 0) {
+            // Delimiter match: copy [current, scan)
+            parts = utf8_byte_append_slice(current, scan, parts, count);
+            if (!parts) {
+                return NULL;
+            }
+            scan += delim_len;
+            current = scan;
+        } else {
+            scan++;
+        }
+    }
+
+    // Handle any trailing text after the last delimiter (or if no delimiter at all)
+    if (current < end) {
+        parts = utf8_byte_append_slice(current, end, parts, count);
+        if (!parts) {
+            return NULL;
+        }
+    }
+
+    return parts;
+}
