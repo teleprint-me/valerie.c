@@ -159,3 +159,20 @@ int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b) {
 
     return UTF8_COMPARE_EQUAL;
 }
+
+uint8_t** utf8_byte_append(const uint8_t* src, uint8_t** parts, uint64_t* capacity) {
+    if (!src || !parts || !capacity) {
+        return NULL;
+    }
+
+    size_t old_size = sizeof(uint8_t*) * (*capacity);
+    size_t new_size = sizeof(uint8_t*) * (*capacity + 1);
+    uint8_t** temp = memory_realloc(parts, old_size, new_size, alignof(uint8_t*));
+    if (!temp) {
+        return NULL;
+    }
+
+    parts = temp;
+    parts[(*capacity)++] = (uint8_t*) src;
+    return parts;
+}
