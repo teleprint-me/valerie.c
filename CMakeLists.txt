@@ -44,7 +44,6 @@ add_library(valerie SHARED
     "src/utf8/regex.c"
     "src/utf8/byte.c"
     "src/utf8/codepoint.c"
-    "src/utf8/iterator.c"
     "src/utf8/grapheme-data.c"
     "src/utf8/grapheme.c"
     "src/utf8/string.c"
