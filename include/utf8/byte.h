@@ -122,7 +122,8 @@ int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b);
 uint8_t** utf8_byte_append(const uint8_t* src, uint8_t** parts, uint64_t* count);
 
 /**
- * @brief Makes a heap-allocated copy of the first n bytes from src, then appends the copy to parts.
+ * @brief Makes a heap-allocated copy of the first n bytes from src,
+ *        then appends the copy to parts.
  *
  * @param src   Pointer to the bytes to copy.
  * @param n     Number of bytes to copy from src (must not exceed length of src).
@@ -130,13 +131,30 @@ uint8_t** utf8_byte_append(const uint8_t* src, uint8_t** parts, uint64_t* count)
  * @param count Pointer to the current count; will be incremented on success.
  * @return      New pointer to the (possibly reallocated) array, or NULL on error.
  *
- * Notes:
- *   - Caller must assign the return value back to parts.
- *   - On allocation failure, no memory is leaked.
- *   - The appended entry is always a heap-allocated, null-terminated copy.
+ * @note Caller must assign the return value back to parts.
+ * @note On allocation failure, no memory is leaked.
+ * @note The appended entry is always a heap-allocated, null-terminated copy.
  */
 uint8_t** utf8_byte_append_n(
     const uint8_t* src, const uint64_t n, uint8_t** parts, uint64_t* count
+);
+
+/**
+ * @brief Makes a null-terminated copy of the bytes from [start, end),
+ *        then appends the copy to parts.
+ *
+ * @param start  Pointer to the beginning of the slice (inclusive).
+ * @param end    Pointer to the end of the slice (exclusive).
+ * @param parts  Dynamic array of uint8_t* pointers (may be reallocated).
+ * @param count  Pointer to the current count; incremented on success.
+ * @return       Pointer to the (possibly reallocated) array, or NULL on error.
+ *
+ * @note Caller must assign the return value back to the parts variable.
+ * @note If [start, end) is empty, appends an empty string.
+ * @note On allocation failure, no memory is leaked.
+ */
+uint8_t** utf8_byte_append_slice(
+    const uint8_t* start, const uint8_t* end, uint8_t** parts, uint64_t* count
 );
 
 #endif  // UTF8_BYTE_H

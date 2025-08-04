@@ -197,3 +197,24 @@ uint8_t** utf8_byte_append_n(
 
     return temp;
 }
+
+uint8_t** utf8_byte_append_slice(
+    const uint8_t* start, const uint8_t* end, uint8_t** parts, uint64_t* count
+) {
+    if (!start || !end || !parts || !count) {
+        return NULL;
+    }
+
+    uint8_t* slice = utf8_byte_copy_slice(start, end);
+    if (!slice) {
+        return NULL;
+    }
+
+    uint8_t** temp = utf8_byte_append(slice, parts, count);
+    if (!temp) {
+        free(slice);
+        return NULL;
+    }
+
+    return temp;
+}
