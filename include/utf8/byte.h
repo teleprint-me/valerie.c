@@ -200,9 +200,8 @@ uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64
  * @param delim    Optional delimiter to insert between each part (may be NULL).
  * @return         Newly allocated, null-terminated string; NULL on error.
  *
- * Notes:
- *   - Caller must free the result.
- *   - If count is 0, returns NULL.
+ * @note Caller must free the result.
+ * @note If count is 0, returns NULL.
  */
 uint8_t* utf8_byte_join(uint8_t** parts, uint64_t count, const uint8_t* delim);
 
