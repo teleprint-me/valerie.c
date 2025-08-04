@@ -17,4 +17,13 @@
  */
 int64_t utf8_byte_count(const uint8_t* start);
 
+/**
+ * @brief Allocates and returns a null-terminated byte-for-byte copy of the input UTF-8 string.
+ *
+ * @param start Pointer to a null-terminated UTF-8 string.
+ * @return Newly allocated copy, or NULL on allocation error or if start is NULL.
+ *         Caller is responsible for freeing the returned buffer.
+ */
+uint8_t* utf8_byte_copy(const uint8_t* start);
+
 #endif  // UTF8_BYTE_H
