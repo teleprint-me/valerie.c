@@ -146,19 +146,15 @@ int64_t utf8_cp_count(const uint8_t* start) {
     }
 
     int64_t count = 0;
-    const uint8_t* dst = start;
-    while (*dst) {
-        if (!utf8_cp_is_valid(dst)) {
-            return -1;
-        }
-
-        int8_t width = utf8_cp_width(dst);
-        if (1 > width) {
+    const uint8_t* stream = start;
+    while (*stream) {
+        int8_t width = utf8_cp_width(stream);
+        if (-1 == width || !utf8_cp_is_valid(stream)) {
             return -1;
         }
 
         count++;
-        dst += width;
+        stream += width;
     }
 
     return count;
