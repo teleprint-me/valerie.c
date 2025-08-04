@@ -46,13 +46,6 @@ char* utf8_concat(const char* dst, const char* src);
 
 /** UTF-8 Compare */
 
-typedef enum UTF8Compare {
-    UTF8_COMPARE_INVALID = -2, // Invalid input
-    UTF8_COMPARE_LESS = -1,
-    UTF8_COMPARE_EQUAL = 0,
-    UTF8_COMPARE_GREATER = 1
-} UTF8Compare;
-
 // Lexicographical comparison
 int32_t utf8_compare(const char* a, const char* b);
 
