@@ -1,5 +1,14 @@
 /**
+ * Copyright © 2023 Austin Berrio
+ *
  * @file src/utf8/byte.c
+ * @brief UTF-8 byte-oriented string utilities.
+ *
+ * Low-level routines for working directly with bytes in null-terminated UTF-8 strings.
+ * These routines operate purely on bytes—not codepoints or graphemes.
+ *
+ * All allocation routines return newly allocated buffers the caller must free.
+ * All functions treat empty strings ("") as valid input.
  */
 
 #include "memory.h"
