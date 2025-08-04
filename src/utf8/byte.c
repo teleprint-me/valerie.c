@@ -176,3 +176,24 @@ uint8_t** utf8_byte_append(const uint8_t* src, uint8_t** parts, uint64_t* count)
     parts[(*count)++] = (uint8_t*) src;
     return parts;
 }
+
+uint8_t** utf8_byte_append_n(
+    const uint8_t* src, const uint64_t n, uint8_t** parts, uint64_t* count
+) {
+    if (!src || !parts || !count) {
+        return NULL;
+    }
+
+    uint8_t* dst = utf8_byte_copy_n(src, n);
+    if (!dst) {
+        return NULL;
+    }
+
+    uint8_t** temp = utf8_byte_append(dst, parts, count);
+    if (!temp) {
+        free(dst);
+        return NULL;
+    }
+
+    return temp;
+}
