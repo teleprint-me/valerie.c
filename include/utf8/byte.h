@@ -80,4 +80,14 @@ uint8_t* utf8_byte_copy_slice(const uint8_t* start, const uint8_t* end);
  */
 uint8_t* utf8_byte_cat(const uint8_t* dst, const uint8_t* src);
 
+// Useful for self documenting code
+typedef enum UTF8ByteCompare {
+    UTF8_COMPARE_INVALID = -2, // Invalid input
+    UTF8_COMPARE_LESS = -1,
+    UTF8_COMPARE_EQUAL = 0,
+    UTF8_COMPARE_GREATER = 1
+} UTF8ByteCompare;
+
+int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b);
+
 #endif  // UTF8_BYTE_H

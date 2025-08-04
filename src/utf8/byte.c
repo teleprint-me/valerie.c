@@ -128,3 +128,34 @@ uint8_t* utf8_byte_cat(const uint8_t* dst, const uint8_t* src) {
 
     return out;
 }
+
+int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b) {
+    if (!a || !b) {
+        return UTF8_COMPARE_INVALID;  // NULL strings are invalid inputs.
+    }
+
+    const uint8_t* a_stream = a;
+    const uint8_t* b_stream = b;
+
+    while (*a_stream && *b_stream) {
+        if (*a_stream < *b_stream) {
+            return UTF8_COMPARE_LESS;
+        }
+        if (*a_stream > *b_stream) {
+            return UTF8_COMPARE_GREATER;
+        }
+        // Both bytes are equal, move to the next
+        a_stream++;
+        b_stream++;
+    }
+
+    // Check if strings are of different lengths
+    if (*a_stream) {
+        return UTF8_COMPARE_GREATER;
+    }
+    if (*b_stream) {
+        return UTF8_COMPARE_LESS;
+    }
+
+    return UTF8_COMPARE_EQUAL;
+}
