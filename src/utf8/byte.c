@@ -228,7 +228,7 @@ uint8_t** utf8_byte_split(const uint8_t* src, uint64_t* count) {
     *count = 0;
     uint8_t** parts = memory_alloc(sizeof(uint8_t*), alignof(uint8_t*));
     int64_t len = utf8_byte_count(src);
-    if (len < 0) {
+    if (!parts || len < 0) {
         return NULL;
     }
 
@@ -279,6 +279,10 @@ uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64
 
     *count = 0;
     uint8_t** parts = memory_alloc(sizeof(uint8_t*), alignof(uint8_t*));
+    if (!parts) {
+        return NULL;
+    }
+
     const uint8_t* current = src;
     const uint8_t* scan = src;
     const uint8_t* end = src + src_len;
@@ -322,7 +326,7 @@ uint8_t** utf8_byte_split_regex(const uint8_t* src, const uint8_t* pattern, uint
 
     uint8_t** parts = memory_alloc(sizeof(uint8_t*), alignof(uint8_t*));
     int64_t total_bytes = utf8_byte_count(src);
-    if (total_bytes <= 0) {
+    if (!parts || total_bytes <= 0) {
         utf8_regex_free(code, match);
         return NULL;
     }
