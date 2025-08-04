@@ -157,4 +157,15 @@ uint8_t** utf8_byte_append_slice(
     const uint8_t* start, const uint8_t* end, uint8_t** parts, uint64_t* count
 );
 
+/**
+ * @brief Splits a UTF-8 byte string into individual bytes as null-terminated strings.
+ *
+ * @param src   Pointer to the null-terminated byte string.
+ * @param count Pointer to count, set to number of parts on return.
+ * @return      Array of pointers to newly allocated 1-byte strings (each null-terminated),
+ *              or NULL on error. Caller must free each part and the array.
+ */
+uint8_t** utf8_byte_split(const uint8_t* src, uint64_t* count);
+void utf8_byte_split_free(uint8_t** parts, uint64_t count);
+
 #endif  // UTF8_BYTE_H

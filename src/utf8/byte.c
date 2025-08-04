@@ -191,7 +191,7 @@ uint8_t** utf8_byte_append_n(
 
     uint8_t** temp = utf8_byte_append(dst, parts, count);
     if (!temp) {
-        free(dst);
+        memory_free(dst);
         return NULL;
     }
 
@@ -212,9 +212,50 @@ uint8_t** utf8_byte_append_slice(
 
     uint8_t** temp = utf8_byte_append(slice, parts, count);
     if (!temp) {
-        free(slice);
+        memory_free(slice);
         return NULL;
     }
 
     return temp;
+}
+
+uint8_t** utf8_byte_split(const uint8_t* src, uint64_t* count) {
+    if (!src || !count) {
+        return NULL;
+    }
+
+    *count = 0;
+    uint8_t** parts = NULL;
+    int64_t len = utf8_byte_count(src);
+    if (len < 0) {
+        return NULL;
+    }
+
+    for (int64_t i = 0; i < len; i++) {
+        uint8_t* chunk = memory_alloc(2 * sizeof(uint8_t), alignof(uint8_t));
+        if (!chunk) {
+            // Optionally: free previous parts
+            return NULL;
+        }
+        chunk[0] = src[i];
+        chunk[1] = '\0';
+
+        parts = utf8_byte_append(chunk, parts, count);
+        if (!parts) {
+            memory_free(chunk);
+            // Optionally: free previous parts
+            return NULL;
+        }
+    }
+
+    return parts;
+}
+
+void utf8_byte_split_free(uint8_t** parts, uint64_t count) {
+    if (parts) {
+        for (uint64_t i = 0; i < count; i++) {
+            memory_free(parts[i]);
+        }
+        memory_free(parts);
+    }
 }
