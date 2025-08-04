@@ -129,12 +129,8 @@ int64_t utf8_gcb_count(const char* src) {
     bool first = true;
 
     while (*stream) {
-        if (!utf8_cp_is_valid(stream)) {
-            return -1;
-        }
-
         int8_t width = utf8_cp_width(stream);
-        if (1 > width) {
+        if (-1 == width || !utf8_cp_is_valid(stream)) {
             return -1;
         }
 
