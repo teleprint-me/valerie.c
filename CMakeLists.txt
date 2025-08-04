@@ -37,17 +37,18 @@ add_library(valerie SHARED
     "src/memory.c" # posix memory allocation and deallocation
     "src/logger.c" # logging utility
     "src/unit.c" # unit testing utility
-    "src/map.c" # hash map with linear probing
     "src/page.c" # page table memory allocator
     "src/compare.c" # numeric comparisons, including floating-point
     "src/xorshift.c" # numeric psuedo random number generator
     "src/type.c" # numeric data types, focusing on numeric precision
-    "src/utf8/codepoint.c" # unicode codepoint utilities
+    "src/utf8/byte.c"
+    "src/utf8/codepoint.c"
     "src/utf8/iterator.c"
     "src/utf8/grapheme-data.c"
     "src/utf8/grapheme.c"
-    "src/utf8/string.c" # unicode string (char*) processing
+    "src/utf8/string.c"
     "src/utf8/path.c"
+    "src/map.c" # hash map with linear probing
 )
 target_include_directories(valerie PUBLIC include)
 target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
