@@ -109,16 +109,16 @@ int8_t utf8_byte_cmp(const uint8_t* a, const uint8_t* b);
 /**
  * @brief Appends a pointer to a dynamic array of uint8_t* pointers, resizing as needed.
  *
- * @param start    Pointer to add to the array.
+ * @param src      Pointer to add to the array.
  * @param parts    Dynamic array of pointers (may be reallocated). Must not be NULL.
- * @param capacity Pointer to current capacity/count. Will be incremented on success.
+ * @param count    Pointer to the current count. Will be incremented on success.
  * @return         New pointer to the (possibly reallocated) array, or NULL on error.
  *
  * @note Caller must assign the return value back to the parts variable.
- *       (e.g., parts = utf8_byte_push(...))
+ *       (e.g., parts = utf8_byte_append(...))
  * @note The array is grown by one; previous contents are preserved.
- * @note On allocation failure, NULL is returned and *capacity is not incremented.
+ * @note On allocation failure, NULL is returned and *count is not incremented.
  */
-uint8_t** utf8_byte_append(const uint8_t* start, uint8_t** parts, uint64_t* capacity);
+uint8_t** utf8_byte_append(const uint8_t* src, uint8_t** parts, uint64_t* count);
 
 #endif  // UTF8_BYTE_H
