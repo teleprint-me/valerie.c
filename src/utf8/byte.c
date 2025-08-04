@@ -260,7 +260,7 @@ void utf8_byte_split_free(uint8_t** parts, uint64_t count) {
     }
 }
 
-uint8_t** utf8_split_delim(const uint8_t* src, const uint8_t* delim, uint64_t* count) {
+uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64_t* count) {
     if (!src || !count) {
         return NULL;
     }
