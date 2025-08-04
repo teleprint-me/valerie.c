@@ -306,3 +306,47 @@ uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64
 
     return parts;
 }
+
+uint8_t* utf8_byte_join(uint8_t** parts, uint64_t count, const uint8_t* delim) {
+    if (!parts || count == 0) {
+        return NULL;
+    }
+
+    int64_t delim_len = delim ? utf8_byte_count(delim) : 0;
+
+    // Compute total length
+    size_t total = 1;  // For final null terminator
+    for (uint64_t i = 0; i < count; i++) {
+        int64_t part_len = utf8_byte_count(parts[i]);
+        if (part_len < 0) {
+            return NULL;  // Defensive
+        }
+        total += (size_t) part_len;
+    }
+    if (delim_len > 0 && count > 1) {
+        total += (size_t) delim_len * (count - 1);
+    }
+
+    // Allocate output buffer
+    uint8_t* buffer = memory_alloc(total * sizeof(uint8_t), alignof(uint8_t));
+    if (!buffer) {
+        return NULL;
+    }
+
+    // Copy parts and delimiters
+    uint8_t* out = buffer;
+    for (uint64_t i = 0; i < count; i++) {
+        if (i > 0 && delim_len > 0) {
+            memcpy(out, delim, delim_len);
+            out += delim_len;
+        }
+        int64_t part_len = utf8_byte_count(parts[i]);
+        if (part_len > 0) {
+            memcpy(out, parts[i], part_len);
+            out += part_len;
+        }
+    }
+    *out = '\0';  // Null-terminate
+
+    return buffer;
+}
