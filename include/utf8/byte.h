@@ -166,6 +166,16 @@ uint8_t** utf8_byte_append_slice(
  *              or NULL on error. Caller must free each part and the array.
  */
 uint8_t** utf8_byte_split(const uint8_t* src, uint64_t* count);
+
+/**
+ * @brief Free memory allocated by `utf8_byte_split`.
+ *
+ * Frees each individual string in the array and then frees the array itself.
+ * The caller must ensure that the array was allocated via `utf8_byte_split`.
+ *
+ * @param parts Pointer to the array of pointers to null-terminated strings.
+ * @param count Number of elements in the array (must match the actual count).
+ */
 void utf8_byte_split_free(uint8_t** parts, uint64_t count);
 
 /**
