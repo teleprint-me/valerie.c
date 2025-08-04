@@ -67,4 +67,17 @@ uint8_t* utf8_byte_copy_n(const uint8_t* start, uint64_t n);
  */
 uint8_t* utf8_byte_copy_slice(const uint8_t* start, const uint8_t* end);
 
+/**
+ * @brief Allocates and returns a new string which is the concatenation of dst and src.
+ *
+ * @param dst  Pointer to a null-terminated UTF-8 string (left operand).
+ * @param src  Pointer to a null-terminated UTF-8 string (right operand).
+ * @return     Newly allocated buffer, or NULL on allocation error or invalid input.
+ *             Caller must free the returned buffer.
+ *
+ * @note If either input is an empty string, result is a copy of the other.
+ * @note If both inputs are empty, result is an empty string ("").
+ */
+uint8_t* utf8_byte_cat(const uint8_t* dst, const uint8_t* src);
+
 #endif  // UTF8_BYTE_H

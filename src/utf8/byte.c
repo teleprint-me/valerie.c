@@ -91,3 +91,31 @@ uint8_t* utf8_byte_copy_slice(const uint8_t* start, const uint8_t* end) {
 
     return utf8_byte_copy_n(start, (uint64_t) diff);
 }
+
+uint8_t* utf8_byte_cat(const uint8_t* dst, const uint8_t* src) {
+    if (!dst || !src) {
+        return NULL;
+    }
+
+    int64_t dst_n = utf8_byte_count(dst);
+    int64_t src_n = utf8_byte_count(src);
+    if (dst_n == -1 || src_n == -1) {
+        return NULL;
+    }
+
+    size_t out_n = (size_t) (dst_n + src_n);
+    uint8_t* out = memory_alloc((out_n + 1) * sizeof(uint8_t), alignof(uint8_t));
+    if (!out) {
+        return NULL;
+    }
+
+    if (dst_n > 0) {
+        memcpy(out, dst, dst_n);
+    }
+    if (src_n > 0) {
+        memcpy(out + dst_n, src, src_n);
+    }
+    out[out_n] = '\0';
+
+    return out;
+}
