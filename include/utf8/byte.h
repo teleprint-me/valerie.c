@@ -205,4 +205,18 @@ uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64
  */
 uint8_t* utf8_byte_join(uint8_t** parts, uint64_t count, const uint8_t* delim);
 
+/**
+ * @brief Splits a UTF-8 byte string into parts matching a PCRE2 regex pattern.
+ *
+ * @param src      Null-terminated UTF-8 byte string.
+ * @param pattern  Null-terminated regex pattern (PCRE2).
+ * @param count    Output: number of parts.
+ * @return         Array of pointers to null-terminated substrings (each newly allocated),
+ *                 or NULL on error.
+ *
+ * @note Only matched regions are included in output (GPT-2 BPE style).
+ * @note Caller must free each result and the array.
+ */
+uint8_t** utf8_byte_split_regex(const uint8_t* src, const uint8_t* pattern, uint64_t* count);
+
 #endif  // UTF8_BYTE_H
