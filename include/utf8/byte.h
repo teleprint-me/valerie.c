@@ -193,19 +193,6 @@ void utf8_byte_split_free(uint8_t** parts, uint64_t count);
 uint8_t** utf8_byte_split_delim(const uint8_t* src, const uint8_t* delim, uint64_t* count);
 
 /**
- * @brief Joins an array of null-terminated byte strings into one string, with optional delimiter.
- *
- * @param parts    Array of null-terminated byte strings to join.
- * @param count    Number of elements in parts.
- * @param delim    Optional delimiter to insert between each part (may be NULL).
- * @return         Newly allocated, null-terminated string; NULL on error.
- *
- * @note Caller must free the result.
- * @note If count is 0, returns NULL.
- */
-uint8_t* utf8_byte_join(uint8_t** parts, uint64_t count, const uint8_t* delim);
-
-/**
  * @brief Splits a UTF-8 byte string into parts matching a PCRE2 regex pattern.
  *
  * @param src      Null-terminated UTF-8 byte string.
@@ -218,5 +205,18 @@ uint8_t* utf8_byte_join(uint8_t** parts, uint64_t count, const uint8_t* delim);
  * @note Caller must free each result and the array.
  */
 uint8_t** utf8_byte_split_regex(const uint8_t* src, const uint8_t* pattern, uint64_t* count);
+
+/**
+ * @brief Joins an array of null-terminated byte strings into one string, with optional delimiter.
+ *
+ * @param parts    Array of null-terminated byte strings to join.
+ * @param count    Number of elements in parts.
+ * @param delim    Optional delimiter to insert between each part (may be NULL).
+ * @return         Newly allocated, null-terminated string; NULL on error.
+ *
+ * @note Caller must free the result.
+ * @note If count is 0, returns NULL.
+ */
+uint8_t* utf8_byte_join(uint8_t** parts, uint64_t count, const uint8_t* delim);
 
 #endif  // UTF8_BYTE_H
