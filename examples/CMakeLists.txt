@@ -1,7 +1,10 @@
 # CMakeLists.txt Examples
 
 set(EXAMPLES
-    "tokenizer"
+    "split"
+    "grapheme"
+    "gb-iter"
+    # "tokenizer"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples)
