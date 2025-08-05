@@ -24,7 +24,7 @@ def corpus_default() -> dict[str, int]:
 
 def corpus_read(path: str) -> dict[str, int]:
     vocab = {}
-    with open(args.corpus, "r") as file:
+    with open(path, "r") as file:
         corpus = file.read()
     lines = corpus.splitlines()
     for line in lines:
@@ -32,7 +32,7 @@ def corpus_read(path: str) -> dict[str, int]:
             symbols = list(word)
             symbols.append("</w>")
             vocab[" ".join(symbols)] = 1
-    print(f"Initialized vocab from file: {args.corpus}")
+    print(f"Initialized vocab from file: {path}")
     print(json.dumps(vocab, indent=2))
     return vocab
 
