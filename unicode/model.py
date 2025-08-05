@@ -37,7 +37,7 @@ def corpus_read(path: str) -> dict[str, int]:
     return vocab
 
 
-def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, ...], int]:
+def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
     pairs = collections.defaultdict(int)  # init freqs to 0
     for word, freq in vocab.items():  # unpacks ("l o w </w>", 5)
         symbols = word.split()  # split word by char -> ["l", "o", "w", ...]
@@ -49,7 +49,7 @@ def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, ...], int]:
     return pairs  # {('l', 'o'): 1}
 
 
-def get_merges(vocab: dict[tuple[str, ...]], pair: str):
+def get_merges(vocab: dict[str, int], pair: tuple[str, str]) -> dict[str, int]:
     print("Updated pairs:")
     print(json.dumps(vocab, indent=2))
 
@@ -80,14 +80,15 @@ if __name__ == "__main__":
 
     num_merges = int(args.merges)
     for i in range(num_merges):
-        pairs = get_pairs(vocab)
-        if not pairs:
+        pairs = get_pairs(vocab)  # create pairs
+        if not pairs:  # empty
             print(f"Exhausted all potential pairs! Halted at step {i}.")
             break
-        best = max(pairs, key=pairs.get)
-        vocab = get_merges(vocab, best)
+        best = max(pairs, key=pairs.get)  # get max rank
+        print(f"best={best}")
+        vocab = get_merges(vocab, best)  # merge ranked pair
 
-    print("Best:")
+    print("Final Best:")
     print(json.dumps(best, indent=2))
-    print("Vocab:")
+    print("Final Vocab:")
     print(json.dumps(vocab, indent=2))
