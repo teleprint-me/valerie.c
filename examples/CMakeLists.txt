@@ -4,7 +4,7 @@ set(EXAMPLES
     "split"
     "grapheme"
     "gb-iter"
-    # "tokenizer"
+    "tokenizer"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples)
