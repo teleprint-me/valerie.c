@@ -130,7 +130,7 @@ class Tokenizer:
         return {token: idx for idx, token in enumerate(self.tokens)}
 
     @property
-    def id_to_token(self, id: int) -> str:
+    def id_to_token(self) -> dict[int, str]:
         return {idx: token for idx, token in enumerate(self.tokens)}
 
     @property
