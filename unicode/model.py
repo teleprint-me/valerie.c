@@ -12,32 +12,35 @@ import json
 # @note The rationale for not using list() to split is because of the stop token.
 #       If list were used, then the stop token would be split along with the rest of the string.
 def corpus_default() -> list[str]:
+    print("Using default corpus.")
     return ["lo", "low", "lower", "newest", "wide", "wider", "widest"]
 
 
 def corpus_read(path: str) -> list[str]:
+    """Load a flat list of words from a file, one per whitespace."""
     words = []
     with open(path, "r") as file:
-        corpus = file.read()
-    lines = corpus.splitlines()
-    for line in lines:
-        for word in line.split():
-            words.append(word)
-    print(f"Initialized vocab from file: {path}")
+        for line in file:
+            for word in line.split():
+                words.append(word)
+    print(f"Using corpus from file: {path}")
     return words
 
 
-def corpus_init(words: list[str]) -> dict[str, int]:
+def corpus_init(words: list[str], stop_token="</w>") -> dict[str, int]:
+    """Convert list of words into vocab dict: space-joined symbols (with stop token) → freq."""
     vocab = {}
     for word in words:
         symbols = list(word)
-        symbols.append("</w>")
+        symbols.append(stop_token)
         vocab[" ".join(symbols)] = 1
+    print("Initialized vocab:")
     print(json.dumps(vocab, indent=2))
     return vocab
 
 
 def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
+    print("Generating pairs:")
     pairs = collections.defaultdict(int)  # init freqs to 0
     for word, freq in vocab.items():  # unpacks ("l o w </w>", 5)
         symbols = word.split()  # split word by char -> ["l", "o", "w", ...]
@@ -77,16 +80,44 @@ def get_merges(vocab: dict[str, int], pair: tuple[str, str]) -> dict[str, int]:
     return new_vocab
 
 
-if __name__ == "__main__":
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--merges", required=False, type=int, default=10)
-    parser.add_argument("-c", "--corpus", required=False, type=str, default=None)
-    args = parser.parse_args()
+    parser.add_argument(
+        "-m",
+        "--merges",
+        required=False,
+        type=int,
+        default=10,
+        help="number of merges",
+    )
+    parser.add_argument(
+        "-c",
+        "--corpus",
+        required=False,
+        type=str,
+        default=None,
+        help="input plaintext file",
+    )
+    parser.add_argument(
+        "-e",
+        "--eos",
+        required=False,
+        type=str,
+        default="</w>",
+        help="end-of-sequence token",
+    )
+    return parser.parse_args()
 
-    words = corpus_default()
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    words = None
     if args.corpus:
         words = corpus_read(args.corpus)
-    vocab = corpus_init(words)
+    else:
+        words = corpus_default()
+    vocab = corpus_init(words, args.eos)
 
     num_merges = int(args.merges)
     for i in range(num_merges):
