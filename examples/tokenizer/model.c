@@ -196,18 +196,18 @@ HashMap* tokenizer_pairs_create(HashMap* vocab) {
         }
 
         for (uint64_t i = 0; i < sym_count - 1; i++) {
-            // Build pair key (e.g. "a b")
-            uint8_t* pair = utf8_byte_join((uint8_t*[]) {syms[i], syms[i + 1]}, 2, (uint8_t*) "");
+            // Build pair key (e.g. {"a", "b"} -> "ab")
+            uint8_t* new_key = utf8_byte_join((uint8_t*[]) {syms[i], syms[i + 1]}, 2, (uint8_t*) "");
 
             // insert into map
-            int* freq = hash_map_search(pairs, pair);
+            int* freq = hash_map_search(pairs, new_key);
             if (!freq) {
                 int* value = memory_alloc(sizeof(int), alignof(int));
-                *value = 1;
-                hash_map_insert(pairs, pair, value);
+                value = memcpy(value, (int*) entry->value, sizeof(int));
+                hash_map_insert(pairs, new_key, value);
             } else {
-                (*freq) += *(int*) entry->value;
-                memory_free(pair);  // Already present
+                (*freq) += *(int*) entry->value; // Update frequency
+                memory_free(new_key);  // Already present
             }
         }
 
@@ -272,9 +272,9 @@ HashMap* tokenizer_merges_create(HashMap* vocab, const char* pair) {
         // Insert or update frequency in new vocab
         int* freq = hash_map_search(new_vocab, new_key);
         if (!freq) {
-            int* val = memory_alloc(sizeof(int), alignof(int));
-            *val = 1;
-            hash_map_insert(new_vocab, new_key, val);
+            int* value = memory_alloc(sizeof(int), alignof(int));
+            memcpy(value, entry->value, sizeof(int));
+            hash_map_insert(new_vocab, new_key, value);
         } else {
             (*freq) += *(int*) entry->value;
             memory_free(new_key);  // Already present

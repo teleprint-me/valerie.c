@@ -53,7 +53,15 @@ add_library(valerie SHARED
 target_include_directories(valerie PUBLIC include)
 target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
 
-add_subdirectory(examples)
+
+set(EXAMPLES 
+    "examples"
+    "examples/utf8"
+    "examples/tokenizer"
+)
+foreach (example IN LISTS EXAMPLES)
+    add_subdirectory(${example})
+endforeach()
 
 # enable_testing()
 # add_subdirectory(tests)
