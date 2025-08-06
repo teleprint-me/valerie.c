@@ -115,9 +115,8 @@ if __name__ == "__main__":
     num_merges = int(args.merges)
 
     # Train vocab model (vocab is the set of all merges)
-    print("Training model vocab")
     vocab = corpus_init(words)
-    best_merges = []
+    merge_table = []
     for i in range(num_merges):
         # pre-process merge pairs every cycle
         pairs = get_pairs(vocab)  # create pairs
@@ -126,46 +125,48 @@ if __name__ == "__main__":
             break
         # use the highest ranked pair for the next merge cycle
         best = max(pairs, key=pairs.get)  # get max rank
-        best_merges.append(best)
-        print(f"best={best}")
+        merge_table.append(best)
         vocab = get_merges(vocab, best)  # merge ranked pair
-    print("Training completed.")
 
     # Print vocab training results (dump merges)
+    print("Merge Table:")
+    print(json.dumps(merge_table, indent=2))
     print("Final Best:")
     print(json.dumps(best, indent=2))
     print("Final Vocab:")
     print(json.dumps(vocab, indent=2))
 
-    # Collect All Unique Tokens (order matters!)
-    # For every key, split by space, add each symbol to a set.
+    # Collect All Unique Tokens
     token_set = set()
-    for word in vocab:
+    for word in vocab:  # must be the vocab!
         for symbol in word.split():
             token_set.add(symbol)
 
-    # Assign IDs
-    token_list = list(token_set)  # or preserve merge order
+    # Assign IDs in sorted order (order matters)
+    token_list = sorted(list(token_set))
 
     # Map each unique token (symbol) to an integer ID.
     token_to_id = {token: idx for idx, token in enumerate(token_list)}
     id_to_token = {idx: token for idx, token in enumerate(token_list)}
     tokens = [id_to_token[i] for i in sorted(id_to_token)]
 
+    print("Tokenizer:")
+    print(json.dumps(token_to_id, indent=2))
+
     # Build the rank table (rank merges)
     rank_table = {}
-    for i, pair in enumerate(best_merges):
+    for i, pair in enumerate(merge_table):
         token = "".join(pair)
         rank_table[token] = i
-        print(f"pair={pair}, token={token}, rank={i}")
+
+    print("Rank Table:")
+    print(json.dumps(rank_table, indent=2))
 
     # Score the merges
     scores = {}
     for token in tokens:
         rank = rank_table.get(token)
         scores[token] = -math.log(rank + 1) if rank else -1e6
-        print(f"token={token}, rank={rank}, score={scores[token]}")
 
-    print("Tokenizer:")
-    for token, id in token_to_id.items():
-        print(f"token={token} | id={id}")
+    print("Token Scores:")
+    print(json.dumps(scores, indent=2))
