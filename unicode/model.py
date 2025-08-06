@@ -7,7 +7,6 @@
 import argparse
 import collections
 import json
-import re
 
 
 # @note The rationale for not using list() to split is because of the stop token.
