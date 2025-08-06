@@ -113,43 +113,48 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
 
+    # Get words from corpus (training data)
     words = None
     if args.corpus:
         words = corpus_read(args.corpus)
     else:
         words = corpus_default()
-    vocab = corpus_init(words, args.eos)
 
+    # Get number of merges (training cycles)
     num_merges = int(args.merges)
+
+    # Train vocab model (vocab is the set of all merges)
+    vocab = corpus_init(words, args.eos)
     for i in range(num_merges):
+        # pre-process merge pairs every cycle
         pairs = get_pairs(vocab)  # create pairs
-        if not pairs:  # empty
+        if not pairs:  # bail if pairs is empty
             print(f"Exhausted all potential pairs! Halted at step {i}.")
             break
+        # use the highest ranked pair for the next merge cycle
         best = max(pairs, key=pairs.get)  # get max rank
-        print(f"best={best}")
         vocab = get_merges(vocab, best)  # merge ranked pair
 
+    # Print vocab training results (dump merges)
     print("Final Best:")
     print(json.dumps(best, indent=2))
     print("Final Vocab:")
     print(json.dumps(vocab, indent=2))
 
-    # Assign IDs
-    token_list = list(token_set)  # or preserve merge order
-
+    # Build the rank table (rank merges)
     rank_table = {}
-    for i, merge in enumerate(vocab):
-        pair = tuple(merge if isinstance(merge, list) else merge.split())
+    for i, merge in enumerate(vocab.keys()):
+        pair = merge.split()
         token = "".join(pair)
         rank_table[token] = i
+        print(f"merge={merge}, pair={pair}, token={token}, rank={i}")
 
-    # Score the frequencies
+    # Score the merges
     scores = {}
-    for token, freq in vocab.items():
-        rank = rank_table.get(token)
-        scores[token] = -math.log(rank + 1) if rank else -1e6
-        print(f"token={token}, rank={rank}, score={scores[token]}")
+    for merge in vocab.keys():
+        rank = rank_table.get(merge)
+        scores[merge] = -math.log(rank + 1) if rank else -1e6
+        print(f"merge={merge}, rank={rank}, score={scores[merge]}")
 
     # Collect All Unique Tokens (order matters!)
     # For every key, split by space, add each symbol to a set.
@@ -157,6 +162,9 @@ if __name__ == "__main__":
     for word in vocab:
         for symbol in word.split():
             token_set.add(symbol)
+
+    # Assign IDs
+    token_list = list(token_set)  # or preserve merge order
 
     # Map each unique token (symbol) to an integer ID.
     token_to_id = {token: idx for idx, token in enumerate(token_list)}
