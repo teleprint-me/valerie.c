@@ -1,3 +1,5 @@
+# examples/tokenizer
+
 set(EXAMPLES
     "model"
 )
