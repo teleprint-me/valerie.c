@@ -1,7 +1,7 @@
 """
 @file unicode.model.py
 @ref https://aclanthology.org/P16-1162/
-@name Algorithm 1 Learn BPE operations
+@ref https://aclanthology.org/2025.coling-main.400/
 """
 
 import argparse
@@ -10,6 +10,8 @@ import json
 import re
 
 
+# @note The rationale for not using list() to split is because of the stop token
+#       If list were used, then the stop token would be split along with the rest of the string.
 def corpus_default() -> dict[str, int]:
     return {
         "l o </w>": 1,
