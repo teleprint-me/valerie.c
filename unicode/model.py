@@ -10,31 +10,30 @@ import json
 import re
 
 
-# @note The rationale for not using list() to split is because of the stop token
+# @note The rationale for not using list() to split is because of the stop token.
 #       If list were used, then the stop token would be split along with the rest of the string.
-def corpus_default() -> dict[str, int]:
-    return {
-        "l o </w>": 1,
-        "l o w </w>": 1,
-        "l o w e r </w>": 1,
-        "n e w e s t </w>": 1,
-        "w i d e </w>": 1,
-        "w i d e r </w>": 1,
-        "w i d e s t </w>": 1,
-    }
+def corpus_default() -> list[str]:
+    return ["lo", "low", "lower", "newest", "wide", "wider", "widest"]
 
 
-def corpus_read(path: str) -> dict[str, int]:
-    vocab = {}
+def corpus_read(path: str) -> list[str]:
+    words = []
     with open(path, "r") as file:
         corpus = file.read()
     lines = corpus.splitlines()
     for line in lines:
         for word in line.split():
-            symbols = list(word)
-            symbols.append("</w>")
-            vocab[" ".join(symbols)] = 1
+            words.append(word)
     print(f"Initialized vocab from file: {path}")
+    return words
+
+
+def corpus_init(words: list[str]) -> dict[str, int]:
+    vocab = {}
+    for word in words:
+        symbols = list(word)
+        symbols.append("</w>")
+        vocab[" ".join(symbols)] = 1
     print(json.dumps(vocab, indent=2))
     return vocab
 
@@ -85,9 +84,10 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--corpus", required=False, type=str, default=None)
     args = parser.parse_args()
 
-    vocab = corpus_default()
+    words = corpus_default()
     if args.corpus:
-        vocab = corpus_read(args.corpus)
+        words = corpus_read(args.corpus)
+    vocab = corpus_init(words)
 
     num_merges = int(args.merges)
     for i in range(num_merges):
