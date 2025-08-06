@@ -10,33 +10,41 @@ import json
 import math
 
 
-# @note The rationale for not using list() to split is because of the stop token.
-#       If list were used, then the stop token would be split along with the rest of the string.
-def corpus_default() -> list[str]:
-    print("Using default corpus.")
-    return ["lo", "low", "lower", "newest", "wide", "wider", "widest"]
+class Corpus:
+    """Load and initialize training data"""
 
+    @staticmethod
+    def default() -> list[str]:
+        return ["lo", "low", "lower", "newest", "wide", "wider", "widest"]
 
-def corpus_read(path: str) -> list[str]:
-    """Load a flat list of words from a file, one per whitespace."""
-    words = []
-    with open(path, "r") as file:
-        for line in file:
-            for word in line.split():
-                words.append(word)
-    print(f"Using corpus from file: {path}")
-    return words
+    @staticmethod
+    def read(path: str) -> list[str]:
+        """Load a flat list of words from a file, one per whitespace."""
+        words = []
+        with open(path, "r") as file:
+            for line in file:
+                for word in line.split():
+                    words.append(word)
+        return words
 
+    @staticmethod
+    def words(path: str = None) -> list[str]:
+        if path:
+            print(f"Using corpus from file: {path}")
+            return Corpus.read(path)
+        print("Using default corpus.")
+        return Corpus.default()
 
-def corpus_init(words: list[str]) -> dict[str, int]:
-    """Convert list of words into vocab dict: space-joined symbols (with stop token) → freq."""
-    vocab = {}
-    for word in words:
-        symbols = list(word)
-        vocab[" ".join(symbols)] = 1
-    print("Initialized vocab:")
-    print(json.dumps(vocab, indent=2))
-    return vocab
+    @staticmethod
+    def vocab(path: str = None) -> dict[str, int]:
+        """Convert list of words into vocab dict: space-joined symbols -> freq."""
+        vocab = {}
+        for word in Corpus.words(path):
+            symbols = list(word)
+            vocab[" ".join(symbols)] = 1
+        print("Initialized vocab:")
+        print(json.dumps(vocab, indent=2))
+        return vocab
 
 
 def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
@@ -104,18 +112,13 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
 
-    # Get words from corpus (training data)
-    words = None
-    if args.corpus:
-        words = corpus_read(args.corpus)
-    else:
-        words = corpus_default()
-
     # Get number of merges (training cycles)
     num_merges = int(args.merges)
 
+    # Get words from corpus (training data)
+    vocab = Corpus.vocab(args.corpus)
+
     # Train vocab model (vocab is the set of all merges)
-    vocab = corpus_init(words)
     merge_table = []
     for i in range(num_merges):
         # pre-process merge pairs every cycle
@@ -131,8 +134,6 @@ if __name__ == "__main__":
     # Print vocab training results (dump merges)
     print("Merge Table:")
     print(json.dumps(merge_table, indent=2))
-    print("Final Best:")
-    print(json.dumps(best, indent=2))
     print("Final Vocab:")
     print(json.dumps(vocab, indent=2))
 
