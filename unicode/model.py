@@ -7,6 +7,7 @@
 import argparse
 import collections
 import json
+import math
 
 
 # @note The rationale for not using list() to split is because of the stop token.
@@ -134,6 +135,22 @@ if __name__ == "__main__":
     print("Final Vocab:")
     print(json.dumps(vocab, indent=2))
 
+    # Assign IDs
+    token_list = list(token_set)  # or preserve merge order
+
+    rank_table = {}
+    for i, merge in enumerate(vocab):
+        pair = tuple(merge if isinstance(merge, list) else merge.split())
+        token = "".join(pair)
+        rank_table[token] = i
+
+    # Score the frequencies
+    scores = {}
+    for token, freq in vocab.items():
+        rank = rank_table.get(token)
+        scores[token] = -math.log(rank + 1) if rank else -1e6
+        print(f"token={token}, rank={rank}, score={scores[token]}")
+
     # Collect All Unique Tokens (order matters!)
     # For every key, split by space, add each symbol to a set.
     token_set = set()
@@ -141,11 +158,10 @@ if __name__ == "__main__":
         for symbol in word.split():
             token_set.add(symbol)
 
-    # Assign IDs
-    token_list = list(token_set)  # or preserve merge order
     # Map each unique token (symbol) to an integer ID.
     token_to_id = {token: idx for idx, token in enumerate(token_list)}
     id_to_token = {idx: token for idx, token in enumerate(token_list)}
+
     print("Tokenizer:")
     for token, id in token_to_id.items():
         print(f"token={token}, id={id}")
