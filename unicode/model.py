@@ -28,12 +28,11 @@ def corpus_read(path: str) -> list[str]:
     return words
 
 
-def corpus_init(words: list[str], stop_token="</w>") -> dict[str, int]:
+def corpus_init(words: list[str]) -> dict[str, int]:
     """Convert list of words into vocab dict: space-joined symbols (with stop token) → freq."""
     vocab = {}
     for word in words:
         symbols = list(word)
-        symbols.append(stop_token)
         vocab[" ".join(symbols)] = 1
     print("Initialized vocab:")
     print(json.dumps(vocab, indent=2))
@@ -98,14 +97,6 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="input plaintext file",
-    )
-    parser.add_argument(
-        "-e",
-        "--eos",
-        required=False,
-        type=str,
-        default="</w>",
-        help="end-of-sequence token",
     )
     return parser.parse_args()
 
