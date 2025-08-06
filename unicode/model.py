@@ -40,7 +40,7 @@ def corpus_init(words: list[str]) -> dict[str, int]:
 
 
 def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
-    print("Generating pairs:")
+    # print("Generating pairs:")
     pairs = collections.defaultdict(int)  # init freqs to 0
     for word, freq in vocab.items():  # unpacks ("l o w </w>", 5)
         symbols = word.split()  # split word by char -> ["l", "o", "w", ...]
@@ -48,7 +48,7 @@ def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
             cur = symbols[i]  # "l"
             nxt = symbols[i + 1]  # "o"
             pairs[cur, nxt] += freq  # p[("l", "o")] += 1
-            print(f"i={i}, cur='{cur}', nxt='{nxt}', freq={freq}")
+            # print(f"i={i}, cur='{cur}', nxt='{nxt}', freq={freq}")
     return pairs  # {('l', 'o'): 1}
 
 
@@ -67,15 +67,15 @@ def merge_pair(symbols: list[str], pair: tuple[str, str]) -> list[str]:
 
 
 def get_merges(vocab: dict[str, int], pair: tuple[str, str]) -> dict[str, int]:
-    print("Updated pairs:")
-    print(json.dumps(vocab, indent=2))
+    # print("Updated pairs:")
+    # print(json.dumps(vocab, indent=2))
 
     new_vocab = {}  # new empty vocab
     for word in vocab:  # for each pair in a given map
         symbols = word.split()  # ["l", "o", "w", "</w>"]
         merged = merge_pair(symbols, pair)
         new_word = " ".join(merged)
-        print(f"word={word}, new_word={new_word}")
+        # print(f"word={word}, new_word={new_word}")
         new_vocab[new_word] = vocab[word]
     return new_vocab
 
@@ -115,7 +115,9 @@ if __name__ == "__main__":
     num_merges = int(args.merges)
 
     # Train vocab model (vocab is the set of all merges)
-    vocab = corpus_init(words, args.eos)
+    print("Training model vocab")
+    vocab = corpus_init(words)
+    best_merges = []
     for i in range(num_merges):
         # pre-process merge pairs every cycle
         pairs = get_pairs(vocab)  # create pairs
@@ -124,28 +126,16 @@ if __name__ == "__main__":
             break
         # use the highest ranked pair for the next merge cycle
         best = max(pairs, key=pairs.get)  # get max rank
+        best_merges.append(best)
+        print(f"best={best}")
         vocab = get_merges(vocab, best)  # merge ranked pair
+    print("Training completed.")
 
     # Print vocab training results (dump merges)
     print("Final Best:")
     print(json.dumps(best, indent=2))
     print("Final Vocab:")
     print(json.dumps(vocab, indent=2))
-
-    # Build the rank table (rank merges)
-    rank_table = {}
-    for i, merge in enumerate(vocab.keys()):
-        pair = merge.split()
-        token = "".join(pair)
-        rank_table[token] = i
-        print(f"merge={merge}, pair={pair}, token={token}, rank={i}")
-
-    # Score the merges
-    scores = {}
-    for merge in vocab.keys():
-        rank = rank_table.get(merge)
-        scores[merge] = -math.log(rank + 1) if rank else -1e6
-        print(f"merge={merge}, rank={rank}, score={scores[merge]}")
 
     # Collect All Unique Tokens (order matters!)
     # For every key, split by space, add each symbol to a set.
@@ -160,7 +150,22 @@ if __name__ == "__main__":
     # Map each unique token (symbol) to an integer ID.
     token_to_id = {token: idx for idx, token in enumerate(token_list)}
     id_to_token = {idx: token for idx, token in enumerate(token_list)}
+    tokens = [id_to_token[i] for i in sorted(id_to_token)]
+
+    # Build the rank table (rank merges)
+    rank_table = {}
+    for i, pair in enumerate(best_merges):
+        token = "".join(pair)
+        rank_table[token] = i
+        print(f"pair={pair}, token={token}, rank={i}")
+
+    # Score the merges
+    scores = {}
+    for token in tokens:
+        rank = rank_table.get(token)
+        scores[token] = -math.log(rank + 1) if rank else -1e6
+        print(f"token={token}, rank={rank}, score={scores[token]}")
 
     print("Tokenizer:")
     for token, id in token_to_id.items():
-        print(f"token={token}, id={id}")
+        print(f"token={token} | id={id}")
