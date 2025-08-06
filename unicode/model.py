@@ -51,20 +51,29 @@ def get_pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
     return pairs  # {('l', 'o'): 1}
 
 
+def merge_pair(symbols: list[str], pair: tuple[str, str]) -> list[str]:
+    out = []
+    i = 0
+    while i < len(symbols):
+        # If this symbol and the next match the pair, merge them
+        if i < len(symbols) - 1 and symbols[i] == pair[0] and symbols[i + 1] == pair[1]:
+            out.append(symbols[i] + symbols[i + 1])
+            i += 2  # Skip the next symbol (it's merged)
+        else:
+            out.append(symbols[i])
+            i += 1
+    return out
+
+
 def get_merges(vocab: dict[str, int], pair: tuple[str, str]) -> dict[str, int]:
     print("Updated pairs:")
     print(json.dumps(vocab, indent=2))
 
     new_vocab = {}  # new empty vocab
-    bigram = re.escape(" ".join(pair))  # Escape spaces: ('l', 'o') -> "l\ o"
-    # Regex: Match only 'l o' as whole tokens, not inside others (word-boundaries)
-    # (?<!\S): Not preceded by non-whitespace (i.e., start or whitespace)
-    # (?!\S): Not followed by non-whitespace (i.e., end or whitespace)
-    match = re.compile(r"(?<!\S)" + bigram + r"(?!\S)")
-    print(f"pair={pair}, bigram={bigram}, match={match}")
     for word in vocab:  # for each pair in a given map
-        # Replace the bigram in the word (all occurrences)
-        new_word = match.sub("".join(pair), word)
+        symbols = word.split()  # ["l", "o", "w", "</w>"]
+        merged = merge_pair(symbols, pair)
+        new_word = " ".join(merged)
         print(f"word={word}, new_word={new_word}")
         new_vocab[new_word] = vocab[word]
     return new_vocab
