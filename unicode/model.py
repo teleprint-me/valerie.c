@@ -1,7 +1,10 @@
 """
+Copyright © 2025 Austin Berrio
 @file unicode.model.py
+@license cc-by-sa-nc-4.0
 @ref https://aclanthology.org/P16-1162/
 @ref https://aclanthology.org/2025.coling-main.400/
+@ref https://huggingface.co/blog/catherinearnett/dangers-of-tokenizer-recycling
 """
 
 import argparse
@@ -98,28 +101,42 @@ class Model:
 
 class Tokenizer:
     def __init__(self, vocab: dict[str, int]):
-        self.vocab = vocab
-        self.merges = []
+        self.model = {
+            "type": "BPE",
+            "version": "0.1.0",
+            "vocab": vocab,
+            "merges": [],
+        }
 
-    def train(self, num_merges: int) -> None:
-        # Train vocab model (vocab is the set of all merges)
-        self.merges = []
-        for i in range(num_merges):
-            # pre-process merge pairs every cycle
-            pairs = Model.pairs(self.vocab)  # create pairs
-            if not pairs:  # bail if pairs is empty
-                print(f"Exhausted all potential pairs! Halted at step {i}.")
-                break
-            # use the highest ranked pair for the next merge cycle
-            best = max(pairs, key=pairs.get)  # get max rank
-            self.merges.append(best)
-            self.vocab = Model.merges(self.vocab, best)  # merge ranked pair
+    @property
+    def type(self) -> str:
+        return self.model["type"]
+
+    @property
+    def version(self) -> str:
+        return self.model["version"]
+
+    @property
+    def vocab(self) -> dict[str, int]:
+        return self.model["vocab"]
+
+    @vocab.setter
+    def vocab(self, value: dict[str, int]) -> None:
+        self.model["vocab"] = value
+
+    @property
+    def merges(self) -> list[tuple[str, str]]:
+        return self.model["merges"]
+
+    @merges.setter
+    def merges(self, value: list[tuple[str, str]]):
+        self.model["merges"] = value
 
     @property
     def tokens(self) -> list[str]:
         # Collect All Unique Tokens
         token_set = set()
-        for word in self.vocab:  # must be the vocab!
+        for word in self.vocab:  # must be vocab!
             for symbol in word.split():
                 token_set.add(symbol)
         # Assign IDs in sorted order (order matters)
@@ -137,7 +154,7 @@ class Tokenizer:
     def ranks(self) -> dict[str, int]:
         # Build the rank table (rank merges)
         rank_table = {}
-        for i, pair in enumerate(self.merges):
+        for i, pair in enumerate(self.merges):  # must be merges!
             token = "".join(pair)
             rank_table[token] = i
         return rank_table
@@ -150,6 +167,28 @@ class Tokenizer:
             rank = self.ranks.get(token)
             scores[token] = -math.log(rank + 1) if rank else -1e6
         return scores
+
+    def train(self, num_merges: int) -> None:
+        # Train vocab model (vocab is the set of all merges)
+        self.merges = []
+        for i in range(num_merges):
+            # pre-process merge pairs every cycle
+            pairs = Model.pairs(self.vocab)  # create pairs
+            if not pairs:  # bail if pairs is empty
+                print(f"Exhausted all potential pairs! Halted at step {i}.")
+                break
+            # use the highest ranked pair for the next merge cycle
+            best = max(pairs, key=pairs.get)  # get max rank
+            self.merges.append(best)
+            self.vocab = Model.merges(self.vocab, best)  # merge ranked pair
+
+    def save(self, path: str) -> None:
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(self.model, file, ensure_ascii=False, indent=2)
+
+    def load(self, path: str) -> None:
+        with open(path, "r", encoding="utf-8") as file:
+            self.model = json.load(file)
 
     def encode(self, token: str) -> int:
         return self.token_to_id[token]
@@ -176,6 +215,20 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="input plaintext file",
     )
+    parser.add_argument(
+        "-l", "--load",
+        required=False,
+        type=str,
+        default=None,
+        help="load model from file"
+    )
+    parser.add_argument(
+        "-s", "--save",
+        required=False,
+        type=str,
+        default=None,
+        help="save model to file"
+    )
     return parser.parse_args()
 
 
@@ -190,14 +243,18 @@ if __name__ == "__main__":
 
     # Train vocab model (vocab is the set of all merges)
     tokenizer = Tokenizer(vocab)
+
+    if args.load:
+        tokenizer.load(args.load)
+
     tokenizer.train(args.merges)
 
-    # Print vocab training results (dump merges)
-    print("Merge Table:")
-    print(json.dumps(tokenizer.merges, indent=2))
+    if args.save:
+        tokenizer.save(args.save)
 
-    print("Final Vocab:")
-    print(json.dumps(tokenizer.vocab, indent=2))
+    # Print vocab training results (dump merges)
+    print("Model:")
+    print(json.dumps(tokenizer.model, indent=2))
 
     print("Tokenizer:")
     print(json.dumps(tokenizer.token_to_id, indent=2))
