@@ -45,8 +45,6 @@ class Corpus:
         for word in Corpus.words(path):
             symbols = list(word)
             vocab[" ".join(symbols)] = 1
-        print("Initialized vocab:")
-        print(json.dumps(vocab, indent=2))
         return vocab
 
 
@@ -55,7 +53,6 @@ class Model:
 
     @staticmethod
     def pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
-        # print("Generating pairs:")
         pairs = collections.defaultdict(int)  # init freqs to 0
         for word, freq in vocab.items():  # unpacks ("l o w", 5)
             symbols = word.split()  # split word by char -> ["l", "o", "w", ...]
@@ -63,7 +60,6 @@ class Model:
                 cur = symbols[i]  # "l"
                 nxt = symbols[i + 1]  # "o"
                 pairs[cur, nxt] += freq  # p[("l", "o")] += 1
-                # print(f"i={i}, cur='{cur}', nxt='{nxt}', freq={freq}")
         return pairs  # {('l', 'o'): 1}
 
     @staticmethod
@@ -86,15 +82,11 @@ class Model:
 
     @staticmethod
     def merges(vocab: dict[str, int], pair: tuple[str, str]) -> dict[str, int]:
-        # print("Updated pairs:")
-        # print(json.dumps(vocab, indent=2))
-
         new_vocab = {}  # new empty vocab
         for word in vocab:  # for each pair in a given map
             symbols = word.split()  # ["l", "o", "w", ...]
             bigram = Model.bigram(symbols, pair)  # merge neighbors
             new_word = " ".join(bigram)  # new n-gram
-            # print(f"word={word}, new_word={new_word}")
             new_vocab[new_word] = vocab[word]
         return new_vocab
 
@@ -107,6 +99,9 @@ class Tokenizer:
             "vocab": vocab,
             "merges": [],
         }
+
+    def __len__(self) -> int:
+        return len(self.token_to_id)
 
     @property
     def type(self) -> str:
@@ -216,18 +211,28 @@ def parse_args() -> argparse.Namespace:
         help="input plaintext file",
     )
     parser.add_argument(
-        "-l", "--load",
+        "-l",
+        "--load",
         required=False,
         type=str,
         default=None,
-        help="load model from file"
+        help="load model from file",
     )
     parser.add_argument(
-        "-s", "--save",
+        "-s",
+        "--save",
         required=False,
         type=str,
         default=None,
-        help="save model to file"
+        help="save model to file",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        required=False,
+        type=bool,
+        default=False,
+        help="enable debug mode"
     )
     return parser.parse_args()
 
@@ -247,22 +252,23 @@ if __name__ == "__main__":
     if args.load:
         tokenizer.load(args.load)
 
-    tokenizer.train(args.merges)
-
     if args.save:
+        tokenizer.train(args.merges)
         tokenizer.save(args.save)
 
-    # Print vocab training results (dump merges)
-    print("Model:")
-    print(json.dumps(tokenizer.model, indent=2))
+    if args.verbose:
+        # Print vocab training results (dump merges)
+        print("Model:")
+        print(json.dumps(tokenizer.model, indent=2))
+
+        # Build the rank table (rank merges)
+        print("Rank Table:")
+        print(json.dumps(tokenizer.ranks, indent=2))
+
+        # Score the merges
+        print("Token Scores:")
+        print(json.dumps(tokenizer.scores, indent=2))
 
     print("Tokenizer:")
     print(json.dumps(tokenizer.token_to_id, indent=2))
-
-    # Build the rank table (rank merges)
-    print("Rank Table:")
-    print(json.dumps(tokenizer.ranks, indent=2))
-
-    # Score the merges
-    print("Token Scores:")
-    print(json.dumps(tokenizer.scores, indent=2))
+    print(f"Model has {len(tokenizer)} tokens.")
