@@ -57,7 +57,7 @@ class Model:
     def pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
         # print("Generating pairs:")
         pairs = collections.defaultdict(int)  # init freqs to 0
-        for word, freq in vocab.items():  # unpacks ("l o w </w>", 5)
+        for word, freq in vocab.items():  # unpacks ("l o w", 5)
             symbols = word.split()  # split word by char -> ["l", "o", "w", ...]
             for i in range(len(symbols) - 1):  # for each step in the set of symbols
                 cur = symbols[i]  # "l"
@@ -91,7 +91,7 @@ class Model:
 
         new_vocab = {}  # new empty vocab
         for word in vocab:  # for each pair in a given map
-            symbols = word.split()  # ["l", "o", "w", "</w>"]
+            symbols = word.split()  # ["l", "o", "w", ...]
             bigram = Model.bigram(symbols, pair)  # merge neighbors
             new_word = " ".join(bigram)  # new n-gram
             # print(f"word={word}, new_word={new_word}")
