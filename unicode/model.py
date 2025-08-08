@@ -13,19 +13,18 @@ import json
 import math
 
 if __name__ == "__main__":
-    num_merges = 10
+    num_merges = 15
 
     # Get words from corpus (training data)
-    tokens = list("lo low lower newest wide wider widest x-ray")
-    # print(json.dumps(tokens, indent=2))
+    vocab = list("lo low lower newest wide wider widest x-ray")
+    # print(json.dumps(vocab, indent=2))
 
-    base_alphabet = list(dict.fromkeys(tokens))  # first-appearance order
-    created_tokens = []  # a+b in creation order
-    created_seen = set()
+    base_alphabet = list(dict.fromkeys(vocab))  # first-appearance order
+
     merge_table = []
     for i in range(num_merges):
         # pre-process pairs
-        pairs = [(tokens[i], tokens[i + 1]) for i in range(len(tokens) - 1)]
+        pairs = [(vocab[i], vocab[i + 1]) for i in range(len(vocab) - 1)]
         if not pairs:
             break  # Exhausted all possible occurrances
         # print(json.dumps(pairs, indent=2))
@@ -72,32 +71,28 @@ if __name__ == "__main__":
         merge_table.append(best_pair)
 
         # merge n-grams and replace all non-overlapping occurences
-        merged = []
+        n_grams = []
         i = 0
         m = 0  # count non-overlapping occurances
         a, b = best_pair  # current target pair
-        while i < len(tokens):
+        while i < len(vocab):
             new_tok = None
-            if i + 1 < len(tokens) and tokens[i] == a and tokens[i + 1] == b:
+            if i + 1 < len(vocab) and vocab[i] == a and vocab[i + 1] == b:
                 new_tok = a + b
                 m += 1
                 i += 2
             else:
-                new_tok = tokens[i]
+                new_tok = vocab[i]
                 i += 1
 
             if new_tok:
-                merged.append(new_tok)
-
-            if new_tok and new_tok not in created_seen:
-                created_seen.add(new_tok)
-                created_tokens.append(new_tok)
+                n_grams.append(new_tok)
 
         assert (
-            len(merged) == len(tokens) - m
-        ), f"Expected {len(tokens)-m} tokens after merge, got {len(merged)}"
+            len(n_grams) == len(vocab) - m
+        ), f"Expected {len(vocab) - m} vocab after merge, got {len(n_grams)}"
 
-        tokens = merged  # update the set of pairs
+        vocab = n_grams  # update the set of pairs
 
     print("Base Alphabet:")
     print(json.dumps(base_alphabet))
@@ -106,10 +101,10 @@ if __name__ == "__main__":
     print(json.dumps(merge_table, indent=2))
 
     print("Vocab Table:")
-    print(json.dumps(tokens, indent=2))
+    print(json.dumps(vocab, indent=2))
 
     # Assign IDs in sorted order (order matters)
     # Use base vocab to heal token set
-    token_list = sorted(list(set(base_alphabet + tokens)))
+    token_list = sorted(list(set(base_alphabet + vocab)))
     print("Tokenizer:")
     print(json.dumps(token_list, indent=2))
