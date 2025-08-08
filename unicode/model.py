@@ -19,6 +19,9 @@ if __name__ == "__main__":
     tokens = list("lo low lower newest wide wider widest x-ray")
     # print(json.dumps(tokens, indent=2))
 
+    base_alphabet = list(dict.fromkeys(tokens))  # first-appearance order
+    created_tokens = []  # a+b in creation order
+    created_seen = set()
     merge_table = []
     for i in range(num_merges):
         # pre-process pairs
@@ -74,19 +77,30 @@ if __name__ == "__main__":
         m = 0  # count non-overlapping occurances
         a, b = best_pair  # current target pair
         while i < len(tokens):
+            new_tok = None
             if i + 1 < len(tokens) and tokens[i] == a and tokens[i + 1] == b:
-                merged.append(a + b)
+                new_tok = a + b
                 m += 1
                 i += 2
             else:
-                merged.append(tokens[i])
+                new_tok = tokens[i]
                 i += 1
+
+            if new_tok:
+                merged.append(new_tok)
+
+            if new_tok and new_tok not in created_seen:
+                created_seen.add(new_tok)
+                created_tokens.append(new_tok)
 
         assert (
             len(merged) == len(tokens) - m
         ), f"Expected {len(tokens)-m} tokens after merge, got {len(merged)}"
 
         tokens = merged  # update the set of pairs
+
+    print("Base Alphabet:")
+    print(json.dumps(base_alphabet))
 
     print("Merge Table:")
     print(json.dumps(merge_table, indent=2))
@@ -95,6 +109,7 @@ if __name__ == "__main__":
     print(json.dumps(tokens, indent=2))
 
     # Assign IDs in sorted order (order matters)
-    token_list = sorted(list(set(tokens)))
+    # Use base vocab to heal token set
+    token_list = sorted(list(set(base_alphabet + tokens)))
     print("Tokenizer:")
     print(json.dumps(token_list, indent=2))
