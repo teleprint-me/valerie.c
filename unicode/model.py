@@ -16,7 +16,7 @@ if __name__ == "__main__":
     num_merges = 10
 
     # Get words from corpus (training data)
-    tokens = list("lo low lower newest wide wider widest")
+    tokens = list("lo low lower newest wide wider widest x-ray")
     # print(json.dumps(tokens, indent=2))
 
     merge_table = []
@@ -88,9 +88,13 @@ if __name__ == "__main__":
 
         tokens = merged  # update the set of pairs
 
+    print("Merge Table:")
     print(json.dumps(merge_table, indent=2))
 
+    print("Vocab Table:")
+    print(json.dumps(tokens, indent=2))
+
     # Assign IDs in sorted order (order matters)
-    token_set = set(sum(merge_table, ()))
-    token_list = sorted(list(token_set))
+    token_list = sorted(list(set(tokens)))
+    print("Tokenizer:")
     print(json.dumps(token_list, indent=2))
