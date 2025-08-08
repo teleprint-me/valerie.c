@@ -72,18 +72,18 @@ if __name__ == "__main__":
 
         # merge n-grams and replace all non-overlapping occurences
         n_grams = []
-        i = 0
+        j = 0
         m = 0  # count non-overlapping occurances
         a, b = best_pair  # current target pair
-        while i < len(vocab):
+        while j < len(vocab):
             new_tok = None
-            if i + 1 < len(vocab) and vocab[i] == a and vocab[i + 1] == b:
+            if j + 1 < len(vocab) and vocab[j] == a and vocab[j + 1] == b:
                 new_tok = a + b
                 m += 1
-                i += 2
+                j += 2
             else:
-                new_tok = vocab[i]
-                i += 1
+                new_tok = vocab[j]
+                j += 1
 
             if new_tok:
                 n_grams.append(new_tok)
