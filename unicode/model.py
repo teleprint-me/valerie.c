@@ -89,3 +89,8 @@ if __name__ == "__main__":
         tokens = merged  # update the set of pairs
 
     print(json.dumps(merge_table, indent=2))
+
+    # Assign IDs in sorted order (order matters)
+    token_set = set(sum(merge_table, ()))
+    token_list = sorted(list(token_set))
+    print(json.dumps(token_list, indent=2))
