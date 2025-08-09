@@ -2,8 +2,9 @@
 Copyright © 2025 Austin Berrio
 @file unicode.model.py
 @license cc-by-sa-nc-4.0
-@ref https://aclanthology.org/P16-1162/
-@ref https://aclanthology.org/2025.coling-main.400/
+@ref https://arxiv.org/abs/1508.07909
+@ref https://arxiv.org/abs/2409.11501
+@ref https://arxiv.org/abs/2507.07955
 @ref https://huggingface.co/blog/catherinearnett/dangers-of-tokenizer-recycling
 """
 
