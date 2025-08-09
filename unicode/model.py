@@ -12,99 +12,263 @@ import collections
 import json
 import math
 
+
+class Corpus:
+    """Load and initialize training data"""
+
+    @staticmethod
+    def default() -> list[str]:
+        return ["lo", "low", "lower", "newest", "wide", "wider", "widest"]
+
+    @staticmethod
+    def read(path: str) -> list[str]:
+        """Load a flat list of words from a file, one per whitespace."""
+        words = []
+        with open(path, "r") as file:
+            for line in file:
+                for word in line.split():
+                    words.append(word)
+        return words
+
+    @staticmethod
+    def words(path: str = None) -> list[str]:
+        if path:
+            print(f"Using corpus from file: {path}")
+            return Corpus.read(path)
+        print("Using default corpus.")
+        return Corpus.default()
+
+    @staticmethod
+    def vocab(path: str = None) -> dict[str, int]:
+        """Convert list of words into vocab dict: space-joined symbols -> freq."""
+        vocab = {}
+        for word in Corpus.words(path):
+            symbols = list(word)
+            vocab[" ".join(symbols)] = 1
+        return vocab
+
+
+class Model:
+    """Byte-pair Encoding"""
+
+    @staticmethod
+    def pairs(vocab: dict[str, int]) -> dict[tuple[str, str], int]:
+        pairs = collections.defaultdict(int)  # init freqs to 0
+        for word, freq in vocab.items():  # unpacks ("l o w", 5)
+            symbols = word.split()  # split word by char -> ["l", "o", "w", ...]
+            for i in range(len(symbols) - 1):  # for each step in the set of symbols
+                cur = symbols[i]  # "l"
+                nxt = symbols[i + 1]  # "o"
+                pairs[cur, nxt] += freq  # p[("l", "o")] += 1
+        return pairs  # {('l', 'o'): 1}
+
+    @staticmethod
+    def bigram(symbols: list[str], pair: tuple[str, str]) -> list[str]:
+        bigram = []
+        i = 0
+        while i < len(symbols):
+            # If this symbol and the next match the pair, merge them
+            if (
+                i < len(symbols) - 1
+                and symbols[i] == pair[0]
+                and symbols[i + 1] == pair[1]
+            ):
+                bigram.append(symbols[i] + symbols[i + 1])
+                i += 2  # Skip the next symbol (it's merged)
+            else:
+                bigram.append(symbols[i])
+                i += 1
+        return bigram
+
+    @staticmethod
+    def merges(vocab: dict[str, int], pair: tuple[str, str]) -> dict[str, int]:
+        new_vocab = {}  # new empty vocab
+        for word in vocab:  # for each pair in a given map
+            symbols = word.split()  # ["l", "o", "w", ...]
+            bigram = Model.bigram(symbols, pair)  # merge neighbors
+            new_word = " ".join(bigram)  # new n-gram
+            new_vocab[new_word] = vocab[word]
+        return new_vocab
+
+
+class Tokenizer:
+    def __init__(self, vocab: dict[str, int]):
+        self.model = {
+            "type": "BPE",
+            "version": "0.1.0",
+            "vocab": vocab,
+            "merges": [],
+        }
+
+    def __len__(self) -> int:
+        return len(self.token_to_id)
+
+    @property
+    def type(self) -> str:
+        return self.model["type"]
+
+    @property
+    def version(self) -> str:
+        return self.model["version"]
+
+    @property
+    def vocab(self) -> dict[str, int]:
+        return self.model["vocab"]
+
+    @vocab.setter
+    def vocab(self, value: dict[str, int]) -> None:
+        self.model["vocab"] = value
+
+    @property
+    def merges(self) -> list[tuple[str, str]]:
+        return self.model["merges"]
+
+    @merges.setter
+    def merges(self, value: list[tuple[str, str]]):
+        self.model["merges"] = value
+
+    @property
+    def tokens(self) -> list[str]:
+        # Collect All Unique Tokens
+        token_set = set()
+        for word in self.vocab:  # must be vocab!
+            for symbol in word.split():
+                token_set.add(symbol)
+        # Assign IDs in sorted order (order matters)
+        return sorted(list(token_set))
+
+    @property
+    def token_to_id(self) -> dict[str, int]:
+        return {token: idx for idx, token in enumerate(self.tokens)}
+
+    @property
+    def id_to_token(self) -> dict[int, str]:
+        return {idx: token for idx, token in enumerate(self.tokens)}
+
+    @property
+    def ranks(self) -> dict[str, int]:
+        # Build the rank table (rank merges)
+        rank_table = {}
+        for i, pair in enumerate(self.merges):  # must be merges!
+            token = "".join(pair)
+            rank_table[token] = i
+        return rank_table
+
+    @property
+    def scores(self):
+        # Score the merges
+        scores = {}
+        for token in self.tokens:
+            rank = self.ranks.get(token)
+            scores[token] = -math.log(rank + 1) if rank else -1e6
+        return scores
+
+    def train(self, num_merges: int) -> None:
+        # Train vocab model (vocab is the set of all merges)
+        self.merges = []
+        for i in range(num_merges):
+            # pre-process merge pairs every cycle
+            pairs = Model.pairs(self.vocab)  # create pairs
+            if not pairs:  # bail if pairs is empty
+                print(f"Exhausted all potential pairs! Halted at step {i}.")
+                break
+            # use the highest ranked pair for the next merge cycle
+            best = max(pairs, key=pairs.get)  # get max rank
+            self.merges.append(best)
+            self.vocab = Model.merges(self.vocab, best)  # merge ranked pair
+
+    def save(self, path: str) -> None:
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(self.model, file, ensure_ascii=False, indent=2)
+
+    def load(self, path: str) -> None:
+        with open(path, "r", encoding="utf-8") as file:
+            self.model = json.load(file)
+
+    def encode(self, token: str) -> int:
+        return self.token_to_id[token]
+
+    def decode(self, id: int) -> str:
+        return self.id_to_token[id]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m",
+        "--merges",
+        required=False,
+        type=int,
+        default=10,
+        help="number of merges",
+    )
+    parser.add_argument(
+        "-c",
+        "--corpus",
+        required=False,
+        type=str,
+        default=None,
+        help="input plaintext file",
+    )
+    parser.add_argument(
+        "-l",
+        "--load",
+        required=False,
+        type=str,
+        default=None,
+        help="load model from file",
+    )
+    parser.add_argument(
+        "-s",
+        "--save",
+        required=False,
+        type=str,
+        default=None,
+        help="save model to file",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        required=False,
+        type=bool,
+        default=False,
+        help="enable debug mode",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    num_merges = 15
+    args = parse_args()
+
+    # Get number of merges (training cycles)
+    num_merges = int(args.merges)
 
     # Get words from corpus (training data)
-    vocab = list("lo low lower newest wide wider widest x-ray")
-    # print(json.dumps(vocab, indent=2))
+    vocab = Corpus.vocab(args.corpus)
 
-    base_alphabet = list(dict.fromkeys(vocab))  # first-appearance order
+    # Train vocab model (vocab is the set of all merges)
+    tokenizer = Tokenizer(vocab)
 
-    merge_table = []
-    for i in range(num_merges):
-        # pre-process pairs
-        pairs = [(vocab[i], vocab[i + 1]) for i in range(len(vocab) - 1)]
-        if not pairs:
-            break  # Exhausted all possible occurrances
-        # print(json.dumps(pairs, indent=2))
+    if args.load:
+        tokenizer.load(args.load)
 
-        # pair frequencies
-        frequencies = {}
-        for pair in pairs:
-            if pair in frequencies:
-                frequencies[pair] += 1
-            else:
-                frequencies[pair] = 1
+    if args.save:
+        tokenizer.train(args.merges)
+        tokenizer.save(args.save)
 
-        # pretty-print without losing structure
-        printable = {f"({a!r}, {b!r})": cnt for (a, b), cnt in frequencies.items()}
-        print(json.dumps(printable, indent=2, ensure_ascii=False))
+    if args.verbose:
+        # Print vocab training results (dump merges)
+        print("Model:")
+        print(json.dumps(tokenizer.model, indent=2))
 
-        # compress duplicates (run-length encoding)
-        encodings = []
-        current = pairs[0]
-        count = 1  # current is inclusive
-        for nxt in pairs[1:]:  # skip to the next pair
-            if current == nxt:
-                count += 1  # pair exists, inc freqs
-            else:
-                encodings.append((current, count))  # track freqs
-                current, count = nxt, 1  # init next pair
-        encodings.append((current, count))
+        # Build the rank table (rank merges)
+        print("Rank Table:")
+        print(json.dumps(tokenizer.ranks, indent=2))
 
-        # get the best pair
-        best_pair = None  # ("l", "o")
-        best_freq = -1  # frequency
-        for pair, freq in frequencies.items():
-            # break ties (mitigates collisions and overlapping boundaries)
-            if (freq > best_freq) or (
-                freq == best_freq and (best_pair is None or pair < best_pair)
-            ):
-                best_pair = pair
-                best_freq = freq
+        # Score the merges
+        print("Token Scores:")
+        print(json.dumps(tokenizer.scores, indent=2))
 
-        if not best_pair:
-            break  # exhausted all possible merges
-
-        print(f"best_pair={best_pair}, best_freq={best_freq}")
-        merge_table.append(best_pair)
-
-        # merge n-grams and replace all non-overlapping occurences
-        n_grams = []
-        j = 0
-        m = 0  # count non-overlapping occurances
-        a, b = best_pair  # current target pair
-        while j < len(vocab):
-            new_tok = None
-            if j + 1 < len(vocab) and vocab[j] == a and vocab[j + 1] == b:
-                new_tok = a + b
-                m += 1
-                j += 2
-            else:
-                new_tok = vocab[j]
-                j += 1
-
-            if new_tok:
-                n_grams.append(new_tok)
-
-        assert (
-            len(n_grams) == len(vocab) - m
-        ), f"Expected {len(vocab) - m} vocab after merge, got {len(n_grams)}"
-
-        vocab = n_grams  # update the set of pairs
-
-    print("Base Alphabet:")
-    print(json.dumps(base_alphabet))
-
-    print("Merge Table:")
-    print(json.dumps(merge_table, indent=2))
-
-    print("Vocab Table:")
-    print(json.dumps(vocab, indent=2))
-
-    # Assign IDs in sorted order (order matters)
-    # Use base vocab to heal token set
-    token_list = sorted(list(set(base_alphabet + vocab)))
     print("Tokenizer:")
-    print(json.dumps(token_list, indent=2))
+    print(json.dumps(tokenizer.token_to_id, indent=2))
+    print(f"Model has {len(tokenizer)} tokens.")
