@@ -249,10 +249,13 @@ if __name__ == "__main__":
     # Train vocab model (vocab is the set of all merges)
     tokenizer = Tokenizer(vocab)
 
-    if args.load:
+    if args.load and args.save:
+        raise Exception("Use save or load. Not both.")
+
+    if args.load and not args.save:
         tokenizer.load(args.load)
 
-    if args.save:
+    if args.save and not args.load:
         tokenizer.train(args.merges)
         tokenizer.save(args.save)
 
