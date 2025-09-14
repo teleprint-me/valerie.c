@@ -3,6 +3,7 @@
  * @brief Test driver for handling transformer bpe vocab.
  */
 
+#include <string.h>
 #include <stdio.h>
 
 #include "strext.h"
@@ -28,7 +29,7 @@ void cli_parse(struct CLIParams* cli) {
 
     for (int i = 1; i < cli->argc; i++) {
         if (strcmp(cli->argv[i], "--vocab") == 0 && i + 1 < cli->argc) {
-            cli->vocab_path = (char*) cli->argv[++i];
+            cli->vocab_path = strdup(cli->argv[++i]);
         } else if (strcmp(cli->argv[i], "--help") == 0 || strcmp(cli->argv[i], "-h") == 0) {
             cli_usage(*cli);
             exit(EXIT_SUCCESS);
@@ -55,5 +56,6 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    free(cli.vocab_path);
     return 0;
 }
