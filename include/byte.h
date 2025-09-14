@@ -2,7 +2,7 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file include/string.h
- * @brief A wrapper to extend string.h for convenience operations.
+ * @brief A transitive wrapper to extend string.h operations.
  *
  * Low-level routines for working directly with bytes in null-terminated strings.
  * These routines operate purely on bytes—not codepoints or graphemes.
@@ -16,7 +16,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>  // IWYU pragma: keep
+
+#ifndef _STRING_H
+    #include <string.h>  // IWYU pragma: keep
+#endif
 
 /**
  * @brief Returns the byte offset from start to end.
@@ -58,6 +61,36 @@ char* string_copy_n(const char* start, size_t n);
  * @return      Newly allocated buffer, or NULL on error. Caller must free.
  */
 char* string_copy_slice(const char* start, const char* end);
+
+/**
+ * @brief Allocates and returns a new string which is the concatenation of dst and src.
+ *
+ * @param dst  Pointer to a null-terminated UTF-8 string (left operand).
+ * @param src  Pointer to a null-terminated UTF-8 string (right operand).
+ * @return     Newly allocated buffer, or NULL on allocation error or invalid input.
+ *             Caller must free the returned buffer.
+ *
+ * @note If either input is an empty string, result is a copy of the other.
+ * @note If both inputs are empty, result is an empty string ("").
+ */
+char* string_concat(const char* dst, const char* src);
+
+/**
+ * @brief Compares two null-terminated UTF-8 byte strings lexicographically.
+ *
+ * Performs a byte-wise comparison of the two strings.
+ *
+ * @param a Pointer to the first null-terminated UTF-8 string.
+ * @param b Pointer to the second null-terminated UTF-8 string.
+ * @return
+ *   - 0 if strings are equal,
+ *   - -1 if a < b,
+ *   - 1 if a > b,
+ *   - -2 if either input is NULL.
+ *
+ * @note Comparison stops at the first differing byte or at the null terminator.
+ */
+int string_compare(const char* a, const char* b);
 
 /**
  * @brief Appends a pointer to a dynamic array of char* pointers, resizing as needed.

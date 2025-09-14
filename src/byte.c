@@ -2,7 +2,7 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file src/string.c
- * @brief A wrapper to extend string.h for convenience operations.
+ * @brief A transitive wrapper to extend string.h operations.
  *
  * Low-level routines for working directly with bytes in null-terminated strings.
  * These routines operate purely on bytes—not codepoints or graphemes.
@@ -81,6 +81,65 @@ char* string_copy_slice(const char* start, const char* end) {
     }
 
     return string_copy_n(start, (size_t) diff);
+}
+
+char* string_concat(const char* dst, const char* src) {
+    if (!dst || !src) {
+        return NULL;
+    }
+
+    size_t dst_len = strlen(dst);
+    size_t src_len = strlen(src);
+    size_t out_len = dst_len + src_len;
+
+    char* out = calloc((out_len + 1), sizeof(char));
+    if (!out) {
+        return NULL;
+    }
+
+    if (dst_len > 0) {
+        memcpy(out, dst, dst_len);
+    }
+    if (src_len > 0) {
+        memcpy(out + dst_len, src, src_len);
+    }
+
+    out[out_len] = '\0';
+    return out;
+}
+
+int string_compare(const char* a, const char* b) {
+    if (!a || !b) {
+        return -2;  // invalid
+    }
+
+    const char* a_stream = a;
+    const char* b_stream = b;
+
+    while (*a_stream && *b_stream) {
+        if (*a_stream < *b_stream) {
+            return -1;  // less than
+        }
+
+        if (*a_stream > *b_stream) {
+            return 1;  // greater than
+        }
+
+        // Both bytes are equal, move to the next
+        a_stream++;
+        b_stream++;
+    }
+
+    // Check if strings are of different lengths
+    if (*a_stream) {
+        return 1;  // greater than
+    }
+
+    if (*b_stream) {
+        return -1;  // less than
+    }
+
+    return 0;  // equal
 }
 
 char** string_append(const char* src, char** parts, size_t* count) {
@@ -184,12 +243,9 @@ char** string_split_delim(const char* src, const char* delim, size_t* count) {
     }
 
     size_t src_len = strlen(src);
-    if (src_len < 0) {
-        return NULL;
-    }
+    size_t delim_len = strlen(delim);
 
     // Empty delimiter means split into bytes
-    size_t delim_len = strlen(delim);
     if (!delim || *delim == '\0' || delim_len < 1) {
         return string_split(src, count);
     }
@@ -288,11 +344,9 @@ char* string_join(char** parts, size_t count, const char* delim) {
     size_t total = 1;  // For final null terminator
     for (size_t i = 0; i < count; i++) {
         size_t part_len = strlen(parts[i]);
-        if (part_len < 0) {
-            return NULL;  // Defensive
-        }
         total += (size_t) part_len;
     }
+
     if (delim_len > 0 && count > 1) {
         total += (size_t) delim_len * (count - 1);
     }
@@ -310,6 +364,7 @@ char* string_join(char** parts, size_t count, const char* delim) {
             memcpy(out, delim, delim_len);
             out += delim_len;
         }
+
         size_t part_len = strlen(parts[i]);
         if (part_len > 0) {
             memcpy(out, parts[i], part_len);

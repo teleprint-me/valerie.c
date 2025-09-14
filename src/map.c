@@ -28,9 +28,8 @@
 
 #include "memory.h"
 #include "logger.h"
-#include "utf8/byte.h"
+#include "byte.h"
 #include "map.h"
-#include <string.h>
 
 /**
  * @section Hash Life-cycle
@@ -458,7 +457,7 @@ uint64_t hash_string(const void* key, uint64_t size, uint64_t i) {
 }
 
 int hash_string_compare(const void* key1, const void* key2) {
-    return utf8_byte_cmp((const uint8_t*) key1, (const uint8_t*) key2);
+    return string_compare((const char*) key1, (const char*) key2);
 }
 
 char* hash_string_search(HashMap* table, const void* key) {
