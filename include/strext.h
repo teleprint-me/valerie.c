@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/string.h
+ * @file include/strext.h
  * @brief A transitive wrapper to extend string.h operations.
  *
  * Low-level routines for working directly with bytes in null-terminated strings.
@@ -11,13 +11,13 @@
  * All functions treat empty strings ("") as valid input.
  */
 
-#ifndef STRING_H
-#define STRING_H
+#ifndef STREXT_H
+#define STREXT_H
 
 #include <stdint.h>
 #include <stddef.h>
 
-#ifndef _STRING_H
+#ifndef _STRING
     #include <string.h>  // IWYU pragma: keep
 #endif
 
@@ -201,4 +201,4 @@ char** string_split_regex(const char* src, const char* pattern, size_t* count);
  */
 char* string_join(char** parts, size_t count, const char* delim);
 
-#endif  // STRING_H
+#endif  // STREXT_H

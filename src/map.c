@@ -28,7 +28,7 @@
 
 #include "memory.h"
 #include "logger.h"
-#include "byte.h"
+#include "strext.h"
 #include "map.h"
 
 /**

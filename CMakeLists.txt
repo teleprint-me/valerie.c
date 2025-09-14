@@ -40,9 +40,9 @@ add_library(valerie SHARED
     "src/page.c" # page table memory allocator
     "src/compare.c" # numeric comparisons, including floating-point
     "src/type.c" # numeric data types, focusing on numeric precision
-    "src/regex.c"
-    "src/byte.c"
-    "src/path.c"
+    "src/regex.c" # convenience interface to compile and free pcre2 regex
+    "src/strext.c" # transitive lib to extend libc string interface
+    "src/path.c" # posix compatible pathlib interface
     "src/map.c" # hash map with linear probing
 )
 

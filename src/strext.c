@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/string.c
+ * @file src/strext.c
  * @brief A transitive wrapper to extend string.h operations.
  *
  * Low-level routines for working directly with bytes in null-terminated strings.
@@ -14,7 +14,7 @@
 #include <stddef.h>
 
 #include "regex.h"
-#include "byte.h"
+#include "strext.h"
 
 // Returns the byte offset from start to end. Returns -1 if inputs are NULL.
 ptrdiff_t string_diff(const char* start, const char* end) {

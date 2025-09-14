@@ -10,8 +10,9 @@
  */
 
 #include "logger.h"  // logging macros LOG_ERROR, etc.
-#include "byte.h"
+#include "strext.h"
 #include "map.h"  // HashMap* map
+
 #include <stdint.h>
 #include <stdio.h>  // IO
 #include <stdlib.h>
