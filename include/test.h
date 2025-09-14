@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/test/unit.h
+ * @file include/test.h
  * @brief Minimal customizable unit testing framework for C.
  *
  * Provides structures and functions to define, run, and manage unit tests
@@ -13,7 +13,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 #include <stddef.h>
 #include <stdint.h>
@@ -175,6 +175,6 @@ int test_suite_run(TestSuite* suite);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#endif // UNIT_TEST_H
+#endif  // UNIT_TEST_H

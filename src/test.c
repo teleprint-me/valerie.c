@@ -1,11 +1,15 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/unit.c
+ * @file src/test.c
+ * @brief Minimal customizable unit testing framework for C.
+ *
+ * Provides structures and functions to define, run, and manage unit tests
+ * with flexible test logic and callback hooks.
  */
 
 #include "logger.h"
-#include "unit.h"
+#include "test.h"
 
 int test_group_run(TestGroup* group) {
     if (!group || !group->name || !group->units || group->count == 0 || !group->run) {
@@ -28,13 +32,13 @@ int test_group_run(TestGroup* group) {
         TestUnit* unit = &group->units[i];
         unit->index = i + 1;
 
-        if (group->before_each) { // group->before_each()
+        if (group->before_each) {  // group->before_each()
             result |= group->before_each(unit);
         }
 
         result |= group->run(unit);
 
-        if (group->after_each) { // group->after_each()
+        if (group->after_each) {  // group->after_each()
             result |= group->after_each(unit);
         }
 
