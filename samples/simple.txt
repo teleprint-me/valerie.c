@@ -1,0 +1,16 @@
+low
+lower
+new
+newer
+newest
+widest
+he
+she
+hello
+world
+their
+there
+they're
+old
+older
+oldest
