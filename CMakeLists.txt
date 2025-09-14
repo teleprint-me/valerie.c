@@ -1,7 +1,7 @@
 # Root CMakeLists.txt
 
 cmake_minimum_required(VERSION 3.14)
-project(valerie VERSION 0.1.0 DESCRIPTION "ANSI C library for Large Language Modeling")
+project(valerie VERSION 0.1.0 DESCRIPTION "ANSI C library for Language Modeling")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -39,37 +39,27 @@ add_library(valerie SHARED
     "src/unit.c" # unit testing utility
     "src/page.c" # page table memory allocator
     "src/compare.c" # numeric comparisons, including floating-point
-    "src/xorshift.c" # numeric psuedo random number generator
     "src/type.c" # numeric data types, focusing on numeric precision
+    "src/regex.c"
+    "src/byte.c"
+    "src/path.c"
     "src/map.c" # hash map with linear probing
 )
+
 target_include_directories(valerie PUBLIC include)
 target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
-
 
 set(EXAMPLES 
     "examples"
     "examples/tokenizer"
 )
+
 foreach (example IN LISTS EXAMPLES)
     add_subdirectory(${example})
 endforeach()
-
-# enable_testing()
-# add_subdirectory(tests)
-# add_custom_target(run_tests
-#     COMMAND ${CMAKE_CTEST_COMMAND}
-#     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-#     COMMENT "Running all tests"
-# )
 
 add_custom_target(run_doxy
     COMMAND doxygen ${CMAKE_SOURCE_DIR}/doxy.conf
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Generating API documentation with Doxygen"
-)
-
-add_custom_target(run_clean
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}
-    COMMENT "Cleaning all generated files"
 )
