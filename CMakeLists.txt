@@ -36,7 +36,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 add_library(valerie SHARED
     "src/memory.c" # posix memory allocation and deallocation
     "src/logger.c" # logging utility
-    "src/unit.c" # unit testing utility
+    "src/test.c" # unit testing utility
     "src/page.c" # page table memory allocator
     "src/compare.c" # numeric comparisons, including floating-point
     "src/type.c" # numeric data types, focusing on numeric precision
