@@ -1,10 +1,10 @@
 /**
- * @file src/utf8/regex.c
+ * @file src/regex.c
  */
 
 #include "regex.h"
 
-bool utf8_regex_compile(const uint8_t* pattern, pcre2_code** code, pcre2_match_data** match) {
+bool regex_compile(const char* pattern, pcre2_code** code, pcre2_match_data** match) {
     if (!pattern || !code || !match) {
         return false;
     }
@@ -36,7 +36,7 @@ bool utf8_regex_compile(const uint8_t* pattern, pcre2_code** code, pcre2_match_d
     return true;
 }
 
-void utf8_regex_free(pcre2_code* code, pcre2_match_data* match) {
+void regex_free(pcre2_code* code, pcre2_match_data* match) {
     if (match) {
         pcre2_match_data_free(match);
     }

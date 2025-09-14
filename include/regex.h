@@ -1,9 +1,9 @@
 /**
- * @file include/utf8/regex.h
+ * @file include/regex.h
  */
 
-#ifndef UTF8_REGEX_H
-#define UTF8_REGEX_H
+#ifndef REGEX_H
+#define REGEX_H
 
 #include <stdbool.h>
 
@@ -20,7 +20,7 @@
  *
  * Caller must free both objects when done.
  */
-bool utf8_regex_compile(const uint8_t* pattern, pcre2_code** code, pcre2_match_data** match);
+bool regex_compile(const char* pattern, pcre2_code** code, pcre2_match_data** match);
 
 /**
  * @brief Frees PCRE2 regex code and match data objects.
@@ -30,6 +30,6 @@ bool utf8_regex_compile(const uint8_t* pattern, pcre2_code** code, pcre2_match_d
  * @param code  Compiled PCRE2 code object (may be NULL).
  * @param match PCRE2 match data object (may be NULL).
  */
-void utf8_regex_free(pcre2_code* code, pcre2_match_data* match);
+void regex_free(pcre2_code* code, pcre2_match_data* match);
 
-#endif  // UTF8_REGEX_H
+#endif  // REGEX_H
