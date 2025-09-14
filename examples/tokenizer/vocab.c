@@ -34,7 +34,7 @@ void cli_parse(struct CLIParams* cli) {
             cli_usage(*cli);
             exit(EXIT_SUCCESS);
         } else {
-            LOG_ERROR("Unknown or incomplete option: %s", cli->argv[i]);
+            printf("Unknown or incomplete option: %s", cli->argv[i]);
             cli_usage(*cli);
             exit(EXIT_FAILURE);
         }
@@ -53,9 +53,48 @@ int main(int argc, const char* argv[]) {
 
     if (!path_exists(cli.vocab_path)) {
         LOG_ERROR("Invalid vocab path detected: '%s'", cli.vocab_path);
+        free(cli.vocab_path);
         exit(EXIT_FAILURE);
     }
 
+    FILE* file = fopen(cli.vocab_path, "r");
+    if (!file) {
+        LOG_ERROR("Failed to open vocab file: %s", cli.vocab_path);
+        free(cli.vocab_path);
+        exit(EXIT_FAILURE);
+    }
+
+    fseek(file, 0, SEEK_END);
+    size_t length = ftell(file);
+    if (length == 0) {
+        LOG_ERROR("Failed to read vocab file.");
+        free(cli.vocab_path);
+        fclose(file);
+        exit(EXIT_FAILURE);
+    }
+    rewind(file);
+    printf("Vocab has %zu bytes.\n", length);
+
+    char* vocab = calloc(length + 1, sizeof(char));
+    if (!vocab) {
+        LOG_ERROR("Failed to allocate memory to input vocab.");
+        free(cli.vocab_path);
+        fclose(file);
+        exit(EXIT_FAILURE);
+    }
+
+    fread(vocab, sizeof(char), length, file);
+    fclose(file);
+    if (!*vocab) {
+        LOG_ERROR("Failed to read text from vocab file.");
+        free(cli.vocab_path);
+        exit(EXIT_FAILURE);
+    }
+    vocab[length] = '\0';
+
+    printf("Vocab contents:\n%s\n", vocab);
+
+    free(vocab);
     free(cli.vocab_path);
     return 0;
 }
