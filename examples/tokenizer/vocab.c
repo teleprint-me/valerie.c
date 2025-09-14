@@ -3,10 +3,11 @@
  * @brief Test driver for handling transformer bpe vocab.
  */
 
-#include "logger.h"
+#include <stdio.h>
+
 #include "strext.h"
 #include "path.h"
-#include <stdio.h>
+#include "logger.h"
 
 struct CLIParams {
     const char** argv;
@@ -16,35 +17,41 @@ struct CLIParams {
 
 void cli_usage(struct CLIParams cli) {
     printf("Usage: %s %s\n", cli.argv[0], "[--vocab S] ...");
-    printf("--vocab S Plain text input file (default: data/vocab.txt)\n");
+    printf("--vocab S Plain text input file (default: samples/simple.txt)\n");
 }
 
-void cli_parse(struct CLIParams cli) {
-    for (int i = 1; i < cli.argc; i++) {
-        if (strcmp(cli.argv[i], "--vocab") == 0 && i + 1 < cli.argc) {
-            cli.vocab_path = (char*) cli.argv[++i];
-        } else if (strcmp(cli.argv[i], "--help") == 0 || strcmp(cli.argv[i], "-h") == 0) {
-            cli_usage(cli);
+void cli_parse(struct CLIParams* cli) {
+    if (cli->argc < 2) {
+        cli_usage(*cli);
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 1; i < cli->argc; i++) {
+        if (strcmp(cli->argv[i], "--vocab") == 0 && i + 1 < cli->argc) {
+            cli->vocab_path = (char*) cli->argv[++i];
+        } else if (strcmp(cli->argv[i], "--help") == 0 || strcmp(cli->argv[i], "-h") == 0) {
+            cli_usage(*cli);
             exit(EXIT_SUCCESS);
         } else {
-            LOG_ERROR("Unknown or incomplete option: %s", cli.argv[i]);
-            cli_usage(cli);
+            LOG_ERROR("Unknown or incomplete option: %s", cli->argv[i]);
+            cli_usage(*cli);
             exit(EXIT_FAILURE);
         }
     }
 }
 
 int main(int argc, const char* argv[]) {
+    // Parse CLI arguments
     struct CLIParams cli = {.argc = argc, .argv = argv, .vocab_path = NULL};
-    if (argc > 1) {
-        cli_parse(cli);
-    } else {
-        cli_usage(cli);
-        exit(EXIT_FAILURE);
+    cli_parse(&cli);
+
+    // Ensure vocab path is not null
+    if (!cli.vocab_path) {
+        cli.vocab_path = strdup("samples/simple.txt");
     }
 
-    if (!cli.vocab_path) {
-        LOG_ERROR("NULL vocab path detected.");
+    if (!path_exists(cli.vocab_path)) {
+        LOG_ERROR("Invalid vocab path detected: '%s'", cli.vocab_path);
         exit(EXIT_FAILURE);
     }
 
