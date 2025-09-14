@@ -1,6 +1,7 @@
 # examples/tokenizer
 
 set(EXAMPLES
+    "vocab"
     "model"
 )
 
