@@ -41,13 +41,6 @@ add_library(valerie SHARED
     "src/compare.c" # numeric comparisons, including floating-point
     "src/xorshift.c" # numeric psuedo random number generator
     "src/type.c" # numeric data types, focusing on numeric precision
-    "src/utf8/regex.c"
-    "src/utf8/byte.c"
-    "src/utf8/codepoint.c"
-    "src/utf8/grapheme-data.c"
-    "src/utf8/grapheme.c"
-    "src/utf8/string.c"
-    "src/utf8/path.c"
     "src/map.c" # hash map with linear probing
 )
 target_include_directories(valerie PUBLIC include)
@@ -56,7 +49,6 @@ target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
 
 set(EXAMPLES 
     "examples"
-    "examples/utf8"
     "examples/tokenizer"
 )
 foreach (example IN LISTS EXAMPLES)

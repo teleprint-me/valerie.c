@@ -2,8 +2,7 @@
  * @file src/utf8/regex.c
  */
 
-#include "logger.h"
-#include "utf8/regex.h"
+#include "regex.h"
 
 bool utf8_regex_compile(const uint8_t* pattern, pcre2_code** code, pcre2_match_data** match) {
     if (!pattern || !code || !match) {
@@ -24,13 +23,11 @@ bool utf8_regex_compile(const uint8_t* pattern, pcre2_code** code, pcre2_match_d
     );
     if (!*code) {
         pcre2_get_error_message(error_code, error_message, sizeof(error_message));
-        LOG_ERROR("PCRE2 compile error at offset %zu: %s", error_offset, error_message);
         return false;
     }
 
     *match = pcre2_match_data_create_from_pattern(*code, NULL);
     if (!*match) {
-        LOG_ERROR("Failed to create PCRE2 match data");
         pcre2_code_free(*code);
         *code = NULL;
         return false;
