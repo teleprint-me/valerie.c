@@ -11,6 +11,7 @@ PointerAlignment: Left
 ReferenceAlignment: Right
 
 IndentWidth: 4
+IndentPPDirectives: BeforeHash
 SpaceAfterCStyleCast: true
 SpaceAfterLogicalNot: false
 SpaceAfterTemplateKeyword: false
