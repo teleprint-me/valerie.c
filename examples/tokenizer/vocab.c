@@ -39,28 +39,29 @@ char* vocab_read_text(const char* path) {
     rewind(file);
 
     // Allocate memory to string
-    char* vocab = calloc(length + 1, sizeof(char));
-    if (!vocab) {
+    char* text = calloc(length + 1, sizeof(char));
+    if (!text) {
         fclose(file);
         return NULL;
     }
 
     // Read data into memory from disk
-    fread(vocab, sizeof(char), length, file);
+    fread(text, sizeof(char), length, file);
     fclose(file);
-    if (!*vocab) {
+    if (!*text) {
         return NULL;
     }
-    vocab[length] = '\0';  // null terminate
+    text[length] = '\0';  // null terminate
 
-    return vocab;
+    return text;
 }
 
 // Create the word frequencies
-HashMap* vocab_create_frequencies(const char* vocab) {
-    // Pre-tokenize the vocab
+HashMap* vocab_create_frequencies(const char* text) {
+    // Pre-tokenize the input text
     size_t pre_token_count = 0;
-    char** pre_tokens = string_split_space(vocab, &pre_token_count);
+    // Split text by whitespace (0x09, 0x0A, 0x0D, 0x20)
+    char** pre_tokens = string_split_space(text, &pre_token_count);
 
     // Build word frequencies from pre-tokens
     HashMap* freqs = hash_map_create(pre_token_count, HASH_MAP_KEY_TYPE_STRING);
@@ -85,44 +86,44 @@ HashMap* vocab_create_frequencies(const char* vocab) {
     string_split_free(pre_tokens, pre_token_count);
 
     // Return hash map
-    return freqs;  // f(v) : tokens -> freqs
+    return freqs;  // text : words -> freqs
 }
 
 // Create the symbol frequencies
-HashMap* vocab_create_symbols(HashMap* freqs) {
+HashMap* vocab_create_symbols(HashMap* words) {
     // Create the symbol-freq mapping
-    HashMap* symbols = hash_map_create(freqs->size, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* vocab = hash_map_create(words->size, HASH_MAP_KEY_TYPE_STRING);
 
     HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(freqs);
+    HashMapIterator it = hash_map_iter(words);
     while ((entry = hash_map_next(&it))) {
         // get current word-freq mapping
         char* word = entry->key;  // tok -> cat
         int* freq = entry->value;  // freq -> 1
 
         // "cat" -> {"c", "a", "t"}
-        size_t word_count = 0;
-        char** word_split = string_split(word, &word_count);
+        size_t list_count = 0;
+        char** list = string_split(word, &list_count);
 
         // {"c", "a", "t"} -> "c a t"
-        char* syms = string_join(word_split, word_count, " ");  // new word
+        char* symbols = string_join(list, list_count, " ");  // new word
 
         // clean up intermediate representation
-        string_split_free(word_split, word_count);
+        string_split_free(list, list_count);
 
         // handle word to symbol freq mapping
-        int* value = hash_map_search(symbols, syms);
-        if (!value) {  // new freq
+        int* sym_freq = hash_map_search(vocab, symbols);
+        if (!sym_freq) {  // new sym-freq
             int* new_freq = malloc(sizeof(int));
             *new_freq = *freq;
-            hash_map_insert(symbols, syms, new_freq);
+            hash_map_insert(vocab, symbols, new_freq);
         } else {
-            *value += 1;  // inc freq
+            *sym_freq += 1;  // inc sym-freq
         }
     }
 
     // return hash map
-    return symbols;  // f : syms -> freqs
+    return vocab;  // words : syms -> freqs
 }
 
 // Free the vocabulary maps
@@ -137,36 +138,47 @@ void vocab_free_map(HashMap* map) {
 }
 
 // Pre-tokenize the vocabulary
-HashMap* vocab_tokenize(const char* vocab) {
-    HashMap* freqs = vocab_create_frequencies(vocab);
-    if (!freqs) {
+HashMap* vocab_tokenize(const char* text) {
+    // Create initial word-freq mapping
+    HashMap* words = vocab_create_frequencies(text);
+    if (!words) {
         return NULL;
     }
 
-    HashMap* syms = vocab_create_symbols(freqs);
-    if (!syms) {
-        vocab_free_map(freqs);
+    // Create initial sym-freq mapping
+    HashMap* vocab = vocab_create_symbols(words);
+    if (!vocab) {
+        vocab_free_map(words);
         return NULL;
     }
 
-    vocab_free_map(freqs);
-    return syms;
+    // Clean up word-freq map
+    vocab_free_map(words);
+
+    // Return a newly initialized vocab map
+    return vocab;  // v : syms -> freqs
 }
 
 // Build the initial vocabulary
 HashMap* vocab_build(const char* path) {
+    // Read the vocab from a plain text file into memory
     char* text = vocab_read_text(path);
     if (!text) {
         return NULL;
     }
 
-    HashMap* syms = vocab_tokenize(text);
-    if (!syms) {
+    // Create the initial sym-freq map
+    HashMap* vocab = vocab_tokenize(text);
+    if (!vocab) {
         free(text);
         return NULL;
     }
 
-    return syms;
+    // Clean up plain text
+    free(text);
+
+    // Return a newly
+    return vocab;
 }
 
 /**
