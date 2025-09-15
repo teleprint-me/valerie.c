@@ -116,8 +116,14 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Vocab contents:\n%s\n", vocab);
+    size_t pre_token_count = 0;
+    char** pre_tokens = string_split_whitespace(vocab, &pre_token_count);
+    printf("pre token count: %zu\n", pre_token_count);
+    for (size_t i = 0; i < pre_token_count; i++) {
+        printf("pre_token[%zu] '%s'\n", i, pre_tokens[i]);
+    }
 
+    string_split_free(pre_tokens, pre_token_count);
     free(vocab);
     free(cli.vocab_path);
     return 0;
