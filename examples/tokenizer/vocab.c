@@ -1,4 +1,5 @@
 /**
+ * Copyright © 2025 Austin Berrio
  * @file examples/tokenizer/vocab.c
  * @brief Test driver for handling transformer bpe vocab.
  */
@@ -13,10 +14,11 @@
 
 /**
  * Vocab Map Utils
+ * @note These can probably be integrated into HashMap
  * @{
  */
 
-// Free the vocabulary maps
+// Free the vocabulary mapping
 void vocab_map_free(HashMap* m) {
     HashMapEntry* entry;
     HashMapIterator it = hash_map_iter(m);
@@ -27,6 +29,7 @@ void vocab_map_free(HashMap* m) {
     hash_map_free(m);
 }
 
+// Flush vocab to standard output
 void vocab_map_print(HashMap* m) {
     HashMapEntry* entry;
     HashMapIterator it = hash_map_iter(m);
@@ -38,6 +41,12 @@ void vocab_map_print(HashMap* m) {
 }
 
 /** @} */
+
+/**
+ * Read text into memory for vocab mapping
+ * @note This should probably be generalized, but this is fine for now.
+ * @{
+ */
 
 // Read a plain text file into memory from disk
 char* vocab_read_text(const char* path) {
@@ -84,6 +93,13 @@ char* vocab_read_text(const char* path) {
 
     return text;
 }
+
+/** @} */
+
+/**
+ * Map vocab frequencies
+ * @{
+ */
 
 // Create the word frequencies
 HashMap* vocab_create_frequencies(const char* text) {
@@ -155,6 +171,13 @@ HashMap* vocab_create_symbols(HashMap* words) {
     return vocab;  // words : syms -> freqs
 }
 
+/** @} */
+
+/**
+ * Vocab factory
+ * @{
+ */
+
 // Pre-tokenize the vocabulary
 HashMap* vocab_tokenize(const char* text) {
     // Create initial word-freq mapping
@@ -198,6 +221,8 @@ HashMap* vocab_build(const char* path) {
     // Return a newly
     return vocab;
 }
+
+/** @} */
 
 /**
  * Command-line interface
@@ -257,6 +282,7 @@ int main(int argc, const char* argv[]) {
     // Build word frequencies from pre-tokens
     HashMap* vocab = vocab_build(cli.vocab_path);
 
+    // Observe mapped results
     vocab_map_print(vocab);
 
     // Clean up
