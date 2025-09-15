@@ -128,9 +128,31 @@ int main(int argc, const char* argv[]) {
     }
 
     // Build word frequencies from pre-tokens
+    HashMap* freqs = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
+    for (size_t i = 0; i < pre_token_count; i++) {
+        int* value = hash_map_search(freqs, pre_tokens[i]);
+        if (!value) {
+            // Create a new key
+            char* key = strdup(pre_tokens[i]);
+            if (!key) {
+                break;  // handle this later
+            }
 
+            // Create a new value
+            value = malloc(sizeof(int));
+            if (!value) {
+                break;  // handle this later
+            }
+
+            *value = 1;
+            hash_map_insert(freqs, key, value);
+        } else {
+            *value += 1;
+        }
+    }
 
     // Clean up
+    hash_map_free(freqs);
     string_split_free(pre_tokens, pre_token_count);
     free(vocab);
     free(cli.vocab_path);
