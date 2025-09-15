@@ -10,6 +10,7 @@
 #include "path.h"
 #include "logger.h"
 
+// Read the models vocabulary from disk
 char* vocab_read(const char* path) {
     // Ensure path is not null
     if (!path_is_valid(path)) {
