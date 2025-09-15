@@ -172,7 +172,7 @@ void string_split_free(char** parts, size_t count);
  * @return A dynamically allocated array of char pointers representing the tokens. The caller is
  * responsible for freeing the memory using `free()` when it is no longer needed.
  */
-char** string_split_whitespace(const char* src, size_t* count);
+char** string_split_space(const char* src, size_t* count);
 
 /**
  * @brief Splits a UTF-8 string by the specified delimiter (literal byte sequence).

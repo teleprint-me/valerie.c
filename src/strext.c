@@ -238,7 +238,7 @@ void string_split_free(char** parts, size_t count) {
     }
 }
 
-char** string_split_whitespace(const char* src, size_t* count) {
+char** string_split_space(const char* src, size_t* count) {
     if (!src || !count) {
         return NULL;
     }

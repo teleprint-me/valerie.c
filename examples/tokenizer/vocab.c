@@ -117,7 +117,7 @@ int main(int argc, const char* argv[]) {
     }
 
     size_t pre_token_count = 0;
-    char** pre_tokens = string_split_whitespace(vocab, &pre_token_count);
+    char** pre_tokens = string_split_space(vocab, &pre_token_count);
     printf("pre token count: %zu\n", pre_token_count);
     for (size_t i = 0; i < pre_token_count; i++) {
         printf("pre_token[%zu] '%s'\n", i, pre_tokens[i]);
