@@ -56,6 +56,48 @@ char* vocab_read(const char* path) {
     return vocab;
 }
 
+// Create the initial vocab frequencies
+HashMap* vocab_freqs_create(const char* vocab) {
+    // Pre-tokenize the vocab
+    size_t pre_token_count = 0;
+    char** pre_tokens = string_split_space(vocab, &pre_token_count);
+
+    // Build word frequencies from pre-tokens
+    HashMap* freqs = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
+    for (size_t i = 0; i < pre_token_count; i++) {
+        int* value = hash_map_search(freqs, pre_tokens[i]);
+        if (!value) {
+            // Create a new key
+            char* key = strdup(pre_tokens[i]);
+
+            // Create a new value
+            value = malloc(sizeof(int));
+            *value = 1;
+
+            // Insert new mapping
+            hash_map_insert(freqs, key, value);
+        } else {
+            *value += 1;  // update current freq
+        }
+    }
+
+    // Clean up pre-tokens
+    string_split_free(pre_tokens, pre_token_count);
+
+    // Return hash map
+    return freqs;  // f(v) : tokens -> freqs
+}
+
+void vocab_freqs_free(HashMap* freqs) {
+    HashMapIterator it = hash_map_iter(freqs);
+    HashMapEntry* entry;
+    while ((entry = hash_map_next(&it))) {
+        free(entry->key);
+        free(entry->value);
+    }
+    hash_map_free(freqs);
+}
+
 /**
  * Command-line interface
  * @{
@@ -119,41 +161,19 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Pre-tokenize the vocab
-    size_t pre_token_count = 0;
-    char** pre_tokens = string_split_space(vocab, &pre_token_count);
-    printf("pre token count: %zu\n", pre_token_count);
-    for (size_t i = 0; i < pre_token_count; i++) {
-        printf("pre_token[%zu] '%s'\n", i, pre_tokens[i]);
-    }
-
     // Build word frequencies from pre-tokens
-    HashMap* freqs = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
-    for (size_t i = 0; i < pre_token_count; i++) {
-        int* value = hash_map_search(freqs, pre_tokens[i]);
-        if (!value) {
-            // Create a new key
-            char* key = strdup(pre_tokens[i]);
-            if (!key) {
-                break;  // handle this later
-            }
-
-            // Create a new value
-            value = malloc(sizeof(int));
-            if (!value) {
-                break;  // handle this later
-            }
-
-            *value = 1;
-            hash_map_insert(freqs, key, value);
-        } else {
-            *value += 1;
-        }
+    HashMap* freqs = vocab_freqs_create(vocab);
+    
+    HashMapIterator it = hash_map_iter(freqs);
+    HashMapEntry* entry;
+    while ((entry = hash_map_next(&it))) {
+        char* word = entry->key;
+        int* freq = entry->value;
+        printf("word = %s, freq = %d\n", word, *freq);
     }
 
     // Clean up
-    hash_map_free(freqs);
-    string_split_free(pre_tokens, pre_token_count);
+    vocab_freqs_free(freqs);
     free(vocab);
     free(cli.vocab_path);
     return 0;
