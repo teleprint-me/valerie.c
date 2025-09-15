@@ -11,6 +11,34 @@
 #include "logger.h"
 #include "map.h"
 
+/**
+ * Vocab Map Utils
+ * @{
+ */
+
+// Free the vocabulary maps
+void vocab_map_free(HashMap* m) {
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(m);
+    while ((entry = hash_map_next(&it))) {
+        free(entry->key);
+        free(entry->value);
+    }
+    hash_map_free(m);
+}
+
+void vocab_map_print(HashMap* m) {
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(m);
+    while ((entry = hash_map_next(&it))) {
+        char* tok = entry->key;
+        int* freq = entry->value;
+        printf("tok=`%s` | freq=`%d`\n", tok, *freq);
+    }
+}
+
+/** @} */
+
 // Read a plain text file into memory from disk
 char* vocab_read_text(const char* path) {
     // Ensure path is not null
@@ -49,6 +77,7 @@ char* vocab_read_text(const char* path) {
     fread(text, sizeof(char), length, file);
     fclose(file);
     if (!*text) {
+        free(text);
         return NULL;
     }
     text[length] = '\0';  // null terminate
@@ -126,17 +155,6 @@ HashMap* vocab_create_symbols(HashMap* words) {
     return vocab;  // words : syms -> freqs
 }
 
-// Free the vocabulary maps
-void vocab_free_map(HashMap* map) {
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(map);
-    while ((entry = hash_map_next(&it))) {
-        free(entry->key);
-        free(entry->value);
-    }
-    hash_map_free(map);
-}
-
 // Pre-tokenize the vocabulary
 HashMap* vocab_tokenize(const char* text) {
     // Create initial word-freq mapping
@@ -148,12 +166,12 @@ HashMap* vocab_tokenize(const char* text) {
     // Create initial sym-freq mapping
     HashMap* vocab = vocab_create_symbols(words);
     if (!vocab) {
-        vocab_free_map(words);
+        vocab_map_free(words);
         return NULL;
     }
 
     // Clean up word-freq map
-    vocab_free_map(words);
+    vocab_map_free(words);
 
     // Return a newly initialized vocab map
     return vocab;  // v : syms -> freqs
@@ -236,30 +254,13 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Read the vocab from disk into memory
-    char* vocab = vocab_read_text(cli.vocab_path);
-    if (!vocab) {
-        LOG_ERROR("Failed to read vocab data: '%s'", cli.vocab_path);
-        free(cli.vocab_path);
-        exit(EXIT_FAILURE);
-    }
-
     // Build word frequencies from pre-tokens
-    HashMap* freqs = vocab_create_frequencies(vocab);
-    HashMap* symbols = vocab_create_symbols(freqs);
+    HashMap* vocab = vocab_build(cli.vocab_path);
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(symbols);
-    while ((entry = hash_map_next(&it))) {
-        char* word = entry->key;
-        int* freq = entry->value;
-        printf("syms = %s, freq = %d\n", word, *freq);
-    }
+    vocab_map_print(vocab);
 
     // Clean up
-    vocab_free_map(symbols);
-    vocab_free_map(freqs);
-    free(vocab);
+    vocab_map_free(vocab);
     free(cli.vocab_path);
     return 0;
 }
