@@ -63,7 +63,7 @@ HashMap* vocab_freqs_create(const char* vocab) {
     char** pre_tokens = string_split_space(vocab, &pre_token_count);
 
     // Build word frequencies from pre-tokens
-    HashMap* freqs = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* freqs = hash_map_create(pre_token_count, HASH_MAP_KEY_TYPE_STRING);
     for (size_t i = 0; i < pre_token_count; i++) {
         int* value = hash_map_search(freqs, pre_tokens[i]);
         if (!value) {
@@ -88,9 +88,9 @@ HashMap* vocab_freqs_create(const char* vocab) {
     return freqs;  // f(v) : tokens -> freqs
 }
 
-void vocab_freqs_free(HashMap* freqs) {
-    HashMapIterator it = hash_map_iter(freqs);
+void vocab_map_free(HashMap* freqs) {
     HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(freqs);
     while ((entry = hash_map_next(&it))) {
         free(entry->key);
         free(entry->value);
@@ -163,17 +163,39 @@ int main(int argc, const char* argv[]) {
 
     // Build word frequencies from pre-tokens
     HashMap* freqs = vocab_freqs_create(vocab);
-    
-    HashMapIterator it = hash_map_iter(freqs);
+
+    HashMap* symbols = hash_map_create(freqs->size, HASH_MAP_KEY_TYPE_STRING);
+
     HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(freqs);
     while ((entry = hash_map_next(&it))) {
-        char* word = entry->key;
-        int* freq = entry->value;
-        printf("word = %s, freq = %d\n", word, *freq);
+        // get vocab mapping
+        char* word = entry->key;  // tok -> cat
+        int* freq = entry->value;  // freq -> 1
+
+        // "cat" -> {"c", "a", "t"}
+        size_t word_count = 0;
+        char** word_split = string_split(word, &word_count);
+
+        // {"c", "a", "t"} -> "c a t"
+        char* syms = string_join(word_split, word_count, " ");  // new word
+
+        // clean up
+        string_split_free(word_split, word_count);
+
+        int* value = hash_map_search(symbols, syms);
+        if (!value) {
+            int* new_freq = malloc(sizeof(int));
+            *new_freq = *freq;
+            hash_map_insert(symbols, syms, new_freq);
+        } else {
+            *value += 1;
+        }
     }
 
     // Clean up
-    vocab_freqs_free(freqs);
+    vocab_map_free(symbols);
+    vocab_map_free(freqs);
     free(vocab);
     free(cli.vocab_path);
     return 0;
