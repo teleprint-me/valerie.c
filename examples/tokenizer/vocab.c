@@ -88,14 +88,50 @@ HashMap* vocab_freqs_create(const char* vocab) {
     return freqs;  // f(v) : tokens -> freqs
 }
 
-void vocab_map_free(HashMap* freqs) {
+HashMap* vocab_symbols_create(HashMap* freqs) {
+    // Create the symbol-freq mapping
+    HashMap* symbols = hash_map_create(freqs->size, HASH_MAP_KEY_TYPE_STRING);
+
     HashMapEntry* entry;
     HashMapIterator it = hash_map_iter(freqs);
+    while ((entry = hash_map_next(&it))) {
+        // get current word-freq mapping
+        char* word = entry->key;  // tok -> cat
+        int* freq = entry->value;  // freq -> 1
+
+        // "cat" -> {"c", "a", "t"}
+        size_t word_count = 0;
+        char** word_split = string_split(word, &word_count);
+
+        // {"c", "a", "t"} -> "c a t"
+        char* syms = string_join(word_split, word_count, " ");  // new word
+
+        // clean up intermediate representation
+        string_split_free(word_split, word_count);
+
+        // handle word to symbol freq mapping
+        int* value = hash_map_search(symbols, syms);
+        if (!value) {  // new freq
+            int* new_freq = malloc(sizeof(int));
+            *new_freq = *freq;
+            hash_map_insert(symbols, syms, new_freq);
+        } else {
+            *value += 1;  // inc freq
+        }
+    }
+
+    // return hash map
+    return symbols;  // f : syms -> freqs
+}
+
+void vocab_map_free(HashMap* map) {
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(map);
     while ((entry = hash_map_next(&it))) {
         free(entry->key);
         free(entry->value);
     }
-    hash_map_free(freqs);
+    hash_map_free(map);
 }
 
 /**
@@ -163,34 +199,14 @@ int main(int argc, const char* argv[]) {
 
     // Build word frequencies from pre-tokens
     HashMap* freqs = vocab_freqs_create(vocab);
-
-    HashMap* symbols = hash_map_create(freqs->size, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* symbols = vocab_symbols_create(freqs);
 
     HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(freqs);
+    HashMapIterator it = hash_map_iter(symbols);
     while ((entry = hash_map_next(&it))) {
-        // get vocab mapping
-        char* word = entry->key;  // tok -> cat
-        int* freq = entry->value;  // freq -> 1
-
-        // "cat" -> {"c", "a", "t"}
-        size_t word_count = 0;
-        char** word_split = string_split(word, &word_count);
-
-        // {"c", "a", "t"} -> "c a t"
-        char* syms = string_join(word_split, word_count, " ");  // new word
-
-        // clean up
-        string_split_free(word_split, word_count);
-
-        int* value = hash_map_search(symbols, syms);
-        if (!value) {
-            int* new_freq = malloc(sizeof(int));
-            *new_freq = *freq;
-            hash_map_insert(symbols, syms, new_freq);
-        } else {
-            *value += 1;
-        }
+        char* word = entry->key;
+        int* freq = entry->value;
+        printf("syms = %s, freq = %d\n", word, *freq);
     }
 
     // Clean up
