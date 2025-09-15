@@ -279,7 +279,7 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Build word frequencies from pre-tokens
+    // Build word frequencies from text file
     HashMap* vocab = vocab_build(cli.vocab_path);
 
     // Observe mapped results
