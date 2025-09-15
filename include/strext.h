@@ -161,6 +161,20 @@ char** string_split(const char* src, size_t* count);
 void string_split_free(char** parts, size_t count);
 
 /**
+ * @brief Splits a given string into an array of tokens separated by whitespace.
+ *
+ * This function takes a string as input and splits it into an array of tokens separated by
+ * whitespace. It skips leading whitespace and ignores any trailing whitespace.
+ *
+ * @param src The input string to be split.
+ * @param count A pointer to a variable that will hold the number of tokens in the resulting array.
+ *
+ * @return A dynamically allocated array of char pointers representing the tokens. The caller is
+ * responsible for freeing the memory using `free()` when it is no longer needed.
+ */
+char** string_split_whitespace(const char* src, size_t* count);
+
+/**
  * @brief Splits a UTF-8 string by the specified delimiter (literal byte sequence).
  *
  * @param src   Null-terminated input string.

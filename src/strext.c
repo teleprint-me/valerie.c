@@ -12,6 +12,7 @@
  */
 
 #include <stddef.h>
+#include <ctype.h>
 
 #include "regex.h"
 #include "strext.h"
@@ -235,6 +236,47 @@ void string_split_free(char** parts, size_t count) {
         }
         free(parts);
     }
+}
+
+char** string_split_whitespace(const char* src, size_t* count) {
+    if (!src || !count) {
+        return NULL;
+    }
+
+    // Ensure parts is a valid pointer for the first realloc
+    *count = 0;
+    char** parts = calloc(1, sizeof(char*));
+    if (!parts) {
+        return NULL;
+    }
+
+    const char* p = src;
+    while (*p) {
+        // Skip leading whitespace
+        while (*p && isspace((unsigned char) *p)) {
+            p++;
+        }
+
+        if (!*p) {
+            break;
+        }
+
+        // Mark token start
+        const char* start = p;
+
+        // Find end of token
+        while (*p && !isspace((unsigned char) *p)) {
+            p++;
+        }
+
+        // Copy token
+        parts = string_append_slice(start, p, parts, count);
+        if (!parts) {
+            return NULL;
+        }
+    }
+
+    return parts;
 }
 
 char** string_split_delim(const char* src, const char* delim, size_t* count) {
