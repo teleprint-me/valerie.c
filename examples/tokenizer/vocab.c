@@ -10,6 +10,55 @@
 #include "path.h"
 #include "logger.h"
 
+char* vocab_read(const char* path) {
+    // Ensure path is not null
+    if (!path_is_valid(path)) {
+        return NULL;
+    }
+
+    // Ensure path exists
+    if (!path_exists(path)) {
+        return NULL;
+    }
+
+    // Open the text file
+    FILE* file = fopen(path, "r");
+    if (!file) {
+        return NULL;
+    }
+
+    // Get the file size
+    fseek(file, 0, SEEK_END);
+    size_t length = ftell(file);
+    if (length == 0) {
+        fclose(file);
+        return NULL;
+    }
+    rewind(file);
+
+    // Allocate memory to string
+    char* vocab = calloc(length + 1, sizeof(char));
+    if (!vocab) {
+        fclose(file);
+        return NULL;
+    }
+
+    // Read data into memory from disk
+    fread(vocab, sizeof(char), length, file);
+    fclose(file);
+    if (!*vocab) {
+        return NULL;
+    }
+    vocab[length] = '\0';  // null terminate
+
+    return vocab;
+}
+
+/**
+ * Command-line interface
+ * @{
+ */
+
 struct CLIParams {
     const char** argv;
     char* vocab_path;
@@ -41,6 +90,8 @@ void cli_parse(struct CLIParams* cli) {
     }
 }
 
+/** @} */
+
 int main(int argc, const char* argv[]) {
     // Parse CLI arguments
     struct CLIParams cli = {.argc = argc, .argv = argv, .vocab_path = NULL};
@@ -57,40 +108,12 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    FILE* file = fopen(cli.vocab_path, "r");
-    if (!file) {
-        LOG_ERROR("Failed to open vocab file: %s", cli.vocab_path);
-        free(cli.vocab_path);
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(file, 0, SEEK_END);
-    size_t length = ftell(file);
-    if (length == 0) {
-        LOG_ERROR("Failed to read vocab file.");
-        free(cli.vocab_path);
-        fclose(file);
-        exit(EXIT_FAILURE);
-    }
-    rewind(file);
-    printf("Vocab has %zu bytes.\n", length);
-
-    char* vocab = calloc(length + 1, sizeof(char));
+    char* vocab = vocab_read(cli.vocab_path);
     if (!vocab) {
-        LOG_ERROR("Failed to allocate memory to input vocab.");
-        free(cli.vocab_path);
-        fclose(file);
-        exit(EXIT_FAILURE);
-    }
-
-    fread(vocab, sizeof(char), length, file);
-    fclose(file);
-    if (!*vocab) {
-        LOG_ERROR("Failed to read text from vocab file.");
+        LOG_ERROR("Failed to read vocab data: '%s'", cli.vocab_path);
         free(cli.vocab_path);
         exit(EXIT_FAILURE);
     }
-    vocab[length] = '\0';
 
     printf("Vocab contents:\n%s\n", vocab);
 
