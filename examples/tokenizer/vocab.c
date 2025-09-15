@@ -9,6 +9,7 @@
 #include "strext.h"
 #include "path.h"
 #include "logger.h"
+#include "map.h"
 
 // Read the models vocabulary from disk
 char* vocab_read(const char* path) {
@@ -103,12 +104,14 @@ int main(int argc, const char* argv[]) {
         cli.vocab_path = strdup("samples/simple.txt");
     }
 
+    // Ensure vocab path exists
     if (!path_exists(cli.vocab_path)) {
         LOG_ERROR("Invalid vocab path detected: '%s'", cli.vocab_path);
         free(cli.vocab_path);
         exit(EXIT_FAILURE);
     }
 
+    // Read the vocab from disk into memory
     char* vocab = vocab_read(cli.vocab_path);
     if (!vocab) {
         LOG_ERROR("Failed to read vocab data: '%s'", cli.vocab_path);
@@ -116,6 +119,7 @@ int main(int argc, const char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    // Pre-tokenize the vocab
     size_t pre_token_count = 0;
     char** pre_tokens = string_split_space(vocab, &pre_token_count);
     printf("pre token count: %zu\n", pre_token_count);
@@ -123,6 +127,10 @@ int main(int argc, const char* argv[]) {
         printf("pre_token[%zu] '%s'\n", i, pre_tokens[i]);
     }
 
+    // Build word frequencies from pre-tokens
+
+
+    // Clean up
     string_split_free(pre_tokens, pre_token_count);
     free(vocab);
     free(cli.vocab_path);
