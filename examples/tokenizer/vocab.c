@@ -74,10 +74,10 @@ bool vocab_map_save(HashMap* m, const char* path) {
 
     // Place holders for future macros
     // Using int keeps things simple for now
-    int magic = 0x766F7800;  // vox header
+    int magic = 0x766F7800;  // vox magic
     fwrite(&magic, 1, sizeof(int), file);
 
-    int version = 1;  // vox version header
+    int version = 1;  // vox version
     fwrite(&version, 1, sizeof(int), file);
 
     // number of elements in the map (for reading)
