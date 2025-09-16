@@ -40,8 +40,10 @@ void vocab_map_print(HashMap* m) {
     }
 }
 
+/** @} */
+
 /**
- * Save the given vocab HashMap to a binary file.
+ * Vocab serialization
  * Format:
  *   [int32] magic ('vox\0')
  *   [int32] version (currently 1)
@@ -52,8 +54,10 @@ void vocab_map_print(HashMap* m) {
  *     [char[]] token bytes
  *     [int32] frequency
  * All values little-endian, native encoding.
- * Returns true on success, false on failure.
+ * @{
  */
+
+// Save the given vocab HashMap to a binary file
 bool vocab_map_save(HashMap* m, const char* path) {
     // Get the current directory
     char* dirname = path_dirname(path);
@@ -105,6 +109,7 @@ bool vocab_map_save(HashMap* m, const char* path) {
     return true;  // ok
 }
 
+// Load the given binary file into a vocab HashMap
 HashMap* vocab_map_load(const char* path) {
     // Check if path is a valid file
     if (!path_is_file(path)) {
