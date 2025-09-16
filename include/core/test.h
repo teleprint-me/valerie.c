@@ -11,8 +11,9 @@
 #ifndef UNIT_TEST_H
 #define UNIT_TEST_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,10 +68,14 @@ typedef struct TestSuite TestSuite;
 #define ASSERT(condition, format, ...) \
     do { \
         if (!(condition)) { \
-            LOG_ERROR(format, ##__VA_ARGS__); \
+            fprintf(stderr, "[%s:%d] " format "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
             return 1; \
         } \
     } while (0)
+
+#define ASSERT_EQ(actual, expected, ...) ASSERT((actual) == (expected), __VA_ARGS__)
+
+#define ASSERT_NEQ(actual, expected, ...) ASSERT((actual) != (expected), __VA_ARGS__)
 
 /** @} */
 
