@@ -13,11 +13,11 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
-#include <stdlib.h>
+#include <stdlib.h>  // IWYU pragma: keep
 #include <stdio.h>
 
-#include <errno.h>
-#include <string.h>
+#include <errno.h>  // IWYU pragma: keep
+#include <string.h>  // IWYU pragma: keep
 #include <pthread.h>
 
 /**
@@ -152,7 +152,7 @@ bool logger_message(Logger* logger, LogLevel log_level, const char* format, ...)
 #define LOG_DEBUG(format, ...) LOG(&logger_global, LOG_LEVEL_DEBUG, format, ##__VA_ARGS__)
 #define LOG_INFO(format, ...) LOG(&logger_global, LOG_LEVEL_INFO, format, ##__VA_ARGS__)
 #define LOG_WARN(format, ...) LOG(&logger_global, LOG_LEVEL_WARN, format, ##__VA_ARGS__)
-#define LOG_WARNING LOG_WARN // Keep it simple, smart-ass
+#define LOG_WARNING LOG_WARN  // Keep it simple, smart-ass
 #define LOG_ERROR(format, ...) LOG(&logger_global, LOG_LEVEL_ERROR, format, ##__VA_ARGS__)
 
 /** @} */
@@ -183,4 +183,4 @@ void logger_set_global(
     const char* file_path
 );
 
-#endif // LOGGER_H
+#endif  // LOGGER_H
