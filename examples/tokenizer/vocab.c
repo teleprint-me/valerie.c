@@ -154,11 +154,12 @@ HashMap* vocab_map_load(const char* path) {
         fread(&k_len, 1, sizeof(int), file);
 
         // Get the key
-        char* k = NULL;
+        char* k = calloc(k_len + 1, sizeof(char));
         fread(k, k_len, sizeof(char), file);
+        k[k_len] = '\0';
 
         // Get the value
-        int* v = NULL;
+        int* v = calloc(1, sizeof(int));
         fread(v, 1, sizeof(int), file);
 
         // m : k -> v
