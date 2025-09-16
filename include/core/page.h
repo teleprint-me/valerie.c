@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "core/posix.h"
+#include "core/posix.h"  // IWYU pragma: keep
 #include "core/map.h"
 
 #ifdef __cplusplus
@@ -155,4 +155,4 @@ void page_allocator_dump(PageAllocator* allocator);
 }
 #endif
 
-#endif // PAGE_ALLOCATOR_H
+#endif  // PAGE_ALLOCATOR_H
