@@ -105,9 +105,61 @@ bool vocab_map_save(HashMap* m, const char* path) {
     return true;  // ok
 }
 
-// HashMap* vocab_map_load(const char* path) {
-//     return NULL;
-// }
+HashMap* vocab_map_load(const char* path) {
+    if (!path_is_file(path)) {
+        return NULL;  // file doesn't exist
+    }
+
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        return NULL;
+    }
+
+    // Read and check headers
+    int magic = 0;
+    fread(&magic, 1, sizeof(int), file);
+    if (magic != 0x766F7800) {
+        return NULL;
+    }
+
+    int version = 0;
+    fread(&version, 1, sizeof(int), file);
+    if (version != 1) {
+        return NULL;
+    }
+
+    int count = 0;
+    fread(&count, 1, sizeof(int), file);
+
+    int size = 0;
+    fread(&size, 1, sizeof(int), file);
+
+    // Allocate the map
+    HashMap* m = hash_map_create(size, HASH_MAP_KEY_TYPE_STRING);
+    if (!m) {
+        return NULL;
+    }
+
+    for (int i = 0; i < count; i++) {
+        // Get the key length
+        int k_len = 0;
+        fread(&k_len, 1, sizeof(int), file);
+
+        // Get the key
+        char* k = NULL;
+        fread(k, k_len, sizeof(char), file);
+
+        // Get the value
+        int* v = NULL;
+        fread(v, 1, sizeof(int), file);
+
+        // m : k -> v
+        hash_map_insert(m, k, v);
+    }
+
+    fclose(file);
+    return m;  // v : tok -> freq
+}
 
 /** @} */
 
