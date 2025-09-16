@@ -121,6 +121,7 @@ HashMap* vocab_map_load(const char* path) {
     int magic = 0;
     fread(&magic, 1, sizeof(int), file);
     if (magic != 0x766F7800) {
+        fclose(file);
         return NULL;
     }
 
@@ -128,6 +129,7 @@ HashMap* vocab_map_load(const char* path) {
     int version = 0;
     fread(&version, 1, sizeof(int), file);
     if (version != 1) {
+        fclose(file);
         return NULL;
     }
 
@@ -142,6 +144,7 @@ HashMap* vocab_map_load(const char* path) {
     // Allocate the map
     HashMap* m = hash_map_create(size, HASH_MAP_KEY_TYPE_STRING);
     if (!m) {
+        fclose(file);
         return NULL;
     }
 
