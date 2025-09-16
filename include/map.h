@@ -71,6 +71,16 @@ typedef struct HashMapIterator {
 } HashMapIterator;
 
 /**
+ * @brief Callback type for freeing hash map values.
+ *
+ * Defines a function pointer type for freeing value pointers
+ * during hash map iteration or cleanup operations.
+ *
+ * @param value Pointer to the value to free.
+ */
+typedef void (*HashMapValueFree)(void*);
+
+/**
  * @name Life-cycle Management
  * @{
  */
@@ -95,16 +105,22 @@ void hash_map_free(HashMap* table);
 
 /**
  * @name Core Hash Operations
+ * @note Thread-safe: acquires internal lock during operation.
  * @{
  */
 
 /**
  * @brief Inserts a key-value pair into the hash table.
  *
+ * If the table exceeds its load factor threshold, it will resize
+ * automatically before insertion.
+ *
  * @param table Pointer to the hash table.
- * @param key Pointer to the key.
- * @param value Pointer to the value.
- * @return HASH_MAP_STATE_SUCCESS if insertion succeeded, or error code.
+ * @param key Pointer to the key to insert.
+ * @param value Pointer to the value to associate with the key.
+ * @return HASH_MAP_STATE_SUCCESS on success, or an error code.
+ *
+ * @note Automatically resizes if capacity is insufficient.
  */
 HashMapState hash_map_insert(HashMap* table, const void* key, void* value);
 
@@ -143,32 +159,92 @@ HashMapState hash_map_clear(HashMap* table);
  */
 void* hash_map_search(HashMap* table, const void* key);
 
+/**
+ * @brief Returns the number of buckets allocated in the hash map.
+ *
+ * The "size" reflects the total number of buckets, not the current number
+ * of elements. Used for capacity/resize logic and iterator bounds.
+ *
+ * @param table Pointer to the hash map, or NULL.
+ * @return Number of buckets allocated, or 0 if table is NULL.
+ */
+uint64_t hash_map_size(HashMap* table);
+
+/**
+ * @brief Returns the number of active (non-empty) entries in the hash map.
+ *
+ * The "count" tracks how many key-value pairs are stored, not the capacity.
+ * Updated on insert/delete. Prefer this over iterating for fast lookups.
+ *
+ * @param table Pointer to the hash map, or NULL.
+ * @return Number of stored key-value pairs, or 0 if table is NULL.
+ */
+uint64_t hash_map_count(HashMap* table);
+
 /** @} */
 
 /**
  * @name Hash Iterator
- * {@
+ * @warning Iterators are not thread-safe. External locking is required if the hash map may be
+ * mutated concurrently during iteration.
+ * @{
  */
 
 /**
- * @brief Initializes an iterator for a given hash map.
+ * @brief Initializes a hash map iterator.
  *
- * @param table Pointer to the hash map.
- * @return Initialized iterator positioned at the first valid entry, or at the end.
- * @warning Requires external locking for thread safety.
+ * Returns an iterator positioned at the start of the table.
+ * Pass to hash_map_next() to traverse key-value entries.
+ *
+ * @param table Pointer to the hash map to iterate.
+ * @return Initialized iterator.
  */
 HashMapIterator hash_map_iter(HashMap* table);
 
 /**
- * @brief Advances the iterator to the next valid entry.
+ * @brief Advances the iterator and returns the next valid entry.
  *
- * @param iter Pointer to the iterator.
- * @return Pointer to the next active entry, or NULL if end is reached.
- * @warning Requires external locking for thread safety.
+ * Skips empty or deleted buckets. Returns entries in arbitrary order
+ * (not sorted). Returns NULL when all entries are exhausted.
+ *
+ * @param iter Pointer to an iterator. Must not be NULL.
+ * @return Pointer to the next valid HashMapEntry, or NULL if done.
  */
 HashMapEntry* hash_map_next(HashMapIterator* iter);
 
-void hash_map_iter_free(HashMap* map, void (*value)(void*));
+/**
+ * @brief Counts the number of valid entries via iteration.
+ *
+ * Slower than hash_map_count(), but useful if external filtering or
+ * validation is needed. Mostly a convenience wrapper.
+ *
+ * @param table Pointer to the hash map, or NULL.
+ * @return Number of valid entries found by iteration.
+ */
+uint64_t hash_map_iter_count(HashMap* table);
+
+/**
+ * @brief Iterates and frees all keys and values in the hash map.
+ *
+ * Frees each key using memory_free(), and each value with either
+ * the provided value_free() function (if non-NULL), or memory_free().
+ * Does not deallocate the hash map structure itself.
+ *
+ * @param table Pointer to the hash map.
+ * @param value_free Optional callback to free value pointers (may be NULL).
+ */
+void hash_map_iter_free_kv(HashMap* table, HashMapValueFree value_free);
+
+/**
+ * @brief Frees all keys and values, then deallocates the entire map.
+ *
+ * Calls hash_map_iter_free_kv() with the standard free() function,
+ * then releases the table with hash_map_free().
+ *
+ * @param table Pointer to the hash map.
+ * @param value_free Optional callback to free value pointers (may be NULL).
+ */
+void hash_map_iter_free_all(HashMap* table, HashMapValueFree value_free);
 
 /** @} */
 
@@ -285,4 +361,4 @@ void* hash_address_search(HashMap* table, const void* key);
 
 /** @} */
 
-#endif // HASH_MAP_LINEAR_H
+#endif  // HASH_MAP_LINEAR_H

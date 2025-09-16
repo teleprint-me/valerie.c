@@ -376,6 +376,22 @@ void* hash_map_search(HashMap* table, const void* key) {
     return value;
 }
 
+uint64_t hash_map_size(HashMap* table) {
+    if (table) {
+        return table->size;
+    }
+
+    return 0;
+}
+
+uint64_t hash_map_count(HashMap* table) {
+    if (table) {
+        return table->count;
+    }
+
+    return 0;
+}
+
 /**
  * @section Hash Iterator
  * {@
@@ -401,7 +417,21 @@ HashMapEntry* hash_map_next(HashMapIterator* iter) {
     return NULL;
 }
 
-void hash_map_iter_free(HashMap* table, void (*value_free)(void*)) {
+uint64_t hash_map_iter_count(HashMap* table) {
+    uint64_t count = 0;
+
+    if (table) {
+        HashMapEntry* entry;
+        HashMapIterator it = hash_map_iter(table);
+        while ((entry = hash_map_next(&it))) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+void hash_map_iter_free_kv(HashMap* table, void (*value_free)(void*)) {
     if (table) {
         HashMapEntry* entry;
         HashMapIterator it = hash_map_iter(table);
@@ -414,6 +444,11 @@ void hash_map_iter_free(HashMap* table, void (*value_free)(void*)) {
             }
         }
     }
+}
+
+void hash_map_iter_free_all(HashMap* table, void (*value_free)(void*)) {
+    hash_map_iter_free_kv(table, value_free);
+    hash_map_free(table);
 }
 
 /** @} */

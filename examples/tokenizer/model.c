@@ -113,7 +113,7 @@ void tokenizer_corpus_unmap(char* corpus, ssize_t size) {
 
 void tokenizer_vocab_free(HashMap* vocab) {
     if (vocab) {
-        hash_map_iter_free(vocab, NULL);
+        hash_map_iter_free_kv(vocab, NULL);
         hash_map_free(vocab);
     }
 }
