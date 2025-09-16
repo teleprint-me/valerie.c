@@ -40,6 +40,75 @@ void vocab_map_print(HashMap* m) {
     }
 }
 
+/**
+ * Save the given vocab HashMap to a binary file.
+ * Format:
+ *   [int32] magic ('vox\0')
+ *   [int32] version (currently 1)
+ *   [int32] count (number of entries)
+ *   [int32] size  (hash map capacity used for init)
+ *   For each entry:
+ *     [int32] token length (bytes)
+ *     [char[]] token bytes
+ *     [int32] frequency
+ * All values little-endian, native encoding.
+ * Returns true on success, false on failure.
+ */
+bool vocab_map_save(HashMap* m, const char* path) {
+    // Get the current directory
+    char* dirname = path_dirname(path);
+    // Create the directory if it does not exist
+    path_mkdir(dirname);  // returns 0 on success
+    // Clean up
+    free(dirname);
+
+    // Open the vocab file for writing
+    FILE* file = fopen(path, "wb");
+    if (!file) {
+        return false;
+    }
+
+    // Place holders for future macros
+    // Using int keeps things simple for now
+    int magic = 0x766F7800;  // vox header
+    fwrite(&magic, 1, sizeof(int), file);
+
+    int version = 1;  // vox version header
+    fwrite(&version, 1, sizeof(int), file);
+
+    // number of elements in the map (for reading)
+    int count = m->count;  // vox has n elements
+    fwrite(&count, 1, sizeof(int), file);
+
+    // number of bytes allocated (for initialization)
+    int size = m->size;  // vox has n bytes
+    fwrite(&size, 1, sizeof(int), file);
+
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(m);
+    while ((entry = hash_map_next(&it))) {
+        // Get the current token
+        char* tok = entry->key;
+        // Get the current token length
+        int tok_len = strlen(tok);
+        // Get the current frequency
+        int* freq = entry->value;
+
+        // Write kv mapping to disk
+        fwrite(&tok_len, 1, sizeof(int), file);
+        fwrite(tok, tok_len, sizeof(char), file);
+        fwrite(freq, 1, sizeof(int), file);
+    }
+
+    // Clean up
+    fclose(file);
+    return true;  // ok
+}
+
+// HashMap* vocab_map_load(const char* path) {
+//     return NULL;
+// }
+
 /** @} */
 
 /**
