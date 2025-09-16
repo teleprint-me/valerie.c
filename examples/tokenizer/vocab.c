@@ -26,7 +26,7 @@ struct CLIParams {
 };
 
 void cli_usage(struct CLIParams cli) {
-    printf("Usage: %s %s\n", cli.argv[0], "[--vocab S] ...");
+    printf("Usage: %s [--vocab S] ...\n", cli.argv[0]);
     printf("--vocab S Plain text input file (default: samples/simple.txt)\n");
 }
 
