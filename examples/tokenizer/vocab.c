@@ -106,31 +106,36 @@ bool vocab_map_save(HashMap* m, const char* path) {
 }
 
 HashMap* vocab_map_load(const char* path) {
+    // Check if path is a valid file
     if (!path_is_file(path)) {
         return NULL;  // file doesn't exist
     }
 
+    // Attempt to open the alleged vocab file
     FILE* file = fopen(path, "rb");
     if (!file) {
         return NULL;
     }
 
-    // Read and check headers
+    // Read and validate vocab magic
     int magic = 0;
     fread(&magic, 1, sizeof(int), file);
     if (magic != 0x766F7800) {
         return NULL;
     }
 
+    // Read and validate vocab version
     int version = 0;
     fread(&version, 1, sizeof(int), file);
     if (version != 1) {
         return NULL;
     }
 
+    // Get the number of kv pairs in the vocab
     int count = 0;
     fread(&count, 1, sizeof(int), file);
 
+    // Get the number of bytes required for the map
     int size = 0;
     fread(&size, 1, sizeof(int), file);
 
