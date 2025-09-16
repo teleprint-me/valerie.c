@@ -24,24 +24,24 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "core/posix.h"
+#include "core/posix.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 /**
- * @brief Default maximum fallback memory size in bytes.
+ * @brief Default maximum fallback memory size in bytes (4 GiB).
  */
 #ifndef MEMORY_MAX_FALLBACK
-    #define MEMORY_MAX_FALLBACK ((size_t) 1 << 32) // 4 GiB
+    #define MEMORY_MAX_FALLBACK ((size_t) 1 << 32)
 #endif
 
 /**
- * @brief Default maximum reserve memory size in bytes.
+ * @brief Default maximum reserve memory size in bytes (1 GiB).
  */
 #ifndef MEMORY_MAX_RESERVE
-    #define MEMORY_MAX_RESERVE ((size_t) 1 << 30) // 1 GiB
+    #define MEMORY_MAX_RESERVE ((size_t) 1 << 30)
 #endif
 
 /**
@@ -235,6 +235,6 @@ void memory_free(void* ptr);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#endif // DSA_MEMORY_H
+#endif  // DSA_MEMORY_H
