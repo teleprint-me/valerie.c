@@ -2,6 +2,7 @@
 
 set(EXAMPLES
     "vocab"
+    "bpe"
     "model"
 )
 
