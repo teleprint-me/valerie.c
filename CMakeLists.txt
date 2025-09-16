@@ -34,6 +34,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Add library
 add_library(valerie SHARED
+# core
     "src/core/memory.c" # posix memory allocation and deallocation
     "src/core/logger.c" # logging utility
     "src/core/test.c" # unit testing utility
@@ -44,6 +45,8 @@ add_library(valerie SHARED
     "src/core/strext.c" # transitive lib to extend libc string interface
     "src/core/path.c" # posix compatible pathlib interface
     "src/core/map.c" # hash map with linear probing
+# tokenizer
+    "src/tokenizer/vocab.c" # string-to-int frequency mapping (map.c)
 )
 
 target_include_directories(valerie PUBLIC include)
