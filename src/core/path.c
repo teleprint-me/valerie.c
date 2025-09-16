@@ -15,7 +15,7 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include "path.h"
+#include "core/path.h"
 
 // Checks if path is valid input
 bool path_is_valid(const char* path) {

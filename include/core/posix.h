@@ -13,14 +13,14 @@
 #ifndef POSIX_H
 #define POSIX_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h> // POSIX threading is preferred
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @name Language Compatibility Fallbacks

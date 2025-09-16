@@ -17,18 +17,18 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
-#include "posix.h"
-
 #include <stdalign.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#include "core/posix.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
 
 /**
  * @brief Default maximum fallback memory size in bytes.

@@ -2,7 +2,7 @@
  * @file src/regex.c
  */
 
-#include "regex.h"
+#include "core/regex.h"
 
 bool regex_compile(const char* pattern, pcre2_code** code, pcre2_match_data** match) {
     if (!pattern || !code || !match) {

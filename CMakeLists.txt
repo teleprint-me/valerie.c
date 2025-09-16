@@ -34,16 +34,16 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Add library
 add_library(valerie SHARED
-    "src/memory.c" # posix memory allocation and deallocation
-    "src/logger.c" # logging utility
-    "src/test.c" # unit testing utility
-    "src/page.c" # page table memory allocator
-    "src/compare.c" # numeric comparisons, including floating-point
-    "src/type.c" # numeric data types, focusing on numeric precision
-    "src/regex.c" # convenience interface to compile and free pcre2 regex
-    "src/strext.c" # transitive lib to extend libc string interface
-    "src/path.c" # posix compatible pathlib interface
-    "src/map.c" # hash map with linear probing
+    "src/core/memory.c" # posix memory allocation and deallocation
+    "src/core/logger.c" # logging utility
+    "src/core/test.c" # unit testing utility
+    "src/core/page.c" # page table memory allocator
+    "src/core/compare.c" # numeric comparisons, including floating-point
+    "src/core/type.c" # numeric data types, focusing on numeric precision
+    "src/core/regex.c" # convenience interface to compile and free pcre2 regex
+    "src/core/strext.c" # transitive lib to extend libc string interface
+    "src/core/path.c" # posix compatible pathlib interface
+    "src/core/map.c" # hash map with linear probing
 )
 
 target_include_directories(valerie PUBLIC include)

@@ -26,10 +26,10 @@
  * - Linear probing is used to handle collisions.
  */
 
-#include "memory.h"
-#include "logger.h"
-#include "strext.h"
-#include "map.h"
+#include "core/memory.h"
+#include "core/logger.h"
+#include "core/strext.h"
+#include "core/map.h"
 
 /**
  * @section Hash Life-cycle

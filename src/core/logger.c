@@ -10,8 +10,8 @@
  * easily integrated into existing C projects.
  */
 
-#include "memory.h"
-#include "logger.h"
+#include "core/memory.h"
+#include "core/logger.h"
 
 const char* LOG_TYPE_NAME[] = {"unknown", "stream", "file"};
 

@@ -11,12 +11,12 @@
 #ifndef UNIT_TEST_H
 #define UNIT_TEST_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-#include <stddef.h>
-#include <stdint.h>
 
 /**
  * @name Forward Declarations

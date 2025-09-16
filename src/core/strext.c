@@ -14,8 +14,8 @@
 #include <stddef.h>
 #include <ctype.h>
 
-#include "regex.h"
-#include "strext.h"
+#include "core/regex.h"
+#include "core/strext.h"
 
 // Returns the byte offset from start to end. Returns -1 if inputs are NULL.
 ptrdiff_t string_diff(const char* start, const char* end) {

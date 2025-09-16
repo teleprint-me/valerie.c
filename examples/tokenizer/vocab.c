@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "strext.h"
-#include "path.h"
-#include "logger.h"
-#include "map.h"
+#include "core/logger.h"
+#include "core/path.h"
+#include "core/strext.h"
+#include "core/map.h"
 
 /**
  * Vocab Map Utils

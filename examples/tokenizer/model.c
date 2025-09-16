@@ -9,15 +9,16 @@
  * @ref https://aclanthology.org/2025.coling-main.400/
  */
 
-#include "logger.h"  // logging macros LOG_ERROR, etc.
-#include "strext.h"
-#include "map.h"  // HashMap* map
-
 #include <stdint.h>
 #include <stdio.h>  // IO
 #include <stdlib.h>
+
 #include <sys/types.h>  // ssize_t
 #include <sys/mman.h>  // mmap/munmap
+
+#include "core/logger.h"  // logging macros LOG_ERROR, etc.
+#include "core/strext.h"
+#include "core/map.h"  // HashMap* map
 
 /**
  * Tokenizer Blueprint

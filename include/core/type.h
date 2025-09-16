@@ -14,13 +14,6 @@
 #ifndef DATA_TYPE_H
 #define DATA_TYPE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
-#include "memory.h"
-#include "compare.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdalign.h>
@@ -28,6 +21,13 @@ extern "C" {
 #include <math.h>
 #include <wchar.h>
 #include <string.h>
+
+#include "core/memory.h"
+#include "core/compare.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
 
 // Safe type casting macros
 #define TYPE_CAST(ptr, type) ((type*) (ptr))

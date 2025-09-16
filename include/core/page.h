@@ -17,10 +17,11 @@
 #ifndef PAGE_ALLOCATOR_H
 #define PAGE_ALLOCATOR_H
 
-#include "posix.h"
-#include "map.h"
 #include <stdbool.h>
 #include <stddef.h>
+
+#include "core/posix.h"
+#include "core/map.h"
 
 #ifdef __cplusplus
 extern "C" {

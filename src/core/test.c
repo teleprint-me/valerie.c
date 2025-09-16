@@ -8,8 +8,8 @@
  * with flexible test logic and callback hooks.
  */
 
-#include "logger.h"
-#include "test.h"
+#include "core/logger.h"
+#include "core/test.h"
 
 int test_group_run(TestGroup* group) {
     if (!group || !group->name || !group->units || group->count == 0 || !group->run) {

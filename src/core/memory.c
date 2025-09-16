@@ -11,11 +11,11 @@
  * - Allocate aligned memory blocks with posix_memalign
  */
 
-#include "memory.h"
-
-#include <sys/sysinfo.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/sysinfo.h>
+
+#include "core/memory.h"
 
 /**
  * @name RAM Utilities

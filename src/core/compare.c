@@ -10,10 +10,11 @@
  * true for the 32-bit implementation.
  */
 
-#include "compare.h"
 
-#include <math.h>
 #include <stdlib.h>
+#include <math.h>
+
+#include "core/compare.h"
 
 // Pre-computed lookup table
 static const double tolerance_table[16]

@@ -4,9 +4,9 @@
  * @file src/page.c
  */
 
-#include "memory.h"
-#include "logger.h"
-#include "page.h"
+#include "core/memory.h"
+#include "core/logger.h"
+#include "core/page.h"
 
 /**
  * @section Private
