@@ -13,10 +13,8 @@
 #ifndef POSIX_H
 #define POSIX_H
 
-#include <stddef.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <pthread.h> // POSIX threading is preferred
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
