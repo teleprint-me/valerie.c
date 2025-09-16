@@ -1,5 +1,5 @@
 /**
- * @file include/page.h
+ * @file core/page.h
  * @brief Page-based memory allocator with metadata tracking.
  *
  * This interface provides a simple allocator built on top of a linear-probing hash map.

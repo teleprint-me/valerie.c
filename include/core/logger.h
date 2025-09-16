@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/core/logger.h
+ * @file core/logger.h
  * @brief A simple and lightweight thread-safe logger in pure C.
  *
  * Provides multi-level logging (DEBUG, INFO, WARN, ERROR) to console or files.

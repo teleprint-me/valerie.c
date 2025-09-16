@@ -1,5 +1,5 @@
 /**
- * @file include/posix.h
+ * @file core/posix.h
  * @brief Fallback utilities for language and compiler compatibility (POSIX/C99/C11)
  *
  * This header provides:

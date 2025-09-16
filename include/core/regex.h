@@ -1,5 +1,5 @@
 /**
- * @file include/regex.h
+ * @file core/regex.h
  */
 
 #ifndef REGEX_H

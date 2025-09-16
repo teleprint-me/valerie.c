@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/map.h
+ * @file core/map.h
  * @brief Minimalistic hash table implementation providing mapping between integers, strings, and
  * memory addresses.
  *

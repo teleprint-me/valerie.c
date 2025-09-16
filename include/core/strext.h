@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/strext.h
+ * @file core/strext.h
  * @brief A transitive wrapper to extend string.h operations.
  *
  * Low-level routines for working directly with bytes in null-terminated strings.

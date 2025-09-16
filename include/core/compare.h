@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/compare.h
+ * @file core/compare.h
  *
  * @brief Compare floating-point numbers with a given tolerance in pure C
  *

@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/page.c
+ * @file core/page.c
  */
 
 #include "core/memory.h"

@@ -1,5 +1,5 @@
 /**
- * @file      path.h
+ * @file      core/path.h
  * @author    Austin Berrio
  * @copyright Copyright © 2025
  * @brief     A POSIX C pathlib interface.

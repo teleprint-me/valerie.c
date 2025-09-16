@@ -1,5 +1,5 @@
 /**
- * @file src/regex.c
+ * @file core/regex.c
  */
 
 #include "core/regex.h"

@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/memory.c
+ * @file core/memory.c
  * @brief Utility functions for memory alignment, padding, and allocation.
  *
  * Provides helper functions to:

@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file src/type.c
+ * @file core/type.c
  *
  * @brief API for numeric data types and conversions.
  *

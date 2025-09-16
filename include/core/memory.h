@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file include/memory.h
+ * @file core/memory.h
  * @brief Utility functions for memory alignment, padding, and aligned allocation.
  *
  * Provides helper functions to:
