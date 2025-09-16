@@ -25,14 +25,14 @@ struct CLIParams {
     int argc;
 };
 
-void cli_usage(struct CLIParams cli) {
-    printf("Usage: %s [--vocab S] ...\n", cli.argv[0]);
+void cli_usage(struct CLIParams* cli) {
+    printf("Usage: %s [--vocab S] ...\n", cli->argv[0]);
     printf("--vocab S Plain text input file (default: samples/simple.txt)\n");
 }
 
 void cli_parse(struct CLIParams* cli) {
     if (cli->argc < 2) {
-        cli_usage(*cli);
+        cli_usage(cli);
         exit(EXIT_FAILURE);
     }
 
@@ -40,11 +40,11 @@ void cli_parse(struct CLIParams* cli) {
         if (strcmp(cli->argv[i], "--vocab") == 0 && i + 1 < cli->argc) {
             cli->vocab_path = strdup(cli->argv[++i]);
         } else if (strcmp(cli->argv[i], "--help") == 0 || strcmp(cli->argv[i], "-h") == 0) {
-            cli_usage(*cli);
+            cli_usage(cli);
             exit(EXIT_SUCCESS);
         } else {
             printf("Unknown or incomplete option: %s", cli->argv[i]);
-            cli_usage(*cli);
+            cli_usage(cli);
             exit(EXIT_FAILURE);
         }
     }
