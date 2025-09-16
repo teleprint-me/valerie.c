@@ -20,13 +20,9 @@
 
 // Free the vocabulary mapping
 void vocab_map_free(HashMap* m) {
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(m);
-    while ((entry = hash_map_next(&it))) {
-        free(entry->key);
-        free(entry->value);
+    if (m) {
+        hash_map_iter_free_all(m, NULL);
     }
-    hash_map_free(m);
 }
 
 // Flush vocab to standard output
@@ -81,11 +77,11 @@ bool vocab_map_save(HashMap* m, const char* path) {
     fwrite(&version, 1, sizeof(int), file);
 
     // number of elements in the map (for reading)
-    int count = m->count;  // vox has n elements
+    int count = hash_map_count(m);  // vox has n elements
     fwrite(&count, 1, sizeof(int), file);
 
     // number of bytes allocated (for initialization)
-    int size = m->size;  // vox has n bytes
+    int size = hash_map_size(m);  // vox has n bytes
     fwrite(&size, 1, sizeof(int), file);
 
     HashMapEntry* entry;
@@ -272,7 +268,7 @@ HashMap* vocab_create_frequencies(const char* text) {
 // Create the symbol frequencies
 HashMap* vocab_create_symbols(HashMap* words) {
     // Create the symbol-freq mapping
-    HashMap* vocab = hash_map_create(words->size, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* vocab = hash_map_create(hash_map_size(words), HASH_MAP_KEY_TYPE_STRING);
 
     HashMapEntry* entry;
     HashMapIterator it = hash_map_iter(words);
