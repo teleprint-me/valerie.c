@@ -96,14 +96,14 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
     HashMapEntry* entry;
     HashMapIterator it = hash_map_iter(vocab);
     while ((entry = hash_map_next(&it))) {
+        // Split word into symbols
         size_t sym_count = 0;
         char** syms = string_split_delim(entry->key, " ", &sym_count);
 
-        // Prep output buffer (never longer than input)
+        // Prepare output buffer (never longer than input)
         size_t out_count = 0;
         char** out = calloc(sym_count, sizeof(char*));
 
-        // Pre-process merge tokens
         size_t i = 0;
         while (i < sym_count) {
             if (i + 1 < sym_count && strcmp(syms[i], a) == 0 && strcmp(syms[i + 1], b) == 0) {
@@ -121,7 +121,7 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
             }
         }
 
-        // Join tokens into new word
+        // Join tokens into new word (space-delimited)
         char* new_word = string_join(out, out_count, " ");
 
         // Insert new word into new vocab
@@ -135,10 +135,9 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
             free(new_word);
         }
 
-        // Clean up
+        // Free intermediate arrays
         string_split_free(out, out_count);
         string_split_free(syms, sym_count);
-        free(new_word);
     }
 
     string_split_free(tuple, tuple_count);
@@ -221,7 +220,7 @@ int main(int argc, const char* argv[]) {
     // Merge symbol pairs based on best freq
     HashMap* merges = bpe_merges(vocab, best_pair);
     // Observe merged results
-    vocab_map_print(pairs);
+    vocab_map_print(merges);
 
     // Clean up
     free(best_pair);
