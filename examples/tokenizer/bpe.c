@@ -235,6 +235,9 @@ int main(int argc, const char* argv[]) {
         size_t n_merges;
     } BPEModel;
 
+    BPEModel model = {0};
+    (void) model;
+
     // Collect the best merge pairs (used to build the model)
     size_t step_count = 0;
     size_t step_cap = sizeof(MergeStep);
