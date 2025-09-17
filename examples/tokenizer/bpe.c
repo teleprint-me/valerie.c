@@ -12,6 +12,17 @@
 
 #include "tokenizer/vocab.h"
 
+typedef struct BPEMerge {
+    char* pair;
+    int freq;
+} BPEMerge;
+
+typedef struct BPEModel {
+    HashMap* vocab;
+    BPEMerge* merges;
+    size_t n_merges;
+} BPEModel;
+
 // collect vocab pairs
 // once all pairs have been exhausted,
 // the pairs function must return NULL to indicate the end of operation
@@ -144,6 +155,74 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
     return new_vocab;
 }
 
+BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
+    // Create a new BPE model
+    BPEModel* model = malloc(sizeof(BPEModel));
+    if (!model) {
+        return NULL;
+    }
+
+    // Collect the best merge pairs (used to build the model)
+    size_t merge_count = 0;
+    size_t merge_cap = sizeof(BPEMerge);
+    BPEMerge* merges = malloc(merge_cap);
+    if (!merges) {
+        free(model);
+        return NULL;
+    }
+
+    // Execute BPE merge steps
+    for (size_t i = 0; i < n_merges; i++) {
+        // Build symbol pairs from vocab
+        HashMap* pairs = bpe_pairs(vocab);
+        if (verbose) {
+            vocab_map_print(pairs);  // debug
+        }
+
+        // Calculate the best pairs
+        int best_freq;
+        char* best_pair = bpe_best(pairs, &best_freq);
+        if (!best_pair) {
+            printf("Exhausted all possible merge pairs at step %zu.\n", i);
+            vocab_map_free(pairs);
+            break;  // exhausted all available pairs
+        }
+
+        // Observe best results
+        printf("best_pair=%s | best_freq=%d\n", best_pair, best_freq);
+
+        // Append the best pairs
+        BPEMerge new_merge = {.pair = strdup(best_pair), .freq = best_freq};
+        merge_cap = sizeof(BPEMerge) * (merge_count + 1);
+        BPEMerge* temp_merge = realloc(merges, merge_cap);
+        merges = temp_merge;
+        merges[merge_count++] = new_merge;
+
+        // Merge symbol pairs based on best freq
+        HashMap* new_vocab = bpe_merges(vocab, best_pair);
+        if (verbose) {
+            vocab_map_print(new_vocab);  // debug
+        }
+
+        // Clean up
+        free(best_pair);
+        vocab_map_free(pairs);
+        vocab_map_free(vocab);
+
+        // Update
+        vocab = new_vocab;
+    }
+
+    // Initialize the new BPE model
+    *model = (BPEModel) {
+        .vocab = vocab,
+        .merges = merges,
+        .n_merges = merge_count,
+    };
+
+    return model;
+}
+
 /**
  * Command-line interface
  * @{
@@ -224,73 +303,20 @@ int main(int argc, const char* argv[]) {
         vocab_map_print(vocab);
     }
 
-    typedef struct MergeStep {
-        char* pair;
-        int freq;
-    } MergeStep;
-
-    typedef struct BPEModel {
-        HashMap* vocab;
-        MergeStep* merges;
-        size_t n_merges;
-    } BPEModel;
-
-    BPEModel model = {0};
-    (void) model;
-
-    // Collect the best merge pairs (used to build the model)
-    size_t step_count = 0;
-    size_t step_cap = sizeof(MergeStep);
-    MergeStep* steps = calloc(step_cap, sizeof(MergeStep));
-    for (int i = 0; i < cli.merges; i++) {
-        // Build symbol pairs from vocab
-        HashMap* pairs = bpe_pairs(vocab);
-        if (cli.debug) {
-            vocab_map_print(pairs);  // debug
-        }
-
-        // Calculate the best pairs
-        int best_freq;
-        char* best_pair = bpe_best(pairs, &best_freq);
-        if (!best_pair) {
-            printf("Exhausted all possible merge pairs at step %d.\n", i);
-            vocab_map_free(pairs);
-            break;  // exhausted all available pairs
-        }
-
-        // Observe best results
-        printf("best_pair=%s | best_freq=%d\n", best_pair, best_freq);
-
-        // Append the best pairs
-        MergeStep step_new = {.pair = strdup(best_pair), .freq = best_freq};
-        step_cap = sizeof(MergeStep) * (step_count + 1);
-        fprintf(stderr, "step cap -> %zu, count -> %zu\n", step_cap, step_count);
-        MergeStep* step_temp = realloc(steps, step_cap);
-        steps = step_temp;
-        steps[step_count++] = step_new;
-
-        // Merge symbol pairs based on best freq
-        HashMap* merges = bpe_merges(vocab, best_pair);
-        if (cli.debug) {
-            vocab_map_print(merges);  // debug
-        }
-
-        // Clean up
-        free(best_pair);
-        vocab_map_free(pairs);
+    BPEModel* model = bpe_train(vocab, cli.merges, cli.debug);
+    if (!model) {
         vocab_map_free(vocab);
-
-        // Update
-        vocab = merges;
+        return EXIT_FAILURE;
     }
 
     // Clean up
-    for (size_t i = 0; i < step_count; i++) {
-        free(steps[i].pair);
+    for (size_t i = 0; i < model->n_merges; i++) {
+        free(model->merges[i].pair);
     }
-    free(steps);
+    free(model->merges);
+    vocab_map_free(model->vocab);
+    free(model);
 
-    vocab_map_free(vocab);
     free(cli.vocab_path);
     return EXIT_SUCCESS;
 }
