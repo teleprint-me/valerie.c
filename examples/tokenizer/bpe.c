@@ -98,6 +98,28 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
     while ((entry = hash_map_next(&it))) {
         size_t sym_count = 0;
         char** syms = string_split_delim(entry->key, " ", &sym_count);
+
+        // Prep output buffer (never longer than input)
+        size_t out_count = 0;
+        char** out = calloc(sym_count, sizeof(char*));
+
+        // Pre-process merge pairs
+        size_t i = 0;
+        while (i < sym_count) {
+            if (i + 1 < sym_count && strcmp(syms[i], a) == 0 && strcmp(syms[i + 1], b) == 0) {
+                // Merge: concat a + b
+                size_t merge_count = strlen(a) + strlen(b) + 1;
+                char* merge = malloc(merge_count);
+                strcpy(merge, a);
+                strcat(merge, b);
+
+                out[out_count++] = merge;
+                i += 2;  // skip b
+            } else {
+                out[out_count++] = strdup(syms[i]);
+                i += 1;
+            }
+        }
     }
 
     return new_vocab;
