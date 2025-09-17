@@ -229,6 +229,12 @@ int main(int argc, const char* argv[]) {
         int freq;
     } MergeStep;
 
+    typedef struct BPEModel {
+        HashMap* vocab;
+        MergeStep* merges;
+        size_t n_merges;
+    } BPEModel;
+
     // Collect the best merge pairs (used to build the model)
     size_t step_count = 0;
     size_t step_cap = sizeof(MergeStep);
@@ -255,7 +261,7 @@ int main(int argc, const char* argv[]) {
         // Append the best pairs
         MergeStep step_new = {.pair = strdup(best_pair), .freq = best_freq};
         step_cap = sizeof(MergeStep) * (step_count + 1);
-        fprintf(stderr, "step cap -> %zu, count = %zu\n", step_cap, step_count);
+        fprintf(stderr, "step cap -> %zu, count -> %zu\n", step_cap, step_count);
         MergeStep* step_temp = realloc(steps, step_cap);
         steps = step_temp;
         steps[step_count++] = step_new;
