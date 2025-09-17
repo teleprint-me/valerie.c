@@ -144,8 +144,11 @@ int main(int argc, const char* argv[]) {
     // prep for best merges
     // collect the array of tuples
     // pairs : {syms[i], syms[i + 1]} -> freq
+    char* best_pair = bpe_best(pairs, NULL);
+    printf("best_pair=`%s`\n", best_pair);
 
     // Clean up
+    free(best_pair);
     vocab_map_free(pairs);
     vocab_map_free(vocab);
     free(cli.vocab_path);
