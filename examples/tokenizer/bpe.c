@@ -62,7 +62,7 @@ char* bpe_best(HashMap* pairs, int* out_freq) {
         if (*freq > best_freq) {
             best_pair = pair;
             best_freq = *freq;
-        } else if (*freq == best_freq && best_pair && string_compare(pair, best_pair) == -1) {
+        } else if (*freq == best_freq && best_pair && strcmp(pair, best_pair) < 0) {
             best_pair = pair;  // lexicographic tie-break
         }
     }
