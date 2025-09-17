@@ -151,13 +151,16 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
 
 struct CLIParams {
     const char** argv;
-    char* vocab_path;
     int argc;
+
+    char* vocab_path;
+    int merges;
 };
 
 void cli_usage(struct CLIParams* cli) {
     printf("Usage: %s [--vocab S] ...\n", cli->argv[0]);
-    printf("--vocab S Plain text input file (default: samples/simple.txt)\n");
+    printf("--vocab  S Plain text input file (default: samples/simple.txt)\n");
+    printf("--merges N Number of merges (default: 10)\n");
 }
 
 void cli_free(struct CLIParams* cli) {
@@ -175,6 +178,9 @@ void cli_parse(struct CLIParams* cli) {
     for (int i = 1; i < cli->argc; i++) {
         if (strcmp(cli->argv[i], "--vocab") == 0 && i + 1 < cli->argc) {
             cli->vocab_path = strdup(cli->argv[++i]);
+        } else if (strcmp(cli->argv[i], "--merges") == 0 && i + 1 < cli->argc) {
+            cli->merges = atoi(cli->argv[++i]);
+            cli->merges = (cli->merges > 0) ? cli->merges : 10;
         } else if (strcmp(cli->argv[i], "--help") == 0 || strcmp(cli->argv[i], "-h") == 0) {
             cli_usage(cli);
             cli_free(cli);
@@ -205,27 +211,34 @@ int main(int argc, const char* argv[]) {
     // Observe initial vocab
     vocab_map_print(vocab);
 
-    // Build symbol pairs from vocab
-    HashMap* pairs = bpe_pairs(vocab);
-    // Observe paired results
-    vocab_map_print(pairs);
+    for (size_t i = 0; i < (size_t) cli.merges; i++) {
+        // Build symbol pairs from vocab
+        HashMap* pairs = bpe_pairs(vocab);
+        // Observe paired results
+        vocab_map_print(pairs);
 
-    // prep for best merges
-    // collect the array of tuples
-    // pairs : {syms[i], syms[i + 1]} -> freq
-    int best_freq;
-    char* best_pair = bpe_best(pairs, &best_freq);
-    printf("best_pair=`%s` | best_freq=`%d`\n", best_pair, best_freq);
+        // prep for best merges
+        // collect the array of tuples
+        // pairs : {syms[i], syms[i + 1]} -> freq
+        int best_freq;
+        char* best_pair = bpe_best(pairs, &best_freq);
+        printf("best_pair=`%s` | best_freq=`%d`\n", best_pair, best_freq);
 
-    // Merge symbol pairs based on best freq
-    HashMap* merges = bpe_merges(vocab, best_pair);
-    // Observe merged results
-    vocab_map_print(merges);
+        // Merge symbol pairs based on best freq
+        HashMap* merges = bpe_merges(vocab, best_pair);
+        // Observe merged results
+        vocab_map_print(merges);
+
+        // Clean up
+        free(best_pair);
+        vocab_map_free(pairs);
+        vocab_map_free(vocab);
+
+        // Update
+        vocab = merges;
+    }
 
     // Clean up
-    free(best_pair);
-    vocab_map_free(merges);
-    vocab_map_free(pairs);
     vocab_map_free(vocab);
     free(cli.vocab_path);
     return EXIT_SUCCESS;
