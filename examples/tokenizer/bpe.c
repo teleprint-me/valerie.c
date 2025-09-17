@@ -49,6 +49,27 @@ HashMap* bpe_pairs(HashMap* vocab) {
     return new_pairs;
 }
 
+void bpe_best(HashMap* pairs, char** best_pair, int* best_freq) {
+    *best_pair = NULL;
+    *best_freq = -1;
+
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(pairs);
+    while ((entry = hash_map_next(&it))) {
+        char* pair = entry->key;
+        char* freq = entry->value;
+
+        if (*freq > *best_freq) {
+            *best_pair = pair;
+            *best_freq = *freq;
+        } else if (*freq == *best_freq && best_pair && -1 == string_compare(pair, *best_pair)) {
+            *best_pair = pair;  // lexicographic tie-break
+        }
+    }
+
+    // handle external memory reqs?
+}
+
 /**
  * Command-line interface
  * @{
