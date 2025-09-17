@@ -75,6 +75,26 @@ char* bpe_best(HashMap* pairs, int* out_freq) {
     return best_pair ? strdup(best_pair) : NULL;
 }
 
+HashMap* bpe_merges(HashMap* pairs, const char* best_pair) {
+    if (!pairs || !best_pair) {
+        return NULL; // all pairs have been exhausted
+    }
+
+    HashMap* new_vocab = hash_map_create(hash_map_size(pairs), HASH_MAP_KEY_TYPE_STRING);
+
+    size_t tuple_count = 0;
+    char** tuple = string_split_delim(best_pair, " ", &tuple_count);
+
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(&it);
+    while ((entry = hash_map_next(&it))) {
+        size_t sym_count = 0;
+        char* syms = string_split_delim(entry->key, " ", &sym_count);
+    }
+
+    return new_vocab;
+}
+
 /**
  * Command-line interface
  * @{
