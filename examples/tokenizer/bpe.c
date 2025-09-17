@@ -12,6 +12,43 @@
 
 #include "tokenizer/vocab.h"
 
+// collect vocab pairs
+// once all pairs have been exhausted,
+// the pairs function must return NULL to indicate the end of operation
+HashMap* bpe_pairs(HashMap* vocab) {
+    HashMap* new_pairs = hash_map_create(hash_map_size(vocab), HASH_MAP_KEY_TYPE_STRING);
+
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(vocab);
+    while ((entry = hash_map_next(&it))) {
+        size_t sym_count = 0;
+        char** syms = string_split_delim(entry->key, " ", &sym_count);
+
+        for (size_t i = 0; i < sym_count - 1; i++) {
+            // Create the symbol tuple
+            char* tuple[] = {syms[i], syms[i + 1]};
+
+            // Create the symbol pair
+            char* pair = string_join(tuple, 2, " ");
+
+            // Check for pair existence
+            int* freq = hash_map_search(new_pairs, pair);
+            if (!freq) {  // pair does not exist
+                int* new_freq = malloc(sizeof(int));
+                *new_freq = *(int*) entry->value;
+                hash_map_insert(new_pairs, pair, new_freq);
+            } else {  // pair already exists
+                *freq += *(int*) entry->value;
+                free(pair);
+            }
+        }
+
+        string_split_free(syms, sym_count);
+    }
+
+    return new_pairs;
+}
+
 /**
  * Command-line interface
  * @{
@@ -70,21 +107,21 @@ int main(int argc, const char* argv[]) {
 
     // Build word frequencies from text file
     HashMap* vocab = vocab_build(cli.vocab_path);
-    // Observe mapped results
+    // Observe initial vocab
     vocab_map_print(vocab);
+
+    // Build symbol pairs from vocab
+    HashMap* pairs = bpe_pairs(vocab);
+    // Observe paired results
+    vocab_map_print(pairs);
 
     // prep for best merges
     // collect the array of tuples
     // pairs : {syms[i], syms[i + 1]} -> freq
 
-    // collect vocab pairs
-    // once all pairs have been exhausted,
-    // the pairs function must return NULL to indicate the end of operation
-    HashMap* new_pairs = hash_map_create(1, HASH_MAP_KEY_TYPE_STRING);
-
     // Clean up
-    hash_map_free(new_pairs);
+    vocab_map_free(pairs);
     vocab_map_free(vocab);
     free(cli.vocab_path);
-    return 0;
+    return EXIT_SUCCESS;
 }
