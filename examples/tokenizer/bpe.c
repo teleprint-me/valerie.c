@@ -75,8 +75,8 @@ char* bpe_best(HashMap* pairs, int* out_freq) {
     return best_pair ? strdup(best_pair) : NULL;
 }
 
-HashMap* bpe_merges(HashMap* pairs, const char* best_pair) {
-    if (!pairs || !best_pair) {
+HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
+    if (!vocab || !best_pair) {
         return NULL;  // exhausted all pairs
     }
 
@@ -91,13 +91,13 @@ HashMap* bpe_merges(HashMap* pairs, const char* best_pair) {
     const char* b = tuple[1];
 
     // New vocab map
-    HashMap* new_vocab = hash_map_create(hash_map_size(pairs), HASH_MAP_KEY_TYPE_STRING);
+    HashMap* new_vocab = hash_map_create(hash_map_size(vocab), HASH_MAP_KEY_TYPE_STRING);
 
     HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(&it);
+    HashMapIterator it = hash_map_iter(vocab);
     while ((entry = hash_map_next(&it))) {
         size_t sym_count = 0;
-        char* syms = string_split_delim(entry->key, " ", &sym_count);
+        char** syms = string_split_delim(entry->key, " ", &sym_count);
     }
 
     return new_vocab;
