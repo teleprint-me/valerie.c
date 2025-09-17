@@ -144,8 +144,9 @@ int main(int argc, const char* argv[]) {
     // prep for best merges
     // collect the array of tuples
     // pairs : {syms[i], syms[i + 1]} -> freq
-    char* best_pair = bpe_best(pairs, NULL);
-    printf("best_pair=`%s`\n", best_pair);
+    int best_freq;
+    char* best_pair = bpe_best(pairs, &best_freq);
+    printf("best_pair=`%s` | best_freq=%d\n", best_pair, best_freq);
 
     // Clean up
     free(best_pair);
