@@ -224,9 +224,15 @@ int main(int argc, const char* argv[]) {
         vocab_map_print(vocab);
     }
 
+    typedef struct MergeStep {
+        char* pair;
+        int freq;
+    } MergeStep;
+
     // Collect the best merge pairs (used to build the model)
-    size_t best_count = 0;
-    char** best = calloc(1, sizeof(char*));
+    size_t step_count = 0;
+    size_t step_cap = sizeof(MergeStep);
+    MergeStep* steps = calloc(step_cap, sizeof(MergeStep));
     for (int i = 0; i < cli.merges; i++) {
         // Build symbol pairs from vocab
         HashMap* pairs = bpe_pairs(vocab);
@@ -234,9 +240,7 @@ int main(int argc, const char* argv[]) {
             vocab_map_print(pairs);  // debug
         }
 
-        // prep for best merges
-        // collect the array of tuples
-        // pairs : {syms[i], syms[i + 1]} -> freq
+        // Calculate the best pairs
         int best_freq;
         char* best_pair = bpe_best(pairs, &best_freq);
         if (!best_pair) {
@@ -249,7 +253,12 @@ int main(int argc, const char* argv[]) {
         printf("best_pair=%s | best_freq=%d\n", best_pair, best_freq);
 
         // Append the best pairs
-        best = string_append(strdup(best_pair), best, &best_count);
+        MergeStep step_new = {.pair = strdup(best_pair), .freq = best_freq};
+        step_cap = sizeof(MergeStep) * (step_count + 1);
+        fprintf(stderr, "step cap -> %zu, count = %zu\n", step_cap, step_count);
+        MergeStep* step_temp = realloc(steps, step_cap);
+        steps = step_temp;
+        steps[step_count++] = step_new;
 
         // Merge symbol pairs based on best freq
         HashMap* merges = bpe_merges(vocab, best_pair);
@@ -267,7 +276,11 @@ int main(int argc, const char* argv[]) {
     }
 
     // Clean up
-    string_split_free(best, best_count);
+    for (size_t i = 0; i < step_count; i++) {
+        free(steps[i].pair);
+    }
+    free(steps);
+
     vocab_map_free(vocab);
     free(cli.vocab_path);
     return EXIT_SUCCESS;
