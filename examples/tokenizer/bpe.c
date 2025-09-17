@@ -180,7 +180,9 @@ void cli_parse(struct CLIParams* cli) {
             cli->vocab_path = strdup(cli->argv[++i]);
         } else if (strcmp(cli->argv[i], "--merges") == 0 && i + 1 < cli->argc) {
             cli->merges = atoi(cli->argv[++i]);
-            cli->merges = (cli->merges > 0) ? cli->merges : 10;
+            if (1 > cli->merges) {
+                cli->merges = 10;
+            }
         } else if (strcmp(cli->argv[i], "--help") == 0 || strcmp(cli->argv[i], "-h") == 0) {
             cli_usage(cli);
             cli_free(cli);
@@ -198,7 +200,12 @@ void cli_parse(struct CLIParams* cli) {
 
 int main(int argc, const char* argv[]) {
     // Parse CLI arguments
-    struct CLIParams cli = {.argc = argc, .argv = argv, .vocab_path = NULL};
+    struct CLIParams cli = {
+        .argc = argc,
+        .argv = argv,
+        .vocab_path = NULL,
+        .merges = 1,
+    };
     cli_parse(&cli);
 
     // Ensure vocab path is not null
@@ -211,23 +218,28 @@ int main(int argc, const char* argv[]) {
     // Observe initial vocab
     vocab_map_print(vocab);
 
-    for (size_t i = 0; i < (size_t) cli.merges; i++) {
+    for (int i = 0; i < cli.merges; i++) {
         // Build symbol pairs from vocab
         HashMap* pairs = bpe_pairs(vocab);
-        // Observe paired results
-        vocab_map_print(pairs);
+        vocab_map_print(pairs);  // debug
 
         // prep for best merges
         // collect the array of tuples
         // pairs : {syms[i], syms[i + 1]} -> freq
         int best_freq;
         char* best_pair = bpe_best(pairs, &best_freq);
+        if (!best_pair) {
+            printf("Exhausted all possible merge pairs at step %d.\n", i);
+            vocab_map_free(pairs);
+            break;  // exhausted all available pairs
+        }
+
+        // Observe best results
         printf("best_pair=`%s` | best_freq=`%d`\n", best_pair, best_freq);
 
         // Merge symbol pairs based on best freq
         HashMap* merges = bpe_merges(vocab, best_pair);
-        // Observe merged results
-        vocab_map_print(merges);
+        vocab_map_print(merges);  // debug
 
         // Clean up
         free(best_pair);
