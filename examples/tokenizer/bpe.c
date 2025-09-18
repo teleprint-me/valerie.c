@@ -352,9 +352,11 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    /// @todo Do stuff here...
+
     // Clean up
-    vocab_map_free(vocab);
     bpe_free_model(model);
+    vocab_map_free(vocab);
     free(cli.vocab_path);
     return EXIT_SUCCESS;
 }
