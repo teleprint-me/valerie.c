@@ -206,7 +206,7 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
     model->merges = malloc(model->capacity * sizeof(BPEMerge));
     if (!model->merges) {
         vocab_map_free(internal_vocab);
-        free(model);
+        bpe_free_model(model);
         return NULL;
     }
 
@@ -224,6 +224,7 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         if (!best_pair) {
             printf("[bpe] Exhausted all possible merge pairs at step %zu.\n", i);
             vocab_map_free(pairs);
+            vocab_map_free(internal_vocab);
             break;
         }
 
@@ -236,9 +237,10 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
             BPEMerge* temp = realloc(model->merges, new_cap * sizeof(BPEMerge));
             if (!temp) {
                 // Free everything up to now
-                bpe_free_model(model);
                 free(best_pair);
                 vocab_map_free(pairs);
+                vocab_map_free(internal_vocab);
+                bpe_free_model(model);
                 return NULL;
             }
             model->merges = temp;
