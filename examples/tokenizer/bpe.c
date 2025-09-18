@@ -12,15 +12,27 @@
 
 #include "tokenizer/vocab.h"
 
+/**
+ * @def BPE_MAGIC
+ * @brief Magic number for merges file format identification ("pair", little-endian).
+ */
+#define BPE_MAGIC 0x70616972
+
+/**
+ * @def BPE_VERSION
+ * @brief Current version of the merges file format.
+ */
+#define BPE_VERSION 1
+
 typedef struct BPEMerge {
     char* pair;
     int freq;
 } BPEMerge;
 
 typedef struct BPEModel {
-    HashMap* vocab;
     BPEMerge* merges;
-    size_t n_merges;
+    size_t count;
+    size_t capacity;
 } BPEModel;
 
 /**
@@ -28,19 +40,14 @@ typedef struct BPEModel {
  * @{
  */
 
-void bpe_free_merges(BPEMerge* merges, size_t n_merges) {
-    if (merges) {
-        for (size_t i = 0; i < n_merges; i++) {
-            free(merges[i].pair);
-        }
-        free(merges);
-    }
-}
-
 void bpe_free_model(BPEModel* model) {
     if (model) {
-        vocab_map_free(model->vocab);
-        bpe_free_merges(model->merges, model->n_merges);
+        if (model->merges) {
+            for (size_t i = 0; i < model->count; i++) {
+                free(model->merges[i].pair);
+            }
+            free(model->merges);
+        }
         free(model);
     }
 }
@@ -194,10 +201,10 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
     }
 
     // Collect the best merge pairs (used to build the model)
-    size_t merge_count = 0;
-    size_t merge_cap = 8;
-    BPEMerge* merges = malloc(merge_cap * sizeof(BPEMerge));
-    if (!merges) {
+    model->count = 0;
+    model->capacity = 8;
+    model->merges = malloc(model->capacity * sizeof(BPEMerge));
+    if (!model->merges) {
         vocab_map_free(internal_vocab);
         free(model);
         return NULL;
@@ -224,23 +231,22 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         printf("[bpe] step=%zu, best_freq=%d, best_pair=%s\n", i, best_freq, best_pair);
 
         // Grow array if needed
-        if (merge_count == merge_cap) {
-            size_t new_cap = merge_cap * 2;
-            BPEMerge* temp = realloc(merges, new_cap * sizeof(BPEMerge));
+        if (model->count == model->capacity) {
+            size_t new_cap = model->capacity * 2;
+            BPEMerge* temp = realloc(model->merges, new_cap * sizeof(BPEMerge));
             if (!temp) {
                 // Free everything up to now
-                bpe_free_merges(merges, merge_count);
-                free(model);
+                bpe_free_model(model);
                 free(best_pair);
                 vocab_map_free(pairs);
                 return NULL;
             }
-            merges = temp;
-            merge_cap = new_cap;
+            model->merges = temp;
+            model->capacity = new_cap;
         }
 
         // Append the best merge pair
-        merges[merge_count++] = (BPEMerge) {strdup(best_pair), best_freq};
+        model->merges[model->count++] = (BPEMerge) {strdup(best_pair), best_freq};
 
         // Merge all matching pairs
         HashMap* new_vocab = bpe_merges(internal_vocab, best_pair);
@@ -257,12 +263,6 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         internal_vocab = new_vocab;
     }
 
-    // Final model output
-    *model = (BPEModel) {
-        .vocab = internal_vocab,
-        .merges = merges,
-        .n_merges = merge_count,
-    };
     return model;
 }
 
