@@ -23,6 +23,30 @@ typedef struct BPEModel {
     size_t n_merges;
 } BPEModel;
 
+/**
+ * BPE clean up
+ * @{
+ */
+
+void bpe_free_merges(BPEMerge* merges, size_t n_merges) {
+    if (merges) {
+        for (size_t i = 0; i < n_merges; i++) {
+            free(merges[i].pair);
+        }
+        free(merges);
+    }
+}
+
+void bpe_free_model(BPEModel* model) {
+    if (model) {
+        vocab_map_free(model->vocab);
+        bpe_free_merges(model->merges, model->n_merges);
+        free(model);
+    }
+}
+
+/** @} */
+
 // collect vocab pairs
 // once all pairs have been exhausted,
 // the pairs function must return NULL to indicate the end of operation
@@ -156,17 +180,25 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
 }
 
 BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
+    // Create a shallow copy of the input vocab
+    HashMap* internal_vocab = vocab_map_copy(vocab);  // always copy!
+    if (!internal_vocab) {
+        return NULL;
+    }
+
     // Create a new BPE model
     BPEModel* model = malloc(sizeof(BPEModel));
     if (!model) {
+        vocab_map_free(internal_vocab);
         return NULL;
     }
 
     // Collect the best merge pairs (used to build the model)
     size_t merge_count = 0;
-    size_t merge_cap = sizeof(BPEMerge);
-    BPEMerge* merges = malloc(merge_cap);
+    size_t merge_cap = 8;
+    BPEMerge* merges = malloc(merge_cap * sizeof(BPEMerge));
     if (!merges) {
+        vocab_map_free(internal_vocab);
         free(model);
         return NULL;
     }
@@ -174,7 +206,7 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
     // Execute BPE merge steps
     for (size_t i = 0; i < n_merges; i++) {
         // Build symbol pairs from vocab
-        HashMap* pairs = bpe_pairs(vocab);
+        HashMap* pairs = bpe_pairs(internal_vocab);
         if (verbose) {
             vocab_map_print(pairs);  // debug
         }
@@ -183,43 +215,54 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         int best_freq;
         char* best_pair = bpe_best(pairs, &best_freq);
         if (!best_pair) {
-            printf("Exhausted all possible merge pairs at step %zu.\n", i);
+            printf("[bpe] Exhausted all possible merge pairs at step %zu.\n", i);
             vocab_map_free(pairs);
-            break;  // exhausted all available pairs
+            break;
         }
 
-        // Observe best results
-        printf("best_pair=%s | best_freq=%d\n", best_pair, best_freq);
+        // Observe the best merge pair
+        printf("[bpe] step=%zu, best_freq=%d, best_pair=%s\n", i, best_freq, best_pair);
 
-        // Append the best pairs
-        BPEMerge new_merge = {.pair = strdup(best_pair), .freq = best_freq};
-        merge_cap = sizeof(BPEMerge) * (merge_count + 1);
-        BPEMerge* temp_merge = realloc(merges, merge_cap);
-        merges = temp_merge;
-        merges[merge_count++] = new_merge;
+        // Grow array if needed
+        if (merge_count == merge_cap) {
+            size_t new_cap = merge_cap * 2;
+            BPEMerge* temp = realloc(merges, new_cap * sizeof(BPEMerge));
+            if (!temp) {
+                // Free everything up to now
+                bpe_free_merges(merges, merge_count);
+                free(model);
+                free(best_pair);
+                vocab_map_free(pairs);
+                return NULL;
+            }
+            merges = temp;
+            merge_cap = new_cap;
+        }
 
-        // Merge symbol pairs based on best freq
-        HashMap* new_vocab = bpe_merges(vocab, best_pair);
+        // Append the best merge pair
+        merges[merge_count++] = (BPEMerge) {strdup(best_pair), best_freq};
+
+        // Merge all matching pairs
+        HashMap* new_vocab = bpe_merges(internal_vocab, best_pair);
         if (verbose) {
-            vocab_map_print(new_vocab);  // debug
+            vocab_map_print(new_vocab);
         }
 
         // Clean up
         free(best_pair);
         vocab_map_free(pairs);
-        vocab_map_free(vocab);
+        vocab_map_free(internal_vocab);
 
         // Update
-        vocab = new_vocab;
+        internal_vocab = new_vocab;
     }
 
-    // Initialize the new BPE model
+    // Final model output
     *model = (BPEModel) {
-        .vocab = vocab,
+        .vocab = internal_vocab,
         .merges = merges,
         .n_merges = merge_count,
     };
-
     return model;
 }
 
@@ -310,13 +353,8 @@ int main(int argc, const char* argv[]) {
     }
 
     // Clean up
-    for (size_t i = 0; i < model->n_merges; i++) {
-        free(model->merges[i].pair);
-    }
-    free(model->merges);
-    vocab_map_free(model->vocab);
-    free(model);
-
+    vocab_map_free(vocab);
+    bpe_free_model(model);
     free(cli.vocab_path);
     return EXIT_SUCCESS;
 }
