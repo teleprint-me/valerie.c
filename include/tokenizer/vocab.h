@@ -40,6 +40,17 @@ extern "C" {
  */
 
 /**
+ * @brief Creates a copy of a given hash map containing word frequencies.
+ *
+ * The caller is responsible for freeing the memory of the returned hash map.
+ *
+ * @param m The input hash map to be copied.
+ *
+ * @return A new hash map with the same key-value pairs as the input hash map.
+ */
+HashMap* vocab_map_copy(HashMap* m);
+
+/**
  * @brief Frees all memory associated with a vocab map.
  *
  * Calls hash_map_iter_free_all() on the map. Safe to call with NULL.

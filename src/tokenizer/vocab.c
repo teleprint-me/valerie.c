@@ -24,6 +24,27 @@
  * @{
  */
 
+HashMap* vocab_map_copy(HashMap* m) {
+    HashMap* copy = hash_map_create(hash_map_size(m), HASH_MAP_KEY_TYPE_STRING);
+    if (!copy) {
+        return NULL;
+    }
+
+    HashMapEntry* entry;
+    HashMapIterator it = hash_map_iter(m);
+    while ((entry = hash_map_next(&it))) {
+        int* freq = hash_map_search(copy, entry->key);
+        if (!freq) {
+            char* key_dup = strdup(entry->key);
+            int* val_dup = malloc(sizeof(int));
+            *val_dup = *(int*) entry->value;
+            hash_map_insert(copy, key_dup, val_dup);
+        }
+    }
+
+    return copy;
+}
+
 // Free the vocabulary mapping
 void vocab_map_free(HashMap* m) {
     if (m) {
