@@ -23,9 +23,9 @@ extern "C" {
 
 /**
  * @def VOCAB_MAGIC
- * @brief Magic number for vocab file format identification ("vox\0", little-endian).
+ * @brief Magic number for vocab file format identification ("syms", little-endian).
  */
-#define VOCAB_MAGIC 0x766F7800
+#define VOCAB_MAGIC 0x73796D73
 
 /**
  * @def VOCAB_VERSION
