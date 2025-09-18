@@ -224,7 +224,6 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         if (!best_pair) {
             printf("[bpe] Exhausted all possible merge pairs at step %zu.\n", i);
             vocab_map_free(pairs);
-            vocab_map_free(internal_vocab);
             break;
         }
 
@@ -265,6 +264,8 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         internal_vocab = new_vocab;
     }
 
+    /// @note ASAN doesn't catch this.
+    vocab_map_free(internal_vocab);  // Always free before exiting.
     return model;
 }
 
