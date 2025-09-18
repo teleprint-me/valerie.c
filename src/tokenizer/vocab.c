@@ -85,7 +85,7 @@ bool vocab_map_save(HashMap* m, const char* path) {
     // Get the current directory
     char* dirname = path_dirname(path);
     // Create the directory if it does not exist
-    path_mkdir(dirname);  // returns 0 on success
+    path_mkdir(dirname);  // returns true on success
     // Clean up
     free(dirname);
 

@@ -31,8 +31,8 @@ bool path_is_dir(const char* path);
 // Checks if path is a regular file
 bool path_is_file(const char* path);
 
-// Saner mkdir wrapper (0 on success, -1 on failure)
-int path_mkdir(const char* path);
+// Saner mkdir wrapper (true on success, false on failure)
+bool path_mkdir(const char* path);
 
 // Returns the directory path
 char* path_dirname(const char* path);

@@ -55,11 +55,11 @@ bool path_is_file(const char* path) {
 }
 
 // Saner mkdir wrapper
-int path_mkdir(const char* path) {
+bool path_mkdir(const char* path) {
     if (mkdir(path, 0755) == -1 && errno != EEXIST) {
-        return -1;
+        return false;
     }
-    return 0;
+    return true;
 }
 
 // Returns the directory path
