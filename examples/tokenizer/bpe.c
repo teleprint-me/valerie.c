@@ -128,7 +128,7 @@ BPEModel* bpe_model_load(const char* path) {
         fread(&pair_len, sizeof(int), 1, file);
 
         char* pair = calloc(pair_len + 1, sizeof(char));
-        fread(pair, pair_len, sizeof(char), file);
+        fread(pair, sizeof(char), pair_len, file);
         pair[pair_len] = '\0';
         model->merges[i].pair = pair;
 
