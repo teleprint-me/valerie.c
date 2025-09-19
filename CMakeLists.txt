@@ -47,6 +47,7 @@ add_library(valerie SHARED
     "src/core/map.c" # hash map with linear probing
 # tokenizer
     "src/tokenizer/vocab.c" # string-to-int frequency mapping (map.c)
+    "src/tokenizer/bpe.c"
 )
 
 target_include_directories(valerie PUBLIC include)
