@@ -11,9 +11,118 @@
  * - For use in hash set, hash map, and similar data structures.
  */
 
+#include <stdlib.h>
 #include <string.h>
 
+#include "core/logger.h"
 #include "core/hash.h"
+
+/**
+ * @section Hash life-cycle
+ */
+
+Hash* hash_create(size_t capacity, HashType type) {
+    Hash* h = malloc(sizeof(Hash));
+    if (!h) {
+        LOG_ERROR("Failed to allocate memory for HashSet.");
+        return NULL;
+    }
+
+    h->count = 0;
+    h->capacity = capacity > 0 ? capacity : 10;
+    h->type = type;
+
+    switch (h->type) {
+        case HASH_INT32:
+            h->fn = hash_int32;
+            h->cmp = hash_int32_cmp;
+            h->size = sizeof(int32_t);
+            break;
+        case HASH_INT64:
+            h->fn = hash_int64;
+            h->cmp = hash_int64_cmp;
+            h->size = sizeof(int64_t);
+            break;
+        case HASH_PTR:
+            h->fn = hash_ptr;
+            h->cmp = hash_ptr_cmp;
+            h->size = sizeof(uintptr_t);
+            break;
+        case HASH_STR:
+            h->fn = hash_str;
+            h->cmp = hash_str_cmp;
+            h->size = sizeof(char);
+            break;
+        default:
+            LOG_ERROR("Invalid HashType given.");
+            free(h);
+            return NULL;
+    }
+
+    h->entries = calloc(h->capacity, h->size);
+    if (!h->entries) {
+        LOG_ERROR("Failed to allocate memory for HashMap data.");
+        free(h);
+        return NULL;
+    }
+
+    // Initialize the mutex for thread safety
+    int error_code = pthread_mutex_init(&h->lock, NULL);
+    if (0 != error_code) {
+        LOG_ERROR("Failed to initialize mutex with error: %d", error_code);
+        free(h->entries);
+        free(h);
+        return NULL;
+    }
+
+    return h;
+}
+
+void hash_free(Hash* h) {
+    if (h) {
+        // Destroy the mutex before freeing memory
+        pthread_mutex_destroy(&h->lock);
+
+        if (h->entries) {
+            free(h->entries);
+        }
+
+        free(h);
+        h = NULL;
+    }
+}
+
+/** @} */
+
+/**
+ * @section Hash utils
+ */
+
+size_t hash_count(Hash* h) {
+    return (h) ? h->count : 0;
+}
+
+size_t hash_capacity(Hash* h) {
+    return (h) ? h->capacity : 0;
+}
+
+size_t hash_size(Hash* h) {
+    return (h) ? h->size : 0;
+}
+
+HashType hash_type(Hash* h) {
+    return (h) ? h->type : HASH_UNK;
+}
+
+bool hash_is_valid(Hash* h) {
+    return h && h->entries && h->capacity > 0;
+}
+
+bool hash_entry_is_valid(HashEntry* e) {
+    return e && e->key;
+}
+
+/** @} */
 
 /**
  * @section Hash int
@@ -29,6 +138,8 @@ int hash_int32_cmp(const void* key1, const void* key2) {
     return *(const int32_t*) key1 - *(const int32_t*) key2;
 }
 
+/** @} */
+
 /**
  * @section Hash long
  */
@@ -42,6 +153,8 @@ uint64_t hash_int64(const void* key, uint64_t size, uint64_t i) {
 int hash_int64_cmp(const void* key1, const void* key2) {
     return *(const int64_t*) key1 - *(const int64_t*) key2;
 }
+
+/** @} */
 
 /**
  * @section Hash ptr
@@ -58,6 +171,8 @@ int hash_ptr_cmp(const void* key1, const void* key2) {
     intptr_t b = (intptr_t) key2;
     return (a > b) - (a < b);
 }
+
+/** @} */
 
 /**
  * @section Hash char
@@ -82,3 +197,5 @@ uint64_t hash_str(const void* key, uint64_t size, uint64_t i) {
 int hash_str_cmp(const void* key1, const void* key2) {
     return strcmp((const char*) key1, (const char*) key2);
 }
+
+/** @} */
