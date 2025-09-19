@@ -14,10 +14,81 @@ typedef struct HashSet {
 
     pthread_mutex_t thread_lock; /**< Mutex for thread safety. */
 
-    void* data; /**< Array of keys. */
-    size_t count; /**< Current number of entries in the set. */
+    void* data; /**< Array of unique elements. */
+    size_t count; /**< Current number of elements in the set. */
     size_t capacity; /**< Total capacity of the set. */
 } HashSet;
+
+HashSet* hash_set_create(uint64_t initial_capacity, HashType type) {
+    HashSet* set = malloc(sizeof(HashSet));
+    if (!set) {
+        LOG_ERROR("Failed to allocate memory for HashSet.");
+        return NULL;
+    }
+
+    set->count = 0;
+    set->capacity = initial_capacity > 0 ? initial_capacity : 10;
+    set->hash.type = type;
+
+    switch (set->hash.type) {
+        case HASH_INT32:
+            set->hash.function = hash_int32;
+            set->hash.compare = hash_int32_cmp;
+            set->hash.size = sizeof(int32_t);
+            break;
+        case HASH_INT64:
+            set->hash.function = hash_int64;
+            set->hash.compare = hash_int64_cmp;
+            set->hash.size = sizeof(int64_t);
+            break;
+        case HASH_PTR:
+            set->hash.function = hash_ptr;
+            set->hash.compare = hash_ptr_cmp;
+            set->hash.size = sizeof(uintptr_t);
+            break;
+        case HASH_STR:
+            set->hash.function = hash_str;
+            set->hash.compare = hash_str_cmp;
+            set->hash.size = sizeof(char);
+            break;
+        default:
+            LOG_ERROR("Invalid HashType given.");
+            free(set);
+            return NULL;
+    }
+
+    set->data = calloc(set->capacity, set->hash.size);
+    if (!set->data) {
+        LOG_ERROR("Failed to allocate memory for HashMap data.");
+        free(set);
+        return NULL;
+    }
+
+    // Initialize the mutex for thread safety
+    int error_code = pthread_mutex_init(&set->thread_lock, NULL);
+    if (0 != error_code) {
+        LOG_ERROR("Failed to initialize mutex with error: %d", error_code);
+        free(set->data);
+        free(set);
+        return NULL;
+    }
+
+    return set;
+}
+
+void hash_set_free(HashSet* set) {
+    if (set) {
+        // Destroy the mutex before freeing memory
+        pthread_mutex_destroy(&set->thread_lock);
+
+        if (set->data) {
+            free(set->data);
+        }
+
+        free(set);
+        set = NULL;
+    }
+}
 
 bool hash_set_is_valid(HashSet* set) {
     return set && set->data && set->capacity > 0;
