@@ -54,6 +54,93 @@ void bpe_free_model(BPEModel* model) {
 
 /** @} */
 
+/**
+ * BPE serialization
+ * @{
+ */
+
+bool bpe_model_save(BPEModel* model, const char* path) {
+    char* dirname = path_dirname(path);
+    path_mkdir(dirname);  // returns true on success
+    free(dirname);
+
+    FILE* file = fopen(path, "wb");
+    if (!file) {
+        return false;
+    }
+
+    int magic = BPE_MAGIC;
+    fwrite(&magic, sizeof(int), 1, file);
+
+    int version = BPE_VERSION;
+    fwrite(&version, sizeof(int), 1, file);
+
+    fwrite(&model->count, sizeof(size_t), 1, file);
+    fwrite(&model->capacity, sizeof(size_t), 1, file);
+
+    for (size_t i = 0; i < model->count; i++) {
+        int pair_len = strlen(model->merges[i].pair);
+        fwrite(&pair_len, sizeof(int), 1, file);
+        fwrite(model->merges[i].pair, sizeof(char), pair_len, file);
+        fwrite(&model->merges[i].freq, sizeof(int), 1, file);
+    }
+
+    fclose(file);
+    return true;
+}
+
+BPEModel* bpe_model_load(const char* path) {
+    if (!path_is_file(path)) {
+        return NULL;
+    }
+
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        return NULL;
+    }
+
+    int magic;
+    fread(&magic, sizeof(int), 1, file);
+    if (magic != BPE_MAGIC) {
+        fclose(file);
+        return NULL;
+    }
+
+    int version;
+    fread(&version, sizeof(int), 1, file);
+    if (version != BPE_VERSION) {
+        fclose(file);
+        return NULL;
+    }
+
+    BPEModel* model = malloc(sizeof(BPEModel));
+    if (!model) {
+        fclose(file);
+        return NULL;
+    }
+
+    fread(&model->count, sizeof(size_t), 1, file);
+    fread(&model->capacity, sizeof(size_t), 1, file);
+
+    model->merges = calloc(model->capacity, sizeof(BPEMerge));
+    for (size_t i = 0; i < model->count; i++) {
+        int pair_len;
+        fread(&pair_len, sizeof(int), 1, file);
+
+        char* pair = calloc(pair_len + 1, sizeof(char));
+        fread(pair, pair_len, sizeof(char), file);
+        pair[pair_len] = '\0';
+        model->merges[i].pair = pair;
+
+        fread(&model->merges[i].freq, sizeof(int), 1, file);
+    }
+
+    fclose(file);
+    return model;
+}
+
+/** @} */
+
 // collect vocab pairs
 // once all pairs have been exhausted,
 // the pairs function must return NULL to indicate the end of operation
