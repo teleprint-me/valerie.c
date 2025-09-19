@@ -129,17 +129,47 @@ void hash_free(Hash* h);
  * @section Hash utils
  */
 
-size_t hash_count(Hash* h);
+/**
+ * @brief Returns the current number of active entries in the hash table.
+ * @param h Pointer to the hash object.
+ * @return Number of active entries, or 0 if invalid.
+ */
+size_t hash_count(const Hash* h);
 
-size_t hash_capacity(Hash* h);
+/**
+ * @brief Returns the current capacity (total buckets) of the hash table.
+ * @param h Pointer to the hash object.
+ * @return Capacity (bucket count), or 0 if invalid.
+ */
+size_t hash_capacity(const Hash* h);
 
-size_t hash_size(Hash* h);
+/**
+ * @brief Returns the key size (in bytes) for the hash table.
+ * @param h Pointer to the hash object.
+ * @return Key size in bytes, or 0 if invalid.
+ */
+size_t hash_size(const Hash* h);
 
-HashType hash_type(Hash* h);
+/**
+ * @brief Returns the key type (HashType) of the hash table.
+ * @param h Pointer to the hash object.
+ * @return HashType enum, or HASH_UNK if invalid.
+ */
+HashType hash_type(const Hash* h);
 
-bool hash_is_valid(Hash* h);
+/**
+ * @brief Checks if a hash object is valid (not null, has entries, has positive capacity).
+ * @param h Pointer to the hash object.
+ * @return true if valid, false otherwise.
+ */
+bool hash_is_valid(const Hash* h);
 
-bool hash_entry_is_valid(HashEntry* e);
+/**
+ * @brief Checks if a hash entry is valid (not null and has a non-null key).
+ * @param e Pointer to the hash entry.
+ * @return true if valid, false otherwise.
+ */
+bool hash_entry_is_valid(const HashEntry* e);
 
 /** @} */
 

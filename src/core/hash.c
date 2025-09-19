@@ -98,27 +98,27 @@ void hash_free(Hash* h) {
  * @section Hash utils
  */
 
-size_t hash_count(Hash* h) {
-    return (h) ? h->count : 0;
+size_t hash_count(const Hash* h) {
+    return h ? h->count : 0;
 }
 
-size_t hash_capacity(Hash* h) {
-    return (h) ? h->capacity : 0;
+size_t hash_capacity(const Hash* h) {
+    return h ? h->capacity : 0;
 }
 
-size_t hash_size(Hash* h) {
-    return (h) ? h->size : 0;
+size_t hash_size(const Hash* h) {
+    return h ? h->size : 0;
 }
 
-HashType hash_type(Hash* h) {
-    return (h) ? h->type : HASH_UNK;
+HashType hash_type(const Hash* h) {
+    return h ? h->type : HASH_UNK;
 }
 
-bool hash_is_valid(Hash* h) {
+bool hash_is_valid(const Hash* h) {
     return h && h->entries && h->capacity > 0;
 }
 
-bool hash_entry_is_valid(HashEntry* e) {
+bool hash_entry_is_valid(const HashEntry* e) {
     return e && e->key;
 }
 
