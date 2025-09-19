@@ -26,7 +26,7 @@ extern "C" {
 
 /**
  * @enum HashState
- * @brief Operational state after execution.
+ * @brief Possible outcomes for hash operations.
  */
 typedef enum HashState {
     HASH_SUCCESS, /**< Operation completed successfully. */
