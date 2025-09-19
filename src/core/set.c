@@ -19,6 +19,11 @@ typedef struct HashSet {
     size_t capacity; /**< Total capacity of the set. */
 } HashSet;
 
+/**
+ * Set Lifecycle
+ * @{
+ */
+
 HashSet* hash_set_create(uint64_t initial_capacity, HashType type) {
     HashSet* set = malloc(sizeof(HashSet));
     if (!set) {
@@ -89,6 +94,8 @@ void hash_set_free(HashSet* set) {
         set = NULL;
     }
 }
+
+/** @} */
 
 bool hash_set_is_valid(HashSet* set) {
     return set && set->data && set->capacity > 0;
