@@ -22,6 +22,47 @@
 #include "tokenizer/vocab.h"
 #include "tokenizer/bpe.h"
 
+#define TOKENIZER_MAGIC 0x766F7870
+#define TOKENIZER_VERSION 1
+
+typedef struct SpecialToken {
+    char* bos;  // <|bos|>
+    char* eos;  // <|eos|>
+    char* pad;  // <|pad|>
+    char* unk;  // <|unk|>
+} SpecialToken;
+
+typedef struct Tokenizer {
+    int magic;
+    int version;
+    BPEModel* model;
+    SpecialToken* special;
+    HashMap* ascii;
+    HashMap* token_to_id;
+    HashMap* id_to_token;
+} Tokenizer;
+
+// exact bijection: 0..255
+HashMap* ascii_generate(void) {
+    HashMap* latin1 = hash_map_create(256, HASH_MAP_KEY_TYPE_STRING);
+    if (!latin1) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < 256; i++) {
+        char* k = calloc(2, sizeof(char));
+        *k = i;
+        k[1] = '\0';
+
+        int* v = malloc(sizeof(int));
+        *v = i;
+
+        hash_map_insert(latin1, k, v);
+    }
+
+    return latin1;
+}
+
 /**
  * @struct CLIParams
  * @brief Command-line parameters for tokenizer training.
