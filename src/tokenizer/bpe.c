@@ -1,8 +1,13 @@
 /**
- * @copyright Copyright © 2025 Austin Berrio
  * @file      tokenizer/bpe.c
- * @brief
+ * @brief     Byte-Pair Encoding (BPE) merges and model API.
+ * @copyright Copyright © 2025 Austin Berrio
  *
+ * This module implements the core BPE model and merge operations,
+ * including training, serialization, and manipulation of BPE merges.
+ *
+ * @note All APIs are designed for use with space-delimited symbol strings
+ *       (e.g., "l o o k e d"). Ownership of returned pointers is specified.
  */
 
 #include <stdio.h>
