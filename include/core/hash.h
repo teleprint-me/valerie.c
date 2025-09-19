@@ -56,12 +56,13 @@ typedef int (*HashCmp)(const void* a, const void* b);
 
 /**
  * @struct Hash
- * @brief Bundles a key type with hash and compare functions.
+ * @brief Bundles key type, hash/compare function pointers, and key size for generic use.
  */
 typedef struct Hash {
-    HashType type; /**< Key type tag */
-    HashFn hash; /**< Hash function */
-    HashCmp compare; /**< Comparison function */
+    HashFn function; /**< Hash function pointer */
+    HashCmp compare; /**< Comparison function pointer */
+    HashType type; /**< Key type tag (e.g. int32, str, ptr) */
+    size_t size; /**< Key size in bytes */
 } Hash;
 
 /** Hash Functions for Supported Types */
