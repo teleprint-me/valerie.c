@@ -24,7 +24,7 @@ typedef struct HashSet {
  * @{
  */
 
-HashSet* hash_set_create(uint64_t initial_capacity, HashType type) {
+HashSet* hash_set_create(size_t initial_capacity, HashType type) {
     HashSet* set = malloc(sizeof(HashSet));
     if (!set) {
         LOG_ERROR("Failed to allocate memory for HashSet.");
