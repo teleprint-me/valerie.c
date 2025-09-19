@@ -25,6 +25,18 @@ extern "C" {
 #define HASH_KNUTH 2654435761U
 
 /**
+ * @enum HashState
+ * @brief Operational state after execution.
+ */
+typedef enum HashState {
+    HASH_SUCCESS, /**< Operation completed successfully. */
+    HASH_ERROR, /**< General error occurred during operation. */
+    HASH_KEY_EXISTS, /**< Duplicate key insertion attempted. */
+    HASH_KEY_NOT_FOUND, /**< Key not found. */
+    HASH_FULL /**< Reached maximum capacity. */
+} HashState;
+
+/**
  * @enum HashType
  * @brief Key type for hash and compare dispatch.
  */
