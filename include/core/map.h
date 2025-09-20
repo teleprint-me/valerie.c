@@ -142,42 +142,6 @@ HashState hash_map_clear(HashMap* map);
  */
 void* hash_map_search(HashMap* map, const void* key);
 
-/**
- * @brief Searches for a 32-bit integer key in the hash map.
- *
- * @param map Pointer to the hash map.
- * @param key Pointer to the integer key to search.
- * @return Pointer to associated value, or NULL if not found.
- */
-int32_t* hash_map_search_int32(HashMap* map, const void* key);
-
-/**
- * @brief Searches for a 64-bit integer key in the hash map.
- *
- * @param map Pointer to the hash map.
- * @param key Pointer to the integer key to search.
- * @return Pointer to associated value, or NULL if not found.
- */
-int64_t* hash_map_search_int64(HashMap* map, const void* key);
-
-/**
- * @brief Searches for a string key in the hash map.
- *
- * @param map Pointer to the hash map.
- * @param key Pointer to the string key to search.
- * @return Pointer to associated value, or NULL if not found.
- */
-char* hash_map_search_str(HashMap* map, const void* key);
-
-/**
- * @brief Searches for an address key in the hash map.
- *
- * @param map Pointer to the hash map.
- * @param key Pointer to the address key to search.
- * @return Pointer to associated value, or NULL if not found.
- */
-void* hash_map_search_ptr(HashMap* map, const void* key);
-
 /** @} */
 
 #ifdef __cplusplus

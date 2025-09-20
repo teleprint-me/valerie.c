@@ -315,20 +315,4 @@ void* hash_map_search(HashMap* map, const void* key) {
     return value;
 }
 
-int32_t* hash_map_search_int32(HashMap* map, const void* key) {
-    return (int32_t*) hash_map_search_internal(map, key);
-}
-
-int64_t* hash_map_search_int64(HashMap* map, const void* key) {
-    return (int64_t*) hash_map_search_internal(map, key);
-}
-
-char* hash_map_search_str(HashMap* map, const void* key) {
-    return (char*) hash_map_search_internal(map, key);
-}
-
-void* hash_map_search_ptr(HashMap* map, const void* key) {
-    return (void*) hash_map_search_internal(map, key);
-}
-
 /** @} */
