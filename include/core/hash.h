@@ -166,7 +166,7 @@ Hash* hash_create(size_t capacity, HashType type);
 /**
  * @brief Frees a hash table and all associated memory.
  *
- * @param table Pointer to the hash table to free.
+ * @param h Pointer to the hash table to free.
  */
 void hash_free(Hash* h);
 
@@ -233,10 +233,10 @@ bool hash_entry_is_valid(const HashEntry* e);
  * Returns an iterator positioned at the start of the table.
  * Pass to hash_map_next() to traverse key-value entries.
  *
- * @param table Pointer to the hash table to iterate.
+ * @param h Pointer to the hash table to iterate.
  * @return Initialized iterator.
  */
-HashIt hash_iter(Hash* table);
+HashIt hash_iter(Hash* h);
 
 /**
  * @brief Validates the hash table iterator.
@@ -264,10 +264,10 @@ HashEntry* hash_iter_next(HashIt* it);
  * the provided value_free() function (if non-NULL), or memory_free().
  * Does not deallocate the hash table structure itself.
  *
- * @param table Pointer to the hash table.
+ * @param h Pointer to the hash table.
  * @param value_free Optional callback to free value pointers (may be NULL).
  */
-void hash_iter_free_kv(Hash* table, HashValueFree value_free);
+void hash_iter_free_kv(Hash* h, HashValueFree value_free);
 
 /**
  * @brief Frees all keys and values, then deallocates the entire table.
@@ -275,10 +275,10 @@ void hash_iter_free_kv(Hash* table, HashValueFree value_free);
  * Calls hash_map_iter_free_kv() with the standard free() function,
  * then releases the table with hash_map_free().
  *
- * @param table Pointer to the hash table.
+ * @param h Pointer to the hash table.
  * @param value_free Optional callback to free value pointers (may be NULL).
  */
-void hash_iter_free_all(Hash* table, HashValueFree value_free);
+void hash_iter_free_all(Hash* h, HashValueFree value_free);
 
 /** @} */
 
