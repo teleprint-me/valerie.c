@@ -135,7 +135,7 @@ Hash* hash_create(size_t capacity, HashType type) {
             return NULL;
     }
 
-    h->entries = calloc(h->capacity, h->size);
+    h->entries = calloc(h->capacity, sizeof(HashEntry));
     if (!h->entries) {
         LOG_ERROR("Failed to allocate memory for HashMap data.");
         free(h);
