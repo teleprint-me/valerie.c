@@ -260,8 +260,9 @@ HashEntry* hash_iter_next(HashIt* it);
 /**
  * @brief Iterates and frees all keys and values in the hash table.
  *
- * Frees each key using memory_free(), and each value with either
- * the provided value_free() function (if non-NULL), or memory_free().
+ * Frees each key using free(), and each value with either
+ * the provided value_free() function, or free(), if non-NULL.
+ * Does not free values if value_free() is NULL.
  * Does not deallocate the hash table structure itself.
  *
  * @param h Pointer to the hash table.

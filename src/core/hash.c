@@ -238,9 +238,7 @@ void hash_iter_free_kv(Hash* h, HashValueFree value_free) {
 
             // Values are optional (May be NULL)
             if (value_free) {
-                value_free(entry->value);  // Custom alloc
-            } else if (entry->value) {
-                free(entry->value);  // Builtin alloc
+                value_free(entry->value);  // custom() or free()
             }
         }
     }
