@@ -38,13 +38,14 @@ add_library(valerie SHARED
     "src/core/memory.c" # posix memory allocation and deallocation
     "src/core/logger.c" # logging utility
     "src/core/test.c" # unit testing utility
+    "src/core/hash.c"
+    "src/core/map.c" # hash map with linear probing
     "src/core/page.c" # page table memory allocator
     "src/core/compare.c" # numeric comparisons, including floating-point
     "src/core/type.c" # numeric data types, focusing on numeric precision
     "src/core/regex.c" # convenience interface to compile and free pcre2 regex
     "src/core/strext.c" # transitive lib to extend libc string interface
     "src/core/path.c" # posix compatible pathlib interface
-    "src/core/map.c" # hash map with linear probing
 # tokenizer
     "src/tokenizer/vocab.c" # string-to-int frequency mapping (map.c)
     "src/tokenizer/bpe.c"
