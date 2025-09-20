@@ -56,6 +56,7 @@ target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
 
 set(EXAMPLES 
     "examples"
+    "examples/core"
     "examples/tokenizer"
 )
 

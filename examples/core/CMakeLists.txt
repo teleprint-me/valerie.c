@@ -4,8 +4,8 @@ set(EXAMPLES
     "map"
 )
 
-set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples)
-set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/build/examples)
+set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/core)
+set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/build/examples/core)
 
 foreach(example IN LISTS EXAMPLES)
     add_executable(${example} ${INPUT_DIR}/${example}.c)
