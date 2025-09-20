@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file map.c
+ * @file map.h
  * @brief Minimalistic hash map implementation providing mapping between integers, strings, and
  * memory addresses.
  *
