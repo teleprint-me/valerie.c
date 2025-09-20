@@ -33,8 +33,8 @@ extern "C" {
 typedef enum HashState {
     HASH_SUCCESS, /**< Operation completed successfully. */
     HASH_ERROR, /**< General error occurred during operation. */
-    HASH_KEY_EXISTS, /**< Duplicate key insertion attempted. */
-    HASH_KEY_NOT_FOUND, /**< Key not found. */
+    HASH_EXISTS, /**< Duplicate key insertion attempted. */
+    HASH_NOT_FOUND, /**< Key not found. */
     HASH_FULL /**< Reached maximum capacity. */
 } HashState;
 
@@ -121,6 +121,36 @@ typedef struct HashIt {
 typedef void (*HashValueFree)(void*);
 
 /**
+ * @section Hash Functions for Supported Types
+ */
+
+/**
+ * @brief Hash and compare for 32-bit int keys.
+ */
+uint64_t hash_int32(const void* key, uint64_t size, uint64_t i);
+int hash_int32_cmp(const void* a, const void* b);
+
+/**
+ * @brief Hash and compare for 64-bit int keys.
+ */
+uint64_t hash_int64(const void* key, uint64_t size, uint64_t i);
+int hash_int64_cmp(const void* a, const void* b);
+
+/**
+ * @brief Hash and compare for pointer keys.
+ */
+uint64_t hash_ptr(const void* key, uint64_t size, uint64_t i);
+int hash_ptr_cmp(const void* a, const void* b);
+
+/**
+ * @brief Hash and compare for null-terminated string keys (djb2).
+ */
+uint64_t hash_str(const void* key, uint64_t size, uint64_t i);
+int hash_str_cmp(const void* a, const void* b);
+
+/** @} */
+
+/**
  * @section Hash life-cycle
  */
 
@@ -190,33 +220,65 @@ bool hash_entry_is_valid(const HashEntry* e);
 
 /** @} */
 
-/** 
- * @section Hash Functions for Supported Types
+/**
+ * @name Hash Iterator
+ * @warning Iterators are not thread-safe. External locking is required if the hash table may
+ * be mutated concurrently during iteration.
+ * @{
  */
 
 /**
- * @brief Hash and compare for 32-bit int keys.
+ * @brief Initializes a hash table iterator.
+ *
+ * Returns an iterator positioned at the start of the table.
+ * Pass to hash_map_next() to traverse key-value entries.
+ *
+ * @param table Pointer to the hash table to iterate.
+ * @return Initialized iterator.
  */
-uint64_t hash_int32(const void* key, uint64_t size, uint64_t i);
-int hash_int32_cmp(const void* a, const void* b);
+HashIt hash_iter(Hash* table);
 
 /**
- * @brief Hash and compare for 64-bit int keys.
+ * @brief Validates the hash table iterator.
+ *
+ * @param iter Pointer to an iterator.
+ * @return true if valid, else false.
  */
-uint64_t hash_int64(const void* key, uint64_t size, uint64_t i);
-int hash_int64_cmp(const void* a, const void* b);
+bool hash_iter_is_valid(HashIt* it);
 
 /**
- * @brief Hash and compare for pointer keys.
+ * @brief Advances the iterator and returns the next valid entry.
+ *
+ * Skips empty or deleted buckets. Returns entries in arbitrary order
+ * (not sorted). Returns NULL when all entries are exhausted.
+ *
+ * @param iter Pointer to an iterator. Must not be NULL.
+ * @return Pointer to the next valid HashEntry, or NULL if done.
  */
-uint64_t hash_ptr(const void* key, uint64_t size, uint64_t i);
-int hash_ptr_cmp(const void* a, const void* b);
+HashEntry* hash_iter_next(HashIt* it);
 
 /**
- * @brief Hash and compare for null-terminated string keys (djb2).
+ * @brief Iterates and frees all keys and values in the hash table.
+ *
+ * Frees each key using memory_free(), and each value with either
+ * the provided value_free() function (if non-NULL), or memory_free().
+ * Does not deallocate the hash table structure itself.
+ *
+ * @param table Pointer to the hash table.
+ * @param value_free Optional callback to free value pointers (may be NULL).
  */
-uint64_t hash_str(const void* key, uint64_t size, uint64_t i);
-int hash_str_cmp(const void* a, const void* b);
+void hash_iter_free_kv(Hash* table, HashValueFree value_free);
+
+/**
+ * @brief Frees all keys and values, then deallocates the entire table.
+ *
+ * Calls hash_map_iter_free_kv() with the standard free() function,
+ * then releases the table with hash_map_free().
+ *
+ * @param table Pointer to the hash table.
+ * @param value_free Optional callback to free value pointers (may be NULL).
+ */
+void hash_iter_free_all(Hash* table, HashValueFree value_free);
 
 /** @} */
 

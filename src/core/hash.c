@@ -18,6 +18,82 @@
 #include "core/hash.h"
 
 /**
+ * @section Hash int
+ */
+
+uint64_t hash_int32(const void* key, uint64_t size, uint64_t i) {
+    const int32_t* k = (int32_t*) key;
+    uint64_t hash = *k * HASH_KNUTH;  // Knuth's multiplicative
+    return (hash + i) % size;
+}
+
+int hash_int32_cmp(const void* key1, const void* key2) {
+    return *(const int32_t*) key1 - *(const int32_t*) key2;
+}
+
+/** @} */
+
+/**
+ * @section Hash long
+ */
+
+uint64_t hash_int64(const void* key, uint64_t size, uint64_t i) {
+    const int64_t* k = (int64_t*) key;
+    uint64_t hash = *k * HASH_KNUTH;  // Knuth's multiplicative
+    return (hash + i) % size;
+}
+
+int hash_int64_cmp(const void* key1, const void* key2) {
+    return *(const int64_t*) key1 - *(const int64_t*) key2;
+}
+
+/** @} */
+
+/**
+ * @section Hash char ptr
+ */
+
+uint64_t hash_djb2(const char* string) {
+    uint64_t hash = 5381;
+    int c;
+
+    while ((c = *string++)) {
+        hash = ((hash << 5) + hash) + c;  // hash * 33 + c
+    }
+
+    return hash;
+}
+
+uint64_t hash_str(const void* key, uint64_t size, uint64_t i) {
+    const char* string = (const char*) key;
+    return (hash_djb2(string) + i) % size;
+}
+
+int hash_str_cmp(const void* key1, const void* key2) {
+    return strcmp((const char*) key1, (const char*) key2);
+}
+
+/** @} */
+
+/**
+ * @section Hash unsigned long ptr
+ */
+
+uint64_t hash_ptr(const void* key, uint64_t size, uint64_t i) {
+    uintptr_t addr = (uintptr_t) key;
+    uint64_t hash = addr * HASH_KNUTH;  // Knuth's multiplicative
+    return (hash + i) % size;
+}
+
+int hash_ptr_cmp(const void* key1, const void* key2) {
+    intptr_t a = (intptr_t) key1;
+    intptr_t b = (intptr_t) key2;
+    return (a > b) - (a < b);
+}
+
+/** @} */
+
+/**
  * @section Hash life-cycle
  */
 
@@ -125,77 +201,54 @@ bool hash_entry_is_valid(const HashEntry* e) {
 /** @} */
 
 /**
- * @section Hash int
+ * @section Hash iterator
+ * {@
  */
 
-uint64_t hash_int32(const void* key, uint64_t size, uint64_t i) {
-    const int32_t* k = (int32_t*) key;
-    uint64_t hash = *k * HASH_KNUTH;  // Knuth's multiplicative
-    return (hash + i) % size;
+HashIt hash_iter(Hash* h) {
+    return (HashIt) {.table = h, .index = 0};
 }
 
-int hash_int32_cmp(const void* key1, const void* key2) {
-    return *(const int32_t*) key1 - *(const int32_t*) key2;
+bool hash_iter_is_valid(HashIt* it) {
+    return it && it->table && it->table->entries;
 }
 
-/** @} */
-
-/**
- * @section Hash long
- */
-
-uint64_t hash_int64(const void* key, uint64_t size, uint64_t i) {
-    const int64_t* k = (int64_t*) key;
-    uint64_t hash = *k * HASH_KNUTH;  // Knuth's multiplicative
-    return (hash + i) % size;
-}
-
-int hash_int64_cmp(const void* key1, const void* key2) {
-    return *(const int64_t*) key1 - *(const int64_t*) key2;
-}
-
-/** @} */
-
-/**
- * @section Hash ptr
- */
-
-uint64_t hash_ptr(const void* key, uint64_t size, uint64_t i) {
-    uintptr_t addr = (uintptr_t) key;
-    uint64_t hash = addr * HASH_KNUTH;  // Knuth's multiplicative
-    return (hash + i) % size;
-}
-
-int hash_ptr_cmp(const void* key1, const void* key2) {
-    intptr_t a = (intptr_t) key1;
-    intptr_t b = (intptr_t) key2;
-    return (a > b) - (a < b);
-}
-
-/** @} */
-
-/**
- * @section Hash char
- */
-
-uint64_t hash_djb2(const char* string) {
-    uint64_t hash = 5381;
-    int c;
-
-    while ((c = *string++)) {
-        hash = ((hash << 5) + hash) + c;  // hash * 33 + c
+HashEntry* hash_iter_next(HashIt* it) {
+    if (!hash_iter_is_valid(it)) {
+        return NULL;
     }
 
-    return hash;
+    while (it->index < it->table->capacity) {
+        HashEntry* entry = &it->table->entries[it->index++];
+        if (hash_entry_is_valid(entry)) {
+            return entry;
+        }
+    }
+
+    return NULL;
 }
 
-uint64_t hash_str(const void* key, uint64_t size, uint64_t i) {
-    const char* string = (const char*) key;
-    return (hash_djb2(string) + i) % size;
+void hash_iter_free_kv(Hash* h, HashValueFree value_free) {
+    if (h) {
+        HashEntry* entry;
+        HashIt it = hash_iter(h);
+        while ((entry = hash_iter_next(&it))) {
+            // Keys are always allocated
+            free(entry->key);  // Restricted by HashType
+
+            // Values are optional (May be NULL)
+            if (value_free) {
+                value_free(entry->value);  // Custom alloc
+            } else if (entry->value) {
+                free(entry->value);  // Builtin alloc
+            }
+        }
+    }
 }
 
-int hash_str_cmp(const void* key1, const void* key2) {
-    return strcmp((const char*) key1, (const char*) key2);
+void hash_iter_free_all(Hash* h, HashValueFree value_free) {
+    hash_iter_free_kv(h, value_free);
+    hash_free(h);
 }
 
 /** @} */
