@@ -1,5 +1,5 @@
 /**
- * @file core/page.h
+ * @file page.h
  * @brief Page-based memory allocator with metadata tracking.
  *
  * This interface provides a simple allocator built on top of a linear-probing hash map.
@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "core/posix.h"  // IWYU pragma: keep
 #include "core/map.h"
 
 #ifdef __cplusplus

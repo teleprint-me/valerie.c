@@ -25,14 +25,14 @@
  */
 
 HashMap* vocab_map_copy(HashMap* m) {
-    HashMap* copy = hash_map_create(hash_map_size(m), HASH_MAP_KEY_TYPE_STRING);
+    HashMap* copy = hash_map_create(hash_capacity(m), HASH_STR);
     if (!copy) {
         return NULL;
     }
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(m);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(m);
+    while ((entry = hash_iter_next(&it))) {
         int* freq = hash_map_search(copy, entry->key);
         if (!freq) {
             char* key_dup = strdup(entry->key);
@@ -48,15 +48,15 @@ HashMap* vocab_map_copy(HashMap* m) {
 // Free the vocabulary mapping
 void vocab_map_free(HashMap* m) {
     if (m) {
-        hash_map_iter_free_all(m, NULL);
+        hash_iter_free_all(m, NULL);
     }
 }
 
 // Flush vocab to standard output
 void vocab_map_print(HashMap* m) {
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(m);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(m);
+    while ((entry = hash_iter_next(&it))) {
         char* tok = entry->key;
         int* freq = entry->value;
         printf("tok=`%s` | freq=`%d`\n", tok, *freq);
@@ -104,16 +104,16 @@ bool vocab_map_save(HashMap* m, const char* path) {
     fwrite(&version, sizeof(int), 1, file);
 
     // number of elements in the map (for reading)
-    int count = hash_map_count(m);  // vox has n elements
+    int count = hash_count(m);  // vox has n elements
     fwrite(&count, sizeof(int), 1, file);
 
     // number of bytes allocated (for initialization)
-    int size = hash_map_size(m);  // vox has n bytes
-    fwrite(&size, sizeof(int), 1, file);
+    int capacity = hash_capacity(m);  // vox has n bytes
+    fwrite(&capacity, sizeof(int), 1, file);
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(m);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(m);
+    while ((entry = hash_iter_next(&it))) {
         // Get the current token
         char* tok = entry->key;
         // Get the current token length
@@ -170,7 +170,7 @@ HashMap* vocab_map_load(const char* path) {
     fread(&size, sizeof(char), 1, file);
 
     // Allocate the map
-    HashMap* m = hash_map_create(size, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* m = hash_map_create(size, HASH_STR);
     if (!m) {
         fclose(file);
         return NULL;
@@ -267,7 +267,7 @@ HashMap* vocab_create_frequencies(const char* text) {
     char** pre_tokens = string_split_space(text, &pre_token_count);
 
     // Build word frequencies from pre-tokens
-    HashMap* freqs = hash_map_create(pre_token_count, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* freqs = hash_map_create(pre_token_count, HASH_STR);
     for (size_t i = 0; i < pre_token_count; i++) {
         int* value = hash_map_search(freqs, pre_tokens[i]);
         if (!value) {
@@ -295,11 +295,11 @@ HashMap* vocab_create_frequencies(const char* text) {
 // Create the symbol frequencies
 HashMap* vocab_create_symbols(HashMap* words) {
     // Create the symbol-freq mapping
-    HashMap* vocab = hash_map_create(hash_map_size(words), HASH_MAP_KEY_TYPE_STRING);
+    HashMap* vocab = hash_map_create(hash_capacity(words), HASH_STR);
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(words);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(words);
+    while ((entry = hash_iter_next(&it))) {
         // get current word-freq mapping
         char* word = entry->key;  // tok -> cat
         int* freq = entry->value;  // freq -> 1

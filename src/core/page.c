@@ -1,7 +1,7 @@
 /**
  * Copyright © 2023 Austin Berrio
  *
- * @file core/page.c
+ * @file page.c
  */
 
 #include "core/memory.h"
@@ -92,11 +92,11 @@ void* page_malloc(PageAllocator* allocator, size_t size, size_t alignment) {
         return NULL;
     }
 
-    HashMapState state = hash_map_insert(allocator, address, page);
-    if (HASH_MAP_STATE_FULL == state) {
+    HashState state = hash_map_insert(allocator, address, page);
+    if (HASH_FULL == state) {
         // Attempt to resize
         state = hash_map_resize(allocator, allocator->size * 2);
-        if (HASH_MAP_STATE_SUCCESS != state) {
+        if (HASH_SUCCESS != state) {
             memory_free(address);
             page_entry_free(page);
             LOG_ERROR("[PA_MALLOC] Failed to resize page allocator.");
@@ -107,7 +107,7 @@ void* page_malloc(PageAllocator* allocator, size_t size, size_t alignment) {
         state = hash_map_insert(allocator, address, page);
     }
 
-    if (HASH_MAP_STATE_SUCCESS != state) {
+    if (HASH_SUCCESS != state) {
         memory_free(address);
         page_entry_free(page);
         LOG_ERROR(
@@ -140,7 +140,7 @@ void* page_realloc(PageAllocator* allocator, void* ptr, size_t size, size_t alig
 
     // Vulkan signals free via realloc with size == 0
     if (0 == size) {
-        if (HASH_MAP_STATE_SUCCESS != hash_map_delete(allocator, ptr)) {
+        if (HASH_SUCCESS != hash_map_delete(allocator, ptr)) {
             LOG_ERROR("[PA_REALLOC] Failed to remove page for %p", ptr);
         }
         page_entry_free(page);
@@ -161,16 +161,16 @@ void* page_realloc(PageAllocator* allocator, void* ptr, size_t size, size_t alig
     };
 
     // Re-allocator page metadata to new address
-    if (HASH_MAP_STATE_SUCCESS != hash_map_delete(allocator, ptr)) {
+    if (HASH_SUCCESS != hash_map_delete(allocator, ptr)) {
         LOG_ERROR("[PA_REALLOC] Failed to remove old mapping for %p", ptr);
         return NULL;
     }
 
-    HashMapState state = hash_map_insert(allocator, address, page);
-    if (HASH_MAP_STATE_FULL == state) {
+    HashState state = hash_map_insert(allocator, address, page);
+    if (HASH_FULL == state) {
         // Attempt to resize
         state = hash_map_resize(allocator, allocator->size * 2);
-        if (HASH_MAP_STATE_SUCCESS != state) {
+        if (HASH_SUCCESS != state) {
             memory_free(address);
             page_entry_free(page);
             LOG_ERROR("[PA_REALLOC] Failed to resize page allocator.");
@@ -181,7 +181,7 @@ void* page_realloc(PageAllocator* allocator, void* ptr, size_t size, size_t alig
         state = hash_map_insert(allocator, address, page);
     }
 
-    if (HASH_MAP_STATE_SUCCESS != state) {
+    if (HASH_SUCCESS != state) {
         memory_free(address);
         page_entry_free(page);
         LOG_ERROR(
@@ -204,7 +204,7 @@ void page_free(PageAllocator* allocator, void* ptr) {
         return;
     }
 
-    if (HASH_MAP_STATE_SUCCESS != hash_map_delete(allocator, ptr)) {
+    if (HASH_SUCCESS != hash_map_delete(allocator, ptr)) {
         LOG_ERROR("[PA_FREE] Failed to remove page for %p", ptr);
         return;
     }
@@ -218,10 +218,10 @@ void page_free_all(PageAllocator* allocator) {
         return;
     }
 
-    HashMapIterator it = hash_map_iter(allocator);
-    HashMapEntry* entry = NULL;
+    HashIt it = hash_iter(allocator);
+    HashEntry* entry = NULL;
 
-    while ((entry = hash_map_next(&it))) {
+    while ((entry = hash_iter_next(&it))) {
         void* ptr = entry->key;
         PageEntry* page = (PageEntry*) entry->value;
 
@@ -264,10 +264,10 @@ bool page_add(PageAllocator* allocator, void* ptr, size_t size, size_t alignment
         return false;
     }
 
-    HashMapState state = hash_map_insert(allocator, ptr, page);
-    if (HASH_MAP_STATE_FULL == state) {
+    HashState state = hash_map_insert(allocator, ptr, page);
+    if (HASH_FULL == state) {
         state = hash_map_resize(allocator, allocator->size * 2);
-        if (HASH_MAP_STATE_SUCCESS != state) {
+        if (HASH_SUCCESS != state) {
             page_entry_free(page);
             LOG_ERROR("[PA_ADD] Failed to resize page allocator");
             return false;
@@ -277,7 +277,7 @@ bool page_add(PageAllocator* allocator, void* ptr, size_t size, size_t alignment
         state = hash_map_insert(allocator, ptr, page);
     }
 
-    if (HASH_MAP_STATE_SUCCESS != state) {
+    if (HASH_SUCCESS != state) {
         page_entry_free(page);
         LOG_ERROR("[PA_ADD] Failed to insert %p into page allocator (state = %d)", ptr, state);
         return false;
@@ -294,7 +294,7 @@ bool page_add(PageAllocator* allocator, void* ptr, size_t size, size_t alignment
  */
 
 PageAllocator* page_allocator_create(size_t initial_size) {
-    return hash_map_create(initial_size, HASH_MAP_KEY_TYPE_ADDRESS);
+    return hash_map_create(initial_size, HASH_PTR);
 }
 
 void page_allocator_free(PageAllocator* allocator) {
@@ -318,10 +318,10 @@ void page_allocator_dump(PageAllocator* allocator) {
     }
 
     size_t total = 0;
-    HashMapIterator it = hash_map_iter(allocator);
-    HashMapEntry* entry = NULL;
+    HashIt it = hash_iter(allocator);
+    HashEntry* entry = NULL;
 
-    while ((entry = hash_map_next(&it))) {
+    while ((entry = hash_iter_next(&it))) {
         PageEntry* page = (PageEntry*) entry->value;
         void* ptr = entry->key;
 

@@ -110,11 +110,11 @@ BPEModel* bpe_load(const char* path) {
 // once all pairs have been exhausted,
 // the pairs function must return NULL to indicate the end of operation
 HashMap* bpe_pairs(HashMap* vocab) {
-    HashMap* new_pairs = hash_map_create(hash_map_size(vocab), HASH_MAP_KEY_TYPE_STRING);
+    HashMap* new_pairs = hash_map_create(hash_capacity(vocab), HASH_STR);
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(vocab);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(vocab);
+    while ((entry = hash_iter_next(&it))) {
         size_t sym_count = 0;
         char** syms = string_split_delim(entry->key, " ", &sym_count);
 
@@ -147,9 +147,9 @@ char* bpe_best(HashMap* pairs, int* out_freq) {
     char* best_pair = NULL;
     int best_freq = -1;
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(pairs);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(pairs);
+    while ((entry = hash_iter_next(&it))) {
         char* pair = entry->key;
         int* freq = entry->value;
 
@@ -185,11 +185,11 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
     const char* b = tuple[1];
 
     // New vocab map
-    HashMap* new_vocab = hash_map_create(hash_map_size(vocab), HASH_MAP_KEY_TYPE_STRING);
+    HashMap* new_vocab = hash_map_create(hash_capacity(vocab), HASH_STR);
 
-    HashMapEntry* entry;
-    HashMapIterator it = hash_map_iter(vocab);
-    while ((entry = hash_map_next(&it))) {
+    HashEntry* entry;
+    HashIt it = hash_iter(vocab);
+    while ((entry = hash_iter_next(&it))) {
         // Split word into symbols
         size_t sym_count = 0;
         char** syms = string_split_delim(entry->key, " ", &sym_count);

@@ -44,7 +44,7 @@ typedef struct Tokenizer {
 
 // exact bijection: 0..255
 HashMap* ascii_generate(void) {
-    HashMap* latin1 = hash_map_create(256, HASH_MAP_KEY_TYPE_STRING);
+    HashMap* latin1 = hash_map_create(256, HASH_STR);
     if (!latin1) {
         return NULL;
     }
