@@ -102,6 +102,23 @@ typedef struct Hash {
     HashCmp cmp; /**< Comparison function pointer */
 } Hash;
 
+/**
+ * @brief Iterator for traversing active entries in a hash table.
+ */
+typedef struct HashIt {
+    Hash* table; /**< Pointer to the hash table being iterated. */
+    size_t index; /**< Current index within the table. */
+} HashIt;
+
+/**
+ * @brief Callback type for freeing hash values.
+ *
+ * Defines a function pointer type for freeing value pointers
+ * during hash table iteration or cleanup operations.
+ *
+ * @param value Pointer to the value to free.
+ */
+typedef void (*HashValueFree)(void*);
 
 /**
  * @section Hash life-cycle
