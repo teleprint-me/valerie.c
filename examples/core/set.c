@@ -7,6 +7,8 @@
 /// Instead, the point here is to experiment with a naive set implementation and to allow it
 /// to organically evolve to see what happens. A HashSet can be used as a fallback if this
 /// experiment fails.
+/// The goal of the experiment is to implement a flexible set interface.
+/// Any object should be able to be placed into the set and it should operate as expected.
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -64,13 +66,17 @@ size_t set_count(Set* set) {
     return set ? set->count : 0;
 }
 
+uint8_t* set_element(Set* set, size_t i) {
+    return set ? (uint8_t*) set->elements + i * set->size : NULL;
+}
+
 /// @note this is equivalent for checking validaty, e.g. is_valid()
 /// maybe rename this to is valid then wrap this as a negated return value instead?
 // ∅ The empty set is the set which contains no elements.
 bool set_is_empty(Set* set) {
     // not sure if this is valid yet. probably expects inverse bool checks.
     // maybe just return count instead?
-    return set && set->count == 0;
+    return !set || set->count == 0;
 }
 
 // start with naive linear search to keep it simple for now
@@ -79,7 +85,7 @@ bool set_contains(Set* set, void* value) {
     // not sure if this can be parallelized yet.
     for (size_t i = 0; i < set->count; i++) {
         // get current element
-        void* element = (uint8_t*) set->elements + i * set->size;
+        void* element = set_element(set, i);
         // compare elements against value
         if (memcmp(element, value, set->size) == 0) {
             return true;
@@ -91,7 +97,7 @@ bool set_contains(Set* set, void* value) {
 // A ⊆ B asserts that A is a subset of B: every element of A is also an element of B.
 bool set_is_subset(Set* a, Set* b) {
     for (size_t i = 0; i < a->count; i++) {
-        void* element = (uint8_t*) a->elements + i * a->size;
+        void* element = set_element(a, i);
         if (!set_contains(b, element)) {
             return false;
         }
@@ -118,8 +124,8 @@ bool set_add(Set* set, void* value) {
     }
 
     // insert value into set
-    void* dst = (uint8_t*) set->elements + set->count * set->size;
-    memmove(dst, value, set->size);  // memmove is safer with inline ops
+    void* element = set_element(set, set->count);
+    memmove(element, value, set->size);  // memmove is safer with inline ops
     set->count++;
     return true;
 }
