@@ -17,6 +17,8 @@
 
 #include "core/logger.h"
 
+/// @note Set only stores a shallow copy of objects
+///       It does not free any resources referenced by those objects.
 typedef struct Set {
     void* elements;  // flat buffer stored as capacity * size
     size_t count;  // current number of elements
