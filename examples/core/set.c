@@ -6,8 +6,8 @@
  * It is a naive implementation and is not optimized for performance. A HashSet can be
  * used as a fallback if this experiment fails.
  * 
- * @ref https://discrete.openmathbooks.org/dmoi4.html
- * @ref https://discrete.openmathbooks.org/dmoi4/sec_intro-structures.html#subsec_structures-sets
+ * @ref https://discrete.openmathbooks.org/dmoi3.html
+ * @ref https://discrete.openmathbooks.org/dmoi3/sec_intro-sets.html
  */
 
 #include <assert.h>
