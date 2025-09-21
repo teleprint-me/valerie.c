@@ -57,6 +57,7 @@ void set_free(Set* set) {
 
 /// @note this is equivalent for checking validaty, e.g. is_valid()
 /// maybe rename this to is valid then wrap this as a negated return value instead?
+// ∅ The empty set is the set which contains no elements.
 bool set_is_empty(Set* set) {
     // not sure if this is valid yet. probably expects inverse bool checks.
     // maybe just return count instead?
@@ -64,6 +65,7 @@ bool set_is_empty(Set* set) {
 }
 
 // start with naive linear search to keep it simple for now
+// 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
 bool set_contains(Set* set, void* value) {
     // not sure if this can be parallelized yet.
     for (size_t i = 0; i < set->count; i++) {
@@ -76,6 +78,17 @@ bool set_contains(Set* set, void* value) {
     return false;
 }
 
+// A ⊆ B asserts that A is a subset of B: every element of A is also an element of B.
+bool set_is_subset(Set* a, Set* b) {
+    for (size_t i = 0; i < a->count; i++) {
+        if (!set_contains(b, a->elements[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// technically, this just appends a new value into the sequence.
 bool set_add(Set* set, void* value) {
     // catch duplicate values
     if (set_contains(set, value)) {
