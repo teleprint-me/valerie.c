@@ -20,7 +20,7 @@ typedef struct Set {
     void* elements;  // flat buffer stored as capacity * size
     size_t count;  // current number of elements
     size_t capacity;  // total capacity in number of elements (not bytes)
-    size_t size;  // size of the object in bytes
+    size_t size;  // size of the object (in bytes)
 } Set;
 
 // this is convoluted, but i'm running with it for now.
@@ -38,7 +38,7 @@ Set* set_create(size_t capacity, size_t size) {
     }
 
     set->size = size;
-    set->capacity = capacity > 0 ? capacity * size : 1;
+    set->capacity = capacity > 0 ? capacity : 1;
     set->count = 0;
     set->elements = malloc(set->capacity * set->size);
     if (!set->elements) {
@@ -57,6 +57,11 @@ void set_free(Set* set) {
         }
         free(set);
     }
+}
+
+// return the number of elements in the set
+size_t set_count(Set* set) {
+    return set ? set->count : 0;
 }
 
 /// @note this is equivalent for checking validaty, e.g. is_valid()
