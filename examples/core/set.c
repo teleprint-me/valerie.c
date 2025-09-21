@@ -1,10 +1,13 @@
 /**
  * @file examples/core/set.c
- * @brief Driver for an (un)ordered set of elements, offering a flexible set interface.
+ * @brief Driver for an unordered set of elements, offering a flexible set interface.
  *
  * This implementation allows any object to be placed into the set and operates as expected.
  * It is a naive implementation and is not optimized for performance. A HashSet can be
  * used as a fallback if this experiment fails.
+ * 
+ * @ref https://discrete.openmathbooks.org/dmoi4.html
+ * @ref https://discrete.openmathbooks.org/dmoi4/sec_intro-structures.html#subsec_structures-sets
  */
 
 #include <assert.h>
