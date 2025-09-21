@@ -16,6 +16,7 @@
 
 #include "core/logger.h"
 
+/// there's a way to make elements flat. i just can't recall how atm.
 typedef struct Set {
     void** elements;  // objects stored in the set
     size_t count;  // number of elements
@@ -23,6 +24,8 @@ typedef struct Set {
     size_t size;  // size of the object in bytes
 } Set;
 
+// this is convoluted, but i'm running with it for now.
+// i'm sure this can be simplified.
 Set* set_create(size_t n, size_t size) {
     Set* set = malloc(sizeof(Set));
     if (!set) {
@@ -62,12 +65,32 @@ bool set_is_empty(Set* set) {
 
 // start with naive linear search to keep it simple for now
 bool set_contains(Set* set, void* value) {
+    // not sure if this can be parallelized yet.
     for (size_t i = 0; i < set->count; i++) {
-        if (memcmp(set->elements[i], value, set->size)) {
+        // believe it or not, indexing is slower than shifting the pointer manually.
+        // this is negligble with small sets, but significant with large sets.
+        if (memcmp(set->elements + (i * set->size), value, set->size)) {
             return true;
         }
     }
     return false;
+}
+
+bool set_add(Set* set, void* value) {
+    // catch duplicate values
+    if (set_contains(set, value)) {
+        return false;  // enums might be more useful, but this is simple
+    }
+
+    // resize the set to fit input
+    void** temp = realloc(set->elements, set->size * (set->count + 1));
+    if (!temp) {
+        return false;  // out of memory?
+    }
+
+    set->elements = temp;
+    set->elements[set->count++] = value;
+    return true;
 }
 
 int main(void) {
