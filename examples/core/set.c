@@ -78,8 +78,6 @@ uint8_t* set_element(Set* set, size_t i) {
 
 /// ∅ The empty set is the set which contains no elements.
 bool set_is_empty(Set* set) {
-    // not sure if this is valid yet. probably expects inverse bool checks.
-    // maybe just return count instead?
     return !set || set->count == 0;
 }
 
