@@ -192,11 +192,15 @@ bool set_remove(Set* set, void* value) {
 }
 
 bool set_clear(Set* set) {
+    // null sets are cleared already
     if (set_is_empty(set)) {
         return false;
     }
+    // zero out memory for safety
     memset(set->elements, 0, set->capacity * set->size);
-    return true;
+    // reset number of elements
+    set->count = 0;
+    return true;  // ok
 }
 
 int main(void) {
