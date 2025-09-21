@@ -91,10 +91,8 @@ bool set_contains(Set* set, void* value) {
 
     // not sure if this can be parallelized yet.
     for (size_t i = 0; i < set->count; i++) {
-        // get current element
-        void* element = set_element(set, i);
         // compare elements against value
-        if (memcmp(element, value, set->size) == 0) {
+        if (memcmp(set_element(set, i), value, set->size) == 0) {
             return true;
         }
     }
@@ -104,8 +102,7 @@ bool set_contains(Set* set, void* value) {
 // A ⊆ B asserts that A is a subset of B: every element of A is also an element of B.
 bool set_is_subset(Set* a, Set* b) {
     for (size_t i = 0; i < a->count; i++) {
-        void* element = set_element(a, i);
-        if (!set_contains(b, element)) {
+        if (!set_contains(b, set_element(a, i))) {
             return false;
         }
     }
@@ -150,9 +147,9 @@ bool set_add(Set* set, void* value) {
         set->capacity = new_capacity;
     }
 
-    // insert value into set
-    void* element = set_element(set, set->count);
-    memmove(element, value, set->size);  // memmove is safer with inline ops
+    /// insert value into set
+    /// @note memmove is safer with inline ops
+    memmove(set_element(set, set->count), value, set->size);
     set->count++;
     return true;
 }
@@ -164,8 +161,7 @@ size_t set_index(Set* set, void* value) {
     }
 
     for (size_t i = 0; i < set->count; i++) {
-        void* element = set_element(set, i);
-        if (memcmp(element, value, set->size) == 0) {
+        if (memcmp(set_element(set, i), value, set->size) == 0) {
             return i;
         }
     }
@@ -197,7 +193,9 @@ bool set_remove(Set* set, void* value) {
 }
 
 bool set_clear(Set* set) {
-    if (set_is_empty(set)) return false;
+    if (set_is_empty(set)) {
+        return false;
+    }
     memset(set->elements, 0, set->capacity * set->size);
     return true;
 }
