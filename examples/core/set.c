@@ -73,8 +73,6 @@ uint8_t* set_element(Set* set, size_t i) {
     return set ? (uint8_t*) set->elements + i * set->size : NULL;
 }
 
-/// @note this is equivalent for checking validaty, e.g. is_valid()
-/// maybe rename this to is valid then wrap this as a negated return value instead?
 /// ∅ The empty set is the set which contains no elements.
 bool set_is_empty(Set* set) {
     // not sure if this is valid yet. probably expects inverse bool checks.
@@ -148,7 +146,7 @@ bool set_add(Set* set, void* value) {
     }
 
     /// insert value into set
-    /// @note memmove is safer with inline ops
+    /// @note memmove is safer with overlapping ops
     memmove(set_element(set, set->count), value, set->size);
     set->count++;
     return true;
@@ -185,6 +183,7 @@ bool set_remove(Set* set, void* value) {
         void* dst = set_element(set, index);
         void* src = set_element(set, index + 1);
         size_t bytes = (set->count - index - 1) * set->size;
+        /// @note memmove is safer with overlapping ops
         memmove(dst, src, bytes);
     }
 
