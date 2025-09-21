@@ -155,7 +155,7 @@ bool set_add(Set* set, void* value) {
 
 // not sure how to handle non-existant values
 size_t set_index(Set* set, void* value) {
-    if (!set) {
+    if (set_is_empty(set)) {
         return SIZE_MAX;  // null set
     }
 
@@ -209,7 +209,7 @@ bool set_clear(Set* set) {
 Set* set_union(Set* a, Set* b) {
     // Handle null sets
     if (set_is_empty(a) || set_is_empty(b)) {
-        return NULL;  // null sets can not be unions
+        return NULL;  // null sets have no unions (UB)
     }
 
     // Start with max capacity for all elements (max of both)
@@ -237,7 +237,7 @@ Set* set_union(Set* a, Set* b) {
 // elements which are elements of both A and B.
 Set* set_intersection(Set* a, Set* b) {
     if (set_is_empty(a) || set_is_empty(b)) {
-        return NULL;  // null sets can not intersect
+        return NULL;  // null sets have no intersections (UB)
     }
 
     // Start with min capacity for all elements (min of both)
@@ -247,7 +247,7 @@ Set* set_intersection(Set* a, Set* b) {
         return NULL;
     }
 
-    // Only copy elements of a that are contained within b
+    // Add all elements of a which are in b
     for (size_t i = 0; i < a->count; i++) {
         if (set_contains(b, set_element(a, i))) {
             set_add(new_set, set_element(a, i));
@@ -255,6 +255,30 @@ Set* set_intersection(Set* a, Set* b) {
     }
 
     // return the intersection of a and b
+    return new_set;
+}
+
+// A \ B is set difference between A and B: the set containing
+// all elements of A which are not elements of B.
+Set* set_difference(Set* a, Set* b) {
+    if (set_is_empty(a) || set_is_empty(b)) {
+        return NULL;  // null sets have no difference (UB)
+    }
+
+    // Create a new set
+    Set* new_set = set_create(a->count, a->size);
+    if (!new_set) {
+        return NULL;
+    }
+
+    // Add all elements of a which are not in b
+    for (size_t i = 0; i < a->count; i++) {
+        if (!set_contains(b, set_element(a, i))) {
+            set_add(new_set, set_element(a, i));
+        }
+    }
+
+    // return the difference between a and b
     return new_set;
 }
 
