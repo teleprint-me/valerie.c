@@ -196,6 +196,12 @@ bool set_remove(Set* set, void* value) {
     return true;
 }
 
+bool set_clear(Set* set) {
+    if (set_is_empty(set)) return false;
+    memset(set->elements, 0, set->capacity * set->size);
+    return true;
+}
+
 int main(void) {
     Set* set = set_create(1, sizeof(int));
     if (!set) {
@@ -212,6 +218,10 @@ int main(void) {
 
     assert(set_contains(set, &a));
 
+    assert(set_remove(set, &c));
+    assert(!set_contains(set, &c));
+
+    printf("All assertions passed!\n");
     set_free(set);
     return 0;
 }
