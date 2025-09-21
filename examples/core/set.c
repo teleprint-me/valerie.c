@@ -1,15 +1,10 @@
 /**
  * @file examples/core/set.c
- * @brief driver for handling an (un)ordered set of elements.
- * HashMap can regulate referenence management.
- * HashMap would be equivalent to using PDS (aka PDO) to store values as keys.
- * This is not as a simple as it initially appears. Especially when seeking out flexibility.
- * The keys of a map are usually restricted which makes sense when appropriately considered.
- * Instead, the point here is to experiment with a naive set implementation and to allow it
- * to organically evolve to see what happens. A HashSet can be used as a fallback if this
- * experiment fails.
- * The goal of the experiment is to implement a flexible set interface.
- * Any object should be able to be placed into the set and it should operate as expected.
+ * @brief Driver for an (un)ordered set of elements, offering a flexible set interface.
+ *
+ * This implementation allows any object to be placed into the set and operates as expected.
+ * It is a naive implementation and is not optimized for performance. A HashSet can be
+ * used as a fallback if this experiment fails.
  */
 
 #include <assert.h>
