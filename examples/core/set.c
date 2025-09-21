@@ -1,5 +1,5 @@
 /// @file examples/core/set.c
-/// @brief driver for handling an unordered set of elements.
+/// @brief driver for handling an (un)ordered set of elements.
 /// HashMap can regulate referenence management.
 /// HashMap would be equivalent to using PDS (aka PDO) to store values as keys.
 /// This is not as a simple as it initially appears. Especially when seeking out flexibility.
@@ -82,12 +82,13 @@ bool set_add(Set* set, void* value) {
         return false;  // enums might be more useful, but this is simple
     }
 
-    // resize the set to fit input
+    // resize set to fit input
     void** temp = realloc(set->elements, set->size * (set->count + 1));
     if (!temp) {
         return false;  // out of memory?
     }
 
+    // insert value into set
     set->elements = temp;
     set->elements[set->count++] = value;
     return true;
