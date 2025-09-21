@@ -36,7 +36,7 @@ Set* set_create(size_t capacity, size_t size) {
     }
 
     if (!(size > 0)) {
-        LOG_ERROR("Size must be greater than 0!");
+        LOG_ERROR("Size must be sizeof(type)!");
         free(set);
         return NULL;
     }
