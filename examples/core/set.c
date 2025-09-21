@@ -1,14 +1,17 @@
-/// @file examples/core/set.c
-/// @brief driver for handling an (un)ordered set of elements.
-/// HashMap can regulate referenence management.
-/// HashMap would be equivalent to using PDS (aka PDO) to store values as keys.
-/// This is not as a simple as it initially appears. Especially when seeking out flexibility.
-/// The keys of a map are usually restricted which makes sense when appropriately considered.
-/// Instead, the point here is to experiment with a naive set implementation and to allow it
-/// to organically evolve to see what happens. A HashSet can be used as a fallback if this
-/// experiment fails.
-/// The goal of the experiment is to implement a flexible set interface.
-/// Any object should be able to be placed into the set and it should operate as expected.
+/**
+ * @file examples/core/set.c
+ * @brief driver for handling an (un)ordered set of elements.
+ * HashMap can regulate referenence management.
+ * HashMap would be equivalent to using PDS (aka PDO) to store values as keys.
+ * This is not as a simple as it initially appears. Especially when seeking out flexibility.
+ * The keys of a map are usually restricted which makes sense when appropriately considered.
+ * Instead, the point here is to experiment with a naive set implementation and to allow it
+ * to organically evolve to see what happens. A HashSet can be used as a fallback if this
+ * experiment fails.
+ * The goal of the experiment is to implement a flexible set interface.
+ * Any object should be able to be placed into the set and it should operate as expected.
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -25,7 +28,8 @@ typedef struct Set {
     size_t size;  // size of the object (in bytes)
 } Set;
 
-// this is convoluted, but i'm running with it for now.
+// We use these braces to enclose the elements of a set.
+// So {1, 2, 3} is the set containing 1, 2, and 3.
 Set* set_create(size_t capacity, size_t size) {
     Set* set = malloc(sizeof(Set));
     if (!set) {
@@ -61,18 +65,19 @@ void set_free(Set* set) {
     }
 }
 
-// return the number of elements in the set
+// The cardinality (or size) of A is the number of elements in A.
 size_t set_count(Set* set) {
     return set ? set->count : 0;
 }
 
+/// @ref https://stackoverflow.com/a/14015582/15147156
 uint8_t* set_element(Set* set, size_t i) {
     return set ? (uint8_t*) set->elements + i * set->size : NULL;
 }
 
 /// @note this is equivalent for checking validaty, e.g. is_valid()
 /// maybe rename this to is valid then wrap this as a negated return value instead?
-// ∅ The empty set is the set which contains no elements.
+/// ∅ The empty set is the set which contains no elements.
 bool set_is_empty(Set* set) {
     // not sure if this is valid yet. probably expects inverse bool checks.
     // maybe just return count instead?
