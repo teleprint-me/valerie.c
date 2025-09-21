@@ -105,6 +105,33 @@ bool set_is_subset(Set* a, Set* b) {
     return true;
 }
 
+bool set_is_equal(Set* a, Set* b) {
+    // a set may be null mathematically, but this may conflict with C itself.
+    // implementation is to be decided. this is fine for now to enforce simplicity.
+    if (!a || !b) {
+        return false;
+    }
+
+    // sets are not equal
+    if (a->count != b->count) {
+        return false;
+    }
+
+    // compare elements
+    // we can use is_subset(), but then execute the loop twice.
+    // this allows us to do it in a single pass.
+    // what's nice is that this is parallelizable.
+    for (size_t i = 0; i < a->count; i++) {
+        void* a_i = set_element(a, i);
+        void* b_i = set_element(b, i);
+        if (memcmp(a_i, b_i, a->size) != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // technically, this just appends a new value into the sequence.
 bool set_add(Set* set, void* value) {
     // catch duplicate values
