@@ -128,26 +128,28 @@ bool set_is_equal(Set* a, Set* b) {
     return set_is_subset(a, b) && set_is_subset(b, a);
 }
 
-// technically, this just appends a new value into the sequence.
+/// Function for adding a new value to the set.
+/// @note Appends a new value to the buffer.
 bool set_add(Set* set, void* value) {
-    // catch duplicate values
+    // Check if the set already contains the value (to avoid duplicates)
     if (set_contains(set, value)) {
-        return false;  // enums might be more useful, but this is simple
+        return false;
     }
 
-    // out of memory
+    // Check if the set is out of memory and needs to resize its capacity
     if (set->count == set->capacity) {
         size_t new_capacity = set->capacity * 2;
         void* temp = realloc(set->elements, new_capacity * set->size);
+
         if (!temp) {
             return false;
         }
+
         set->elements = temp;
         set->capacity = new_capacity;
     }
 
-    /// insert value into set
-    /// @note memmove is safer with overlapping ops
+    // Safely insert the value into the set using memmove
     memmove(set_element(set, set->count), value, set->size);
     set->count++;
     return true;
