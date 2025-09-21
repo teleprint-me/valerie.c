@@ -26,14 +26,16 @@ typedef struct Set {
 Set* set_create(size_t n, size_t size) {
     Set* set = malloc(sizeof(Set));
     if (!set) {
+        LOG_ERROR("Failed to create Set.");
         return NULL;
     }
 
     set->size = size;
     set->count = n > 0 ? n : 1;
     set->capacity = set->count * size;
-    set->elements = malloc(n * size);
+    set->elements = malloc(set->capacity);
     if (!set->elements) {
+        LOG_ERROR("Failed to allocated %zu bytes", set->capacity);
         free(set);
         return NULL;
     }
@@ -51,6 +53,7 @@ void set_free(Set* set) {
 }
 
 /// @note this is equivalent for checking validaty, e.g. is_valid()
+/// maybe rename this to is valid then wrap this as a negated return value instead?
 bool set_is_empty(Set* set) {
     // not sure if this is valid yet. probably expects inverse bool checks.
     // maybe just return count instead?
@@ -58,20 +61,18 @@ bool set_is_empty(Set* set) {
 }
 
 // start with naive linear search to keep it simple for now
-bool set_contains(Set* set, int* value) {
+bool set_contains(Set* set, void* value) {
     for (size_t i = 0; i < set->count; i++) {
         if (memcmp(set->elements[i], value, set->size)) {
             return true;
         }
     }
-
     return false;
 }
 
 int main(void) {
     Set* set = set_create(1, sizeof(int));
     if (!set) {
-        fprintf(stderr, "Failed to create Set.\n");
         return EXIT_FAILURE;
     }
 
