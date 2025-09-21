@@ -16,29 +16,33 @@
 
 #include "core/logger.h"
 
-/// there's a way to make elements flat. i just can't recall how atm.
 typedef struct Set {
-    void** elements;  // objects stored in the set
-    size_t count;  // number of elements
-    size_t capacity;  // total capacity in bytes
+    void* elements;  // flat buffer stored as capacity * size
+    size_t count;  // current number of elements
+    size_t capacity;  // total capacity in number of elements (not bytes)
     size_t size;  // size of the object in bytes
 } Set;
 
 // this is convoluted, but i'm running with it for now.
-// i'm sure this can be simplified.
-Set* set_create(size_t n, size_t size) {
+Set* set_create(size_t capacity, size_t size) {
     Set* set = malloc(sizeof(Set));
     if (!set) {
         LOG_ERROR("Failed to create Set.");
         return NULL;
     }
 
+    if (!(size > 0)) {
+        LOG_ERROR("Size must be greater than 0!");
+        free(set);
+        return NULL;
+    }
+
     set->size = size;
-    set->count = n > 0 ? n : 1;
-    set->capacity = set->count * size;
-    set->elements = malloc(set->capacity);
+    set->capacity = capacity > 0 ? capacity * size : 1;
+    set->count = 0;
+    set->elements = malloc(set->capacity * set->size);
     if (!set->elements) {
-        LOG_ERROR("Failed to allocated %zu bytes", set->capacity);
+        LOG_ERROR("Failed to allocate %zu bytes", set->capacity);
         free(set);
         return NULL;
     }
@@ -49,7 +53,7 @@ Set* set_create(size_t n, size_t size) {
 void set_free(Set* set) {
     if (set) {
         if (set->elements) {
-            free(set);
+            free(set->elements);
         }
         free(set);
     }
@@ -61,7 +65,7 @@ void set_free(Set* set) {
 bool set_is_empty(Set* set) {
     // not sure if this is valid yet. probably expects inverse bool checks.
     // maybe just return count instead?
-    return set && set->size > 0 && set->capacity > 0 && set->count > 0;
+    return set && set->count == 0;
 }
 
 // start with naive linear search to keep it simple for now
@@ -69,9 +73,10 @@ bool set_is_empty(Set* set) {
 bool set_contains(Set* set, void* value) {
     // not sure if this can be parallelized yet.
     for (size_t i = 0; i < set->count; i++) {
-        // believe it or not, indexing is slower than shifting the pointer manually.
-        // this is negligble with small sets, but significant with large sets.
-        if (memcmp(set->elements + (i * set->size), value, set->size)) {
+        // get current element
+        void* element = (uint8_t*) set->elements + i * set->size;
+        // compare elements against value
+        if (memcmp(element, value, set->size) == 0) {
             return true;
         }
     }
@@ -81,7 +86,8 @@ bool set_contains(Set* set, void* value) {
 // A ⊆ B asserts that A is a subset of B: every element of A is also an element of B.
 bool set_is_subset(Set* a, Set* b) {
     for (size_t i = 0; i < a->count; i++) {
-        if (!set_contains(b, a->elements[i])) {
+        void* element = (uint8_t*) a->elements + i * a->size;
+        if (!set_contains(b, element)) {
             return false;
         }
     }
@@ -95,15 +101,21 @@ bool set_add(Set* set, void* value) {
         return false;  // enums might be more useful, but this is simple
     }
 
-    // resize set to fit input
-    void** temp = realloc(set->elements, set->size * (set->count + 1));
-    if (!temp) {
-        return false;  // out of memory?
+    // out of memory
+    if (set->count == set->capacity) {
+        size_t new_capacity = set->capacity * 2;
+        void* temp = realloc(set->elements, new_capacity * set->size);
+        if (!temp) {
+            return false;
+        }
+        set->elements = temp;
+        set->capacity = new_capacity;
     }
 
     // insert value into set
-    set->elements = temp;
-    set->elements[set->count++] = value;
+    void* dst = (uint8_t*) set->elements + set->count * set->size;
+    memmove(dst, value, set->size);  // memmove is safer with inline ops
+    set->count++;
     return true;
 }
 
