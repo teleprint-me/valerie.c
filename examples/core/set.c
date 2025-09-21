@@ -208,18 +208,11 @@ bool set_clear(Set* set) {
 // elements which are elements of A or B or both.
 Set* set_union(Set* a, Set* b) {
     // Handle null sets
-    if (set_is_empty(a) && set_is_empty(b)) {
-        // If both are empty, return an empty set
-        return set_create(1, a ? a->size : (b ? b->size : sizeof(char)));
-    }
-    if (set_is_empty(a)) {
-        return set_create(b->capacity, b->size);
-    }
-    if (set_is_empty(b)) {
-        return set_create(a->capacity, a->size);
+    if (set_is_empty(a) || set_is_empty(b)) {
+        return NULL;  // null sets can not be unions
     }
 
-    // Start with enough capacity for all elements (max of both)
+    // Start with max capacity for all elements (max of both)
     size_t new_capacity = a->count + b->count;
     Set* new_set = set_create(new_capacity, a->size);
     if (!new_set) {
@@ -237,6 +230,31 @@ Set* set_union(Set* a, Set* b) {
     }
 
     // return the union of a and b
+    return new_set;
+}
+
+// A ∩ B is the intersection of A and B: the set containing all
+// elements which are elements of both A and B.
+Set* set_intersection(Set* a, Set* b) {
+    if (set_is_empty(a) || set_is_empty(b)) {
+        return NULL;  // null sets can not intersect
+    }
+
+    // Start with min capacity for all elements (min of both)
+    size_t new_capacity = a->capacity < b->capacity ? a->capacity : b->capacity;
+    Set* new_set = set_create(new_capacity, a->size);
+    if (!new_set) {
+        return NULL;
+    }
+
+    // Only copy elements of a that are contained within b
+    for (size_t i = 0; i < a->count; i++) {
+        if (set_contains(b, set_element(a, i))) {
+            set_add(new_set, set_element(a, i));
+        }
+    }
+
+    // return the intersection of a and b
     return new_set;
 }
 
