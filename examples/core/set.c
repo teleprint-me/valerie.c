@@ -12,6 +12,7 @@
  * Any object should be able to be placed into the set and it should operate as expected.
  */
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -70,6 +71,8 @@ size_t set_count(Set* set) {
     return set ? set->count : 0;
 }
 
+/// @brief Calculates the column for a given element within the buffer.
+/// @note C naturally aligns with row-major ordering.
 /// @ref https://stackoverflow.com/a/14015582/15147156
 uint8_t* set_element(Set* set, size_t i) {
     return set ? (uint8_t*) set->elements + i * set->size : NULL;
@@ -156,6 +159,16 @@ int main(void) {
     if (!set) {
         return EXIT_FAILURE;
     }
+
+    int a = 3;
+    int b = 2;
+    int c = 5;
+
+    assert(set_add(set, &a));
+    assert(set_add(set, &b));
+    assert(set_add(set, &c));
+
+    assert(set_contains(set, &a));
 
     set_free(set);
     return 0;
