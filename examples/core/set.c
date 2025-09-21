@@ -213,7 +213,7 @@ Set* set_union(Set* a, Set* b) {
     }
 
     // Start with max capacity for all elements (max of both)
-    size_t new_capacity = a->count + b->count;
+    size_t new_capacity = a->capacity + b->capacity;
     Set* new_set = set_create(new_capacity, a->size);
     if (!new_set) {
         return NULL;
