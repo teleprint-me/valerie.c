@@ -17,13 +17,14 @@
 
 #include "core/logger.h"
 
-/// @note Set only stores a shallow copy of objects
-///       It does not free any resources referenced by those objects.
+// Define a Set struct for handling a collection of objects.
+// Each set stores a shallow copy of objects and does not free any
+// resources referenced by those objects.
 typedef struct Set {
-    void* elements;  // flat buffer stored as capacity * size
-    size_t count;  // current number of elements
-    size_t capacity;  // total capacity in number of elements (not bytes)
-    size_t size;  // size of the object (in bytes)
+    void* elements;  // Flat buffer storing the capacity * size
+    size_t count;  // Current number of elements
+    size_t capacity;  // Total capacity in terms of number of elements (not bytes)
+    size_t size;  // Size of each object (in bytes)
 } Set;
 
 // Braces are used to enclose the elements of a set.
