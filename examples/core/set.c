@@ -29,8 +29,8 @@ typedef struct Set {
     size_t size;  // size of the object (in bytes)
 } Set;
 
-// We use these braces to enclose the elements of a set.
-// So {1, 2, 3} is the set containing 1, 2, and 3.
+// Braces are used to enclose the elements of a set.
+// e.g. {1, 2, 3} is the set containing 1, 2, and 3.
 Set* set_create(size_t capacity, size_t size) {
     Set* set = malloc(sizeof(Set));
     if (!set) {
@@ -90,6 +90,10 @@ bool set_is_empty(Set* set) {
 // start with naive linear search to keep it simple for now
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
 bool set_contains(Set* set, void* value) {
+    if (set_is_empty(set)) {
+        return false;  // null set
+    }
+
     // not sure if this can be parallelized yet.
     for (size_t i = 0; i < set->count; i++) {
         // get current element
@@ -114,9 +118,13 @@ bool set_is_subset(Set* a, Set* b) {
 }
 
 bool set_is_equal(Set* a, Set* b) {
-    // a set may be null mathematically, but this may conflict with C itself.
-    // implementation is to be decided. this is fine for now to enforce simplicity.
-    if (!a || !b) {
+    // null sets are equal
+    if (set_is_empty(a) && set_is_empty(b)) {
+        return true;
+    }
+
+    // not equal if one set is null and the other is not
+    if (!set_is_empty(a) || !set_is_empty(b)) {
         return false;
     }
 
@@ -125,7 +133,7 @@ bool set_is_equal(Set* a, Set* b) {
         return false;
     }
 
-    // compare elements
+    // compare elements. O(n^2) is okay for now.
     return set_is_subset(a, b) && set_is_subset(b, a);
 }
 
@@ -151,6 +159,45 @@ bool set_add(Set* set, void* value) {
     void* element = set_element(set, set->count);
     memmove(element, value, set->size);  // memmove is safer with inline ops
     set->count++;
+    return true;
+}
+
+// not sure how to handle non-existant values
+size_t set_index(Set* set, void* value) {
+    if (!set) {
+        return SIZE_MAX;  // null set
+    }
+
+    for (size_t i = 0; i < set->count; i++) {
+        void* element = set_element(set, i);
+        if (memcmp(element, value, set->size) == 0) {
+            return i;
+        }
+    }
+
+    return SIZE_MAX;  // nothing exists
+}
+
+bool set_remove(Set* set, void* value) {
+    if (!set_contains(set, value)) {
+        return false;  // nothing to remove
+    }
+
+    // get the index for the given value
+    size_t index = set_index(set, value);
+    if (index == SIZE_MAX) {
+        return false;  // not found
+    }
+
+    // shift elements after index left by one
+    if (index < set->count - 1) {
+        void* dst = set_element(set, index);
+        void* src = set_element(set, index + 1);
+        size_t bytes = (set->count - index - 1) * set->size;
+        memmove(dst, src, bytes);
+    }
+
+    set->count--;  // update!
     return true;
 }
 
