@@ -208,23 +208,31 @@ bool set_clear(Set* set) {
 // A ∪ B is the union of A and B: the set containing all
 // elements which are elements of A or B or both.
 Set* set_union(Set* a, Set* b) {
-    if (set_is_empty(a) || set_is_empty(b)) {
-        return NULL;  // no union?
+    // Handle null sets
+    if (set_is_empty(a) && set_is_empty(b)) {
+        // If both are empty, return an empty set
+        return set_create(1, a ? a->size : (b ? b->size : sizeof(char)));
+    }
+    if (set_is_empty(a)) {
+        return set_create(b->capacity, b->size);
+    }
+    if (set_is_empty(b)) {
+        return set_create(a->capacity, a->size);
     }
 
-    // get the greatest possible capacity to init with
-    size_t new_capacity = a->capacity > b->capacity ? a->capacity : b->capacity;
+    // Start with enough capacity for all elements (max of both)
+    size_t new_capacity = a->count + b->count;
     Set* new_set = set_create(new_capacity, a->size);
     if (!new_set) {
         return NULL;
     }
 
-    // it would be nice to do a and b in a single pass,
-    // but this is only possible if a and b have equal counts.
+    // Add all elements from a
     for (size_t i = 0; i < a->count; i++) {
-        set_add(new_set, set_element(a, i));
+        set_add(new_set, set_element(a, i));  // set_add ensures no duplicates
     }
 
+    // Add all elements from b
     for (size_t i = 0; i < b->count; i++) {
         set_add(new_set, set_element(b, i));
     }
