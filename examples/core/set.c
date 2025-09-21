@@ -205,6 +205,34 @@ bool set_clear(Set* set) {
     return true;  // ok
 }
 
+// A ∪ B is the union of A and B: the set containing all
+// elements which are elements of A or B or both.
+Set* set_union(Set* a, Set* b) {
+    if (set_is_empty(a) || set_is_empty(b)) {
+        return NULL;  // no union?
+    }
+
+    // get the greatest possible capacity to init with
+    size_t new_capacity = a->capacity > b->capacity ? a->capacity : b->capacity;
+    Set* new_set = set_create(new_capacity, a->size);
+    if (!new_set) {
+        return NULL;
+    }
+
+    // it would be nice to do a and b in a single pass,
+    // but this is only possible if a and b have equal counts.
+    for (size_t i = 0; i < a->count; i++) {
+        set_add(new_set, set_element(a, i));
+    }
+
+    for (size_t i = 0; i < b->count; i++) {
+        set_add(new_set, set_element(b, i));
+    }
+
+    // return the union of a and b
+    return new_set;
+}
+
 int main(void) {
     Set* set = set_create(1, sizeof(int));
     if (!set) {
