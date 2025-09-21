@@ -2,6 +2,7 @@
 
 set(EXAMPLES
     "map"
+    "set"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/core)
