@@ -40,13 +40,12 @@ void hash_set_free(HashSet* set) {
 
 // The cardinality (or size) of A is the number of elements in A.
 size_t hash_set_count(HashSet* set) {
-    return hash_count(set);  // set is valid but empty
+    return hash_count(set);  // set is empty or invalid
 }
 
 /// ∅ The empty set is the set which contains no elements.
 bool hash_set_is_empty(HashSet* set) {
-    // set is empty or invalid
-    return hash_set_count(set) == 0;
+    return hash_set_count(set) == 0;  // set is empty or invalid
 }
 
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
@@ -66,6 +65,7 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
         return false;  // every element of A cannot be in B
     }
 
+    // { ∀ a ∈ A : a ∈ B }
     HashEntry* entry;
     HashIt it = hash_iter(a);
     while ((entry = hash_iter_next(&it))) {
@@ -74,6 +74,7 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
         }
     }
 
+    // A is a subset of B
     return true;
 }
 
