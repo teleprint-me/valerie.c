@@ -42,14 +42,13 @@ void hash_set_free(HashSet* set) {
 
 // The cardinality (or size) of A is the number of elements in A.
 size_t hash_set_count(HashSet* set) {
-    // set has a valid count or is size max
-    return hash_is_valid(set) ? hash_count(set) : SIZE_MAX;
+    return hash_count(set);
 }
 
 /// ∅ The empty set is the set which contains no elements.
 bool hash_set_is_empty(HashSet* set) {
     // set is valid and empty
-    return hash_is_valid(set) && hash_set_count(set) == 0;
+    return hash_set_count(set) == 0;
 }
 
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
@@ -68,8 +67,11 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return false;  // undefined behavior
     }
-    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
-        return true;  // the empty set is a subset of any set
+    if (hash_set_is_empty(a)) {
+        return true;  // the empty set is a subset of every set, including the empty set
+    }
+    if (hash_set_is_empty(b) && !hash_set_is_empty(a)) {
+        return false;  // a non-empty set is not a subset of the empty set
     }
     if (hash_set_count(a) > hash_set_count(b)) {
         return false;  // every element of A cannot be in B
@@ -96,8 +98,11 @@ bool hash_set_is_equal(HashSet* a, HashSet* b) {
     if (a == b) {
         return true;  // same ptr, must be equal
     }
+    if (hash_set_is_empty(a) && hash_set_is_empty(b)) {
+        return true;  // two empty sets are always equal
+    }
     if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
-        return false;  // invalid comparison (UB)
+        return false;  // if one is empty, one is not, then they are not equal
     }
     if (hash_set_count(a) != hash_set_count(b)) {
         return false;  // sets must be equal
