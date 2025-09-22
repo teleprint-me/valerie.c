@@ -1,4 +1,10 @@
-/// @file set.c
+/**
+ * Copyright © 2023 Austin Berrio
+ *
+ * @file set.h
+ * @brief Minimalistic hash set implementation.
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -6,155 +12,133 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "core/logger.h"
 #include "core/hash.h"
-
-typedef struct HashSet {
-    Hash hash; /** < Bundles a key type and size with hash and compare functions. */
-
-    pthread_mutex_t thread_lock; /**< Mutex for thread safety. */
-
-    void* data; /**< Array of unique elements. */
-    size_t count; /**< Current number of elements in the set. */
-    size_t capacity; /**< Total capacity of the set. */
-} HashSet;
+#include "core/map.h"
+#include "core/set.h"
 
 /**
- * Set Lifecycle
+ * HashSet life-cycle
  * @{
  */
 
-HashSet* hash_set_create(size_t initial_capacity, HashType type) {
-    HashSet* set = malloc(sizeof(HashSet));
-    if (!set) {
-        LOG_ERROR("Failed to allocate memory for HashSet.");
-        return NULL;
-    }
-
-    set->count = 0;
-    set->capacity = initial_capacity > 0 ? initial_capacity : 10;
-    set->hash.type = type;
-
-    switch (set->hash.type) {
-        case HASH_INT32:
-            set->hash.function = hash_int32;
-            set->hash.compare = hash_int32_cmp;
-            set->hash.size = sizeof(int32_t);
-            break;
-        case HASH_INT64:
-            set->hash.function = hash_int64;
-            set->hash.compare = hash_int64_cmp;
-            set->hash.size = sizeof(int64_t);
-            break;
-        case HASH_PTR:
-            set->hash.function = hash_ptr;
-            set->hash.compare = hash_ptr_cmp;
-            set->hash.size = sizeof(uintptr_t);
-            break;
-        case HASH_STR:
-            set->hash.function = hash_str;
-            set->hash.compare = hash_str_cmp;
-            set->hash.size = sizeof(char);
-            break;
-        default:
-            LOG_ERROR("Invalid HashType given.");
-            free(set);
-            return NULL;
-    }
-
-    set->data = calloc(set->capacity, set->hash.size);
-    if (!set->data) {
-        LOG_ERROR("Failed to allocate memory for HashMap data.");
-        free(set);
-        return NULL;
-    }
-
-    // Initialize the mutex for thread safety
-    int error_code = pthread_mutex_init(&set->thread_lock, NULL);
-    if (0 != error_code) {
-        LOG_ERROR("Failed to initialize mutex with error: %d", error_code);
-        free(set->data);
-        free(set);
-        return NULL;
-    }
-
-    return set;
+// Braces are used to enclose the elements of a set.
+// e.g. {1, 2, 3} is the set containing 1, 2, and 3.
+HashSet* hash_set_create(size_t capacity, HashType type) {
+    return hash_create(capacity, type);
 }
 
 void hash_set_free(HashSet* set) {
-    if (set) {
-        // Destroy the mutex before freeing memory
-        pthread_mutex_destroy(&set->thread_lock);
-
-        if (set->data) {
-            free(set->data);
-        }
-
-        free(set);
-        set = NULL;
-    }
+    hash_free(set);
 }
 
 /** @} */
 
-bool hash_set_is_valid(HashSet* set) {
-    return set && set->data && set->capacity > 0;
-}
-
-uint64_t hash_set_index(HashSet* set, const void* key, size_t i) {
-    return set->hash.function(key, set->capacity, i);
-}
-
-uint8_t* hash_set_value(HashSet* set, const void* key, size_t i) {
-    uint64_t index = hash_set_index(set, key, i);
-    return (uint8_t*) set->data + (index * set->hash.size);
-}
-
 /**
- * HashSet Search
+ * HashSet operations
  * @{
  */
 
-void* hash_set_search_internal(HashSet* set, const void* key) {
-    if (!hash_set_is_valid(set)) {
-        LOG_ERROR("Invalid set for search internal.");
+// The cardinality (or size) of A is the number of elements in A.
+size_t hash_set_count(HashSet* set) {
+    return set ? set->count : 0;  // set is valid but empty
+}
+
+/// ∅ The empty set is the set which contains no elements.
+bool hash_set_is_empty(HashSet* set) {
+    return !set || set->count == 0;  // set is null
+}
+
+// 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
+bool hash_set_contains(HashSet* set, void* value) {
+    if (hash_set_is_empty(set)) {
+        return false;  // null set
+    }
+    return hash_map_search(set, value) == HASH_SET_VALUE;
+}
+
+// A ⊆ B asserts that A is a subset of B: every element of A is also an element of B.
+bool hash_set_is_subset(HashSet* a, HashSet* b) {
+    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
+        return true;  // the empty set is a subset of any set
+    }
+    if (hash_set_count(a) > hash_set_count(b)) {
+        return false;  // every element of a cannot be in b
+    }
+
+    pthread_mutex_lock(&a->lock);
+    pthread_mutex_lock(&b->lock);
+
+    HashEntry* entry;
+    HashIt it = hash_iter(a);
+    while ((entry = hash_iter_next(&it))) {
+        if (!hash_set_contains(b, entry->key)) {
+            return false;
+        }
+    }
+
+    pthread_mutex_unlock(&a->lock);
+    pthread_mutex_unlock(&b->lock);
+    return true;
+}
+
+bool hash_set_is_equal(HashSet* a, HashSet* b) {
+    if (a == b) {
+        return true;  // same ptr, must be equal
+    }
+    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
+        return false;  // invalid comparison (UB)
+    }
+    if (hash_set_count(a) != hash_set_count(b)) {
+        return false;  // sets must be equal
+    }
+    // if all elements in a are in b, and counts are equal, then they're equal
+    return hash_set_is_subset(a, b);
+}
+
+// Add a new value to the set.
+bool hash_set_add(HashSet* set, void* value) {
+    return hash_map_insert(set, value, HASH_SET_VALUE) == HASH_SUCCESS;
+}
+
+// Remove an existing value from the set.
+bool hash_set_remove(HashSet* set, void* value) {
+    return hash_map_delete(set, value) == HASH_SUCCESS;
+}
+
+bool hash_set_clear(HashSet* set) {
+    return hash_map_clear(set) == HASH_SUCCESS;
+}
+
+// A ∪ B is the union of A and B: the set containing all
+// elements which are elements of A or B or both.
+HashSet* set_union(HashSet* a, HashSet* b) {
+    // Handle null sets
+    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
+        return NULL;  // null sets have no unions (UB)
+    }
+
+    // Start with max capacity for all elements (max of both)
+    size_t new_capacity = a->capacity + b->capacity;
+    HashSet* new_set = hash_set_create(new_capacity, a->type);
+    if (!new_set) {
         return NULL;
     }
 
-    if (!key) {
-        LOG_ERROR("Key is NULL.");
-        return NULL;
+    // Add all elements from a
+    HashEntry* entry;
+    HashIt it = hash_iter(a);
+    while ((entry = hash_iter_next(&it))) {
+        hash_set_add(new_set, entry->key);
     }
 
-    for (size_t i = 0; i < set->capacity; i++) {
-        void* v = hash_set_value(set, key, i);
-
-        if (!v) {
-            return NULL;
-        }
-
-        if (0 == set->hash.compare(v, key)) {
-            return v;
-        }
+    // Add all elements from b
+    it = hash_iter(b);
+    while ((entry = hash_iter_next(&it))) {
+        hash_set_add(new_set, entry->key);
     }
 
-    return NULL;
-}
-
-int32_t* hash_set_int32_search(HashSet* set, const void* key) {
-    return (int32_t*) hash_set_search_internal(set, key);
-}
-
-int64_t* hash_set_int64_search(HashSet* set, const void* key) {
-    return (int64_t*) hash_set_search_internal(set, key);
-}
-
-uintptr_t hash_set_ptr_search(HashSet* set, const void* key) {
-    return (uintptr_t) hash_set_search_internal(set, key);
-}
-
-char* hash_set_str_search(HashSet* set, const void* key) {
-    return (char*) hash_set_search_internal(set, key);
+    // return the union of a and b
+    return new_set;
 }
 
 /** @} */
