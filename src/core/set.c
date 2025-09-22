@@ -43,10 +43,15 @@ size_t hash_set_count(HashSet* set) {
     return hash_count(set);  // set is valid but empty
 }
 
+bool hash_set_is_valid(HashSet* set) {
+    // if set is not null and count is not size max, then set is valid
+    return hash_count(set) != SIZE_MAX;
+}
+
 /// ∅ The empty set is the set which contains no elements.
 bool hash_set_is_empty(HashSet* set) {
     // set is empty or invalid
-    return hash_count(set) == 0 || hash_count(set) == SIZE_MAX;
+    return hash_count(set) == 0 || !hash_set_is_valid(set);
 }
 
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
