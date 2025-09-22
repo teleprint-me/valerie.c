@@ -223,4 +223,46 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
     return new_set;
 }
 
+// A ∩ B is the intersection of A and B:
+// the set containing all elements which are elements of both A and B.
+// A ∩ B = { x : x ∈ A ∧ x ∈ B }
+HashSet* hash_set_intersection(HashSet* a, HashSet* b) {
+    if (!hash_is_valid(a) || !hash_is_valid(b)) {
+        return NULL;
+    }
+    if (!hash_type_is_valid(a, b)) {
+        return NULL;
+    }
+
+    // If either is empty, intersection is empty.
+    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
+        return hash_set_create(1, a->type);
+    }
+
+    // Make new set (max possible = min(a,b) count)
+    size_t min_capacity = hash_set_count(a) < hash_set_count(b) ? hash_set_count(a)
+                                                                : hash_set_count(b);
+
+    // Allocate min of A and B
+    HashSet* new_set = hash_set_create(min_capacity > 0 ? min_capacity : 1, a->type);
+    if (!new_set) {
+        return NULL;
+    }
+
+    // Iterate A, add to result if also in B.
+    HashEntry* entry;
+    HashIt it = hash_iter(a);
+    while ((entry = hash_iter_next(&it))) {
+        if (hash_set_contains(b, entry->key)) {
+            if (!hash_set_add(new_set, entry->key)) {
+                hash_set_free(new_set);
+                return NULL;
+            }
+        }
+    }
+
+    // Return the intersection of A and B
+    return new_set;
+}
+
 /** @} */
