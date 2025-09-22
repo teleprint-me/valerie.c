@@ -40,16 +40,21 @@ void hash_set_free(HashSet* set) {
 
 // The cardinality (or size) of A is the number of elements in A.
 size_t hash_set_count(HashSet* set) {
-    return hash_count(set);  // set is empty or invalid
+    // set has a valid count or is size max
+    return hash_is_valid(set) ? hash_count(set) : SIZE_MAX;
 }
 
 /// ∅ The empty set is the set which contains no elements.
 bool hash_set_is_empty(HashSet* set) {
-    return hash_set_count(set) == 0;  // set is empty or invalid
+    // set is valid and empty
+    return hash_is_valid(set) && hash_set_count(set) == 0;
 }
 
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
 bool hash_set_contains(HashSet* set, void* value) {
+    if (!hash_is_valid(set)) {
+        return false;  // undefined behavior
+    }
     if (hash_set_is_empty(set)) {
         return false;  // null set
     }
@@ -58,6 +63,9 @@ bool hash_set_contains(HashSet* set, void* value) {
 
 // A ⊆ B asserts that A is a subset of B: every element of A is also an element of B.
 bool hash_set_is_subset(HashSet* a, HashSet* b) {
+    if (!hash_is_valid(a) || !hash_is_valid(b)) {
+        return false;  // undefined behavior
+    }
     if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
         return true;  // the empty set is a subset of any set
     }
@@ -80,6 +88,9 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
 
 // A = B asserts that A and B are equal
 bool hash_set_is_equal(HashSet* a, HashSet* b) {
+    if (!hash_is_valid(a) || !hash_is_valid(b)) {
+        return false;  // undefined behavior
+    }
     if (a == b) {
         return true;  // same ptr, must be equal
     }
@@ -95,23 +106,32 @@ bool hash_set_is_equal(HashSet* a, HashSet* b) {
 
 // Add a new value to the set.
 bool hash_set_add(HashSet* set, void* value) {
+    if (!hash_is_valid(set) || !value) {
+        return false;  // undefined behavior
+    }
     return hash_map_insert(set, value, HASH_SET_VALUE) == HASH_SUCCESS;
 }
 
 // Remove an existing value from the set.
 bool hash_set_remove(HashSet* set, void* value) {
+    if (!hash_is_valid(set) || !value) {
+        return false;  // undefined behavior
+    }
     return hash_map_delete(set, value) == HASH_SUCCESS;
 }
 
 // Clear all existing values from the set.
 bool hash_set_clear(HashSet* set) {
+    if (!hash_is_valid(set)) {
+        return false;  // undefined behavior
+    }
     return hash_map_clear(set) == HASH_SUCCESS;
 }
 
 // Create a shallow copy of the given set.
 HashSet* hash_set_clone(HashSet* set) {
-    if (hash_set_is_empty(set)) {
-        return NULL;  // null set
+    if (!hash_is_valid(set)) {
+        return NULL;  // undefined behavior
     }
 
     HashSet* new_set = hash_set_create(set->capacity, set->type);
@@ -119,6 +139,7 @@ HashSet* hash_set_clone(HashSet* set) {
         return NULL;  // failed to alloc
     }
 
+    // { x : x ∈ A }
     HashEntry* entry;
     HashIt it = hash_iter(set);
     while ((entry = hash_iter_next(&it))) {
@@ -137,24 +158,33 @@ HashSet* hash_set_clone(HashSet* set) {
 /// @note x ∈ ∅ is always false and is redundant.
 /// @ref https://math.stackexchange.com/q/1124251
 HashSet* set_union(HashSet* a, HashSet* b) {
-    // A is a null set
+    if (!hash_is_valid(a) || !hash_is_valid(b)) {
+        return false;  // undefined behavior
+    }
+
+    // Both empty: result is empty set
+    if (hash_set_is_empty(a) && hash_set_is_empty(b)) {
+        return hash_set_create(1, a->type);
+    }
+
+    // a empty: A ∪ B = B (clone B)
     if (hash_set_is_empty(a)) {
-        return NULL;  // A cannot be a null set (UB)
+        return hash_set_clone(b);
     }
 
-    // B is a null set
+    // b empty: A ∪ B = A (clone A)
     if (hash_set_is_empty(b)) {
-        return hash_set_clone(a);  // A is the subset
+        return hash_set_clone(a);
     }
 
-    // Start with max capacity for all elements (max of both)
+    // Both non-empty: union logic
     size_t new_capacity = hash_capacity(a) + hash_capacity(b);
     HashSet* new_set = hash_set_create(new_capacity, a->type);
     if (!new_set) {
         return NULL;
     }
 
-    // Add all elements from a
+    // Add all elements from A
     HashEntry* entry;
     HashIt it = hash_iter(a);
     while ((entry = hash_iter_next(&it))) {
@@ -164,7 +194,7 @@ HashSet* set_union(HashSet* a, HashSet* b) {
         }
     }
 
-    // Add all elements from b
+    // Add all elements from B
     it = hash_iter(b);
     while ((entry = hash_iter_next(&it))) {
         if (!hash_set_add(new_set, entry->key)) {
@@ -173,7 +203,7 @@ HashSet* set_union(HashSet* a, HashSet* b) {
         }
     }
 
-    // return the union of a and b
+    // return the union of A and B
     return new_set;
 }
 
