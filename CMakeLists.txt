@@ -32,23 +32,25 @@ endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Add library
+# Core shared library (valerie)
 add_library(valerie SHARED
-# core
-    "src/core/memory.c" # posix memory allocation and deallocation
-    "src/core/logger.c" # logging utility
-    "src/core/test.c" # unit testing utility
-    "src/core/hash.c"
-    "src/core/map.c" # hash map with linear probing
-    "src/core/page.c" # page table memory allocator
-    "src/core/compare.c" # numeric comparisons, including floating-point
-    "src/core/type.c" # numeric data types, focusing on numeric precision
-    "src/core/regex.c" # convenience interface to compile and free pcre2 regex
-    "src/core/strext.c" # transitive lib to extend libc string interface
-    "src/core/path.c" # posix compatible pathlib interface
-# tokenizer
-    "src/tokenizer/vocab.c" # string-to-int frequency mapping (map.c)
-    "src/tokenizer/bpe.c"
+    # Core modules
+    "src/core/memory.c"      # POSIX memory allocation and deallocation
+    "src/core/logger.c"      # Logging utility
+    "src/core/test.c"        # Unit testing utility
+    "src/core/regex.c"       # PCRE2 regex compile/free wrapper
+    "src/core/strext.c"      # Libc string extensions (transitive helpers)
+    "src/core/path.c"        # POSIX-compatible path utilities
+    "src/core/hash.c"        # General-purpose hash table (base for map/set)
+    "src/core/map.c"         # Hash map with linear probing (key-value store)
+    "src/core/set.c"         # Hash set (unique keys, set algebra)
+    "src/core/page.c"        # Page-table style memory allocator
+    "src/core/compare.c"     # Numeric and floating-point comparisons
+    "src/core/type.c"        # Numeric data types (precision metadata)
+
+    # Tokenizer modules
+    "src/tokenizer/vocab.c"  # String-to-int frequency vocab map
+    "src/tokenizer/bpe.c"    # Byte Pair Encoding (BPE) algorithms
 )
 
 target_include_directories(valerie PUBLIC include)
