@@ -159,7 +159,7 @@ HashSet* hash_set_clone(HashSet* set) {
 /// proof: A ∪ ∅ = { x : x ∈ A or x ∈ ∅} = { x : x ∈ A } = A
 /// @note x ∈ ∅ is always false and is redundant.
 /// @ref https://math.stackexchange.com/q/1124251
-HashSet* set_union(HashSet* a, HashSet* b) {
+HashSet* hash_set_union(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return false;  // undefined behavior
     }
