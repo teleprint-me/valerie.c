@@ -11,17 +11,22 @@
 
 #include "core/set.h"
 
-void hash_set_print(HashSet* set) {
-    printf("size: %zu\n", set->size);
-    printf("capacity: %zu\n", set->capacity);
-    printf("count: %zu\n", set->count);
+void hash_set_print(Hash* h) {
+    if (!h) {
+        printf("Error: Invalid hash object: %p\n", (void*) h);
+        return;
+    }
+
+    printf("size: %zu\n", h->size);
+    printf("capacity: %zu\n", h->capacity);
+    printf("count: %zu\n", h->count);
 
     bool valid_type = true;
 
     HashEntry* entry;
-    HashIt it = hash_iter(set);
+    HashIt it = hash_iter(h);
     while ((entry = hash_iter_next(&it))) {
-        switch (set->type) {
+        switch (h->type) {
             case HASH_INT32:
                 printf("key: %d\n", *(int32_t*) entry->key);
                 break;
