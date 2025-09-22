@@ -40,12 +40,13 @@ void hash_set_free(HashSet* set) {
 
 // The cardinality (or size) of A is the number of elements in A.
 size_t hash_set_count(HashSet* set) {
-    return set ? set->count : 0;  // set is valid but empty
+    return hash_count(set);  // set is valid but empty
 }
 
 /// ∅ The empty set is the set which contains no elements.
 bool hash_set_is_empty(HashSet* set) {
-    return !set || set->count == 0;  // set is null
+    // set is empty or invalid
+    return hash_count(set) == 0 || hash_count(set) == SIZE_MAX;
 }
 
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
@@ -62,7 +63,7 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
         return true;  // the empty set is a subset of any set
     }
     if (hash_set_count(a) > hash_set_count(b)) {
-        return false;  // every element of a cannot be in b
+        return false;  // every element of A cannot be in B
     }
 
     HashEntry* entry;
@@ -76,6 +77,7 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
     return true;
 }
 
+// A = B asserts that A and B are equal
 bool hash_set_is_equal(HashSet* a, HashSet* b) {
     if (a == b) {
         return true;  // same ptr, must be equal
@@ -100,10 +102,12 @@ bool hash_set_remove(HashSet* set, void* value) {
     return hash_map_delete(set, value) == HASH_SUCCESS;
 }
 
+// Clear all existing values from the set.
 bool hash_set_clear(HashSet* set) {
     return hash_map_clear(set) == HASH_SUCCESS;
 }
 
+// Create a shallow copy of the given set.
 HashSet* hash_set_clone(HashSet* set) {
     if (hash_set_is_empty(set)) {
         return NULL;  // null set
