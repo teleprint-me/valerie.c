@@ -218,6 +218,14 @@ bool hash_is_valid(const Hash* h);
  */
 bool hash_entry_is_valid(const HashEntry* e);
 
+/**
+ * @brief Returns true if key types are equal.
+ * @param a Pointer to a hash object.
+ * @param b Pointer to a hash object.
+ * @return true if valid, false otherwise.
+ */
+bool hash_type_is_valid(const Hash* a, const Hash* b);
+
 /** @} */
 
 /**

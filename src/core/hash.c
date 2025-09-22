@@ -198,6 +198,10 @@ bool hash_entry_is_valid(const HashEntry* e) {
     return e && e->key;
 }
 
+bool hash_type_is_valid(const Hash* a, const Hash* b) {
+    return a->type == b->type;
+}
+
 /** @} */
 
 /**
