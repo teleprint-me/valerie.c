@@ -13,6 +13,9 @@
  *
  * @note The null set is a valid set object with count 0.
  *   - NULL pointers are never valid sets.
+ *
+ * @ref https://discrete.openmathbooks.org/dmoi3.html
+ * @ref https://discrete.openmathbooks.org/dmoi3/sec_intro-sets.html
  */
 
 #ifndef HASH_SET_H
