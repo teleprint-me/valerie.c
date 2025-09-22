@@ -20,6 +20,7 @@ void hash_set_print(Hash* h) {
     printf("size: %zu\n", h->size);
     printf("capacity: %zu\n", h->capacity);
     printf("count: %zu\n", h->count);
+    printf("type: %d\n", h->type);
 
     bool valid_type = true;
 
