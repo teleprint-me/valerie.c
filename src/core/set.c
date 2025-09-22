@@ -67,10 +67,13 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return false;  // undefined behavior
     }
+    if (!hash_type_is_valid(a, b)) {
+        return false;  // hash types do not match
+    }
     if (hash_set_is_empty(a)) {
         return true;  // the empty set is a subset of every set, including the empty set
     }
-    if (hash_set_is_empty(b) && !hash_set_is_empty(a)) {
+    if (hash_set_is_empty(b)) {
         return false;  // a non-empty set is not a subset of the empty set
     }
     if (hash_set_count(a) > hash_set_count(b)) {
@@ -94,6 +97,9 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
 bool hash_set_is_equal(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return false;  // undefined behavior
+    }
+    if (!hash_type_is_valid(a, b)) {
+        return false;  // hash types do not match
     }
     if (a == b) {
         return true;  // same ptr, must be equal
@@ -166,7 +172,10 @@ HashSet* hash_set_clone(HashSet* set) {
 /// @ref https://math.stackexchange.com/q/1124251
 HashSet* hash_set_union(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
-        return false;  // undefined behavior
+        return NULL;  // undefined behavior
+    }
+    if (!hash_type_is_valid(a, b)) {
+        return NULL;  // hash types do not match
     }
 
     // Both empty: result is empty set
