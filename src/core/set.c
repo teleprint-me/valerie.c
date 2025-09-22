@@ -104,16 +104,46 @@ bool hash_set_clear(HashSet* set) {
     return hash_map_clear(set) == HASH_SUCCESS;
 }
 
-// A ∪ B is the union of A and B: the set containing all
-// elements which are elements of A or B or both.
+HashSet* hash_set_clone(HashSet* set) {
+    if (hash_set_is_empty(set)) {
+        return NULL;  // null set
+    }
+
+    HashSet* new_set = hash_set_create(set->capacity, set->type);
+    if (!new_set) {
+        return NULL;  // failed to alloc
+    }
+
+    HashEntry* entry;
+    HashIt it = hash_iter(set);
+    while ((entry = hash_iter_next(&it))) {
+        if (!hash_set_add(new_set, entry->key)) {
+            hash_set_free(new_set);
+            return NULL;  // failed to add element
+        }
+    }
+
+    return new_set;
+}
+
+/// A ∪ B is the union of A and B: the set containing all
+/// elements which are elements of A or B or both.
+/// proof: A ∪ ∅ = { x : x ∈ A or x ∈ ∅} = { x : x ∈ A } = A
+/// @note x ∈ ∅ is always false and is redundant.
+/// @ref https://math.stackexchange.com/q/1124251
 HashSet* set_union(HashSet* a, HashSet* b) {
-    // Handle null sets
-    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
-        return NULL;  // null sets have no unions (UB)
+    // A is a null set
+    if (hash_set_is_empty(a)) {
+        return NULL;  // A cannot be a null set (UB)
+    }
+
+    // B is a null set
+    if (hash_set_is_empty(b)) {
+        return hash_set_clone(a);  // A is the subset
     }
 
     // Start with max capacity for all elements (max of both)
-    size_t new_capacity = a->capacity + b->capacity;
+    size_t new_capacity = hash_capacity(a) + hash_capacity(b);
     HashSet* new_set = hash_set_create(new_capacity, a->type);
     if (!new_set) {
         return NULL;
@@ -123,13 +153,19 @@ HashSet* set_union(HashSet* a, HashSet* b) {
     HashEntry* entry;
     HashIt it = hash_iter(a);
     while ((entry = hash_iter_next(&it))) {
-        hash_set_add(new_set, entry->key);
+        if (!hash_set_add(new_set, entry->key)) {
+            hash_set_free(new_set);
+            return NULL;  // failed to add element
+        }
     }
 
     // Add all elements from b
     it = hash_iter(b);
     while ((entry = hash_iter_next(&it))) {
-        hash_set_add(new_set, entry->key);
+        if (!hash_set_add(new_set, entry->key)) {
+            hash_set_free(new_set);
+            return NULL;  // failed to add element
+        }
     }
 
     // return the union of a and b
