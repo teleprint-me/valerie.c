@@ -65,9 +65,6 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
         return false;  // every element of a cannot be in b
     }
 
-    pthread_mutex_lock(&a->lock);
-    pthread_mutex_lock(&b->lock);
-
     HashEntry* entry;
     HashIt it = hash_iter(a);
     while ((entry = hash_iter_next(&it))) {
@@ -76,8 +73,6 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
         }
     }
 
-    pthread_mutex_unlock(&a->lock);
-    pthread_mutex_unlock(&b->lock);
     return true;
 }
 
