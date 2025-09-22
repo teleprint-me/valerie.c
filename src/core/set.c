@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "core/logger.h"
 #include "core/hash.h"
 #include "core/map.h"
 #include "core/set.h"
@@ -172,9 +173,11 @@ HashSet* hash_set_clone(HashSet* set) {
 /// @ref https://math.stackexchange.com/q/1124251
 HashSet* hash_set_union(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
+        LOG_ERROR("HashSet is invalid!");
         return NULL;  // undefined behavior
     }
     if (!hash_type_is_valid(a, b)) {
+        LOG_ERROR("HashSet does not match!");
         return NULL;  // hash types do not match
     }
 
@@ -197,6 +200,7 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
     size_t new_capacity = hash_capacity(a) + hash_capacity(b);
     HashSet* new_set = hash_set_create(new_capacity, a->type);
     if (!new_set) {
+        LOG_ERROR("Failed to create a new HashSet.");
         return NULL;
     }
 
@@ -205,6 +209,7 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
     HashIt it = hash_iter(a);
     while ((entry = hash_iter_next(&it))) {
         if (!hash_set_add(new_set, entry->key)) {
+            LOG_ERROR("Failed to add element from set A to set C.");
             hash_set_free(new_set);
             return NULL;  // failed to add element
         }
@@ -214,6 +219,7 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
     it = hash_iter(b);
     while ((entry = hash_iter_next(&it))) {
         if (!hash_set_add(new_set, entry->key)) {
+            LOG_ERROR("Failed to add element from set B to set C.");
             hash_set_free(new_set);
             return NULL;  // failed to add element
         }
