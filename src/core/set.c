@@ -209,17 +209,18 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
     HashIt it = hash_iter(a);
     while ((entry = hash_iter_next(&it))) {
         if (!hash_set_add(new_set, entry->key)) {
-            LOG_ERROR("Failed to add element from set A to set C.");
+            LOG_ERROR("Failed to add element from set A to set C: %p", entry->key);
             hash_set_free(new_set);
             return NULL;  // failed to add element
         }
     }
 
     // Add all elements from B
+    entry = NULL;
     it = hash_iter(b);
     while ((entry = hash_iter_next(&it))) {
         if (!hash_set_add(new_set, entry->key)) {
-            LOG_ERROR("Failed to add element from set B to set C.");
+            LOG_ERROR("Failed to add element from set B to set C: %p", entry->key);
             hash_set_free(new_set);
             return NULL;  // failed to add element
         }
