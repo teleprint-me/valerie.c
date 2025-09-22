@@ -74,12 +74,14 @@ int main(void) {
 
     // Test intersection
     HashSet* isect = hash_set_intersection(s1, s2);
+    hash_set_print(isect);
     assert(hash_set_count(isect) == 2);
     assert(hash_set_contains(isect, &b));
     assert(hash_set_contains(isect, &c));
 
     // Test difference
     HashSet* diff = hash_set_difference(s1, s2);
+    hash_set_print(diff);
     assert(hash_set_count(diff) == 1);
     assert(hash_set_contains(diff, &a));
 
