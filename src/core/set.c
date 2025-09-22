@@ -3,6 +3,8 @@
  *
  * @file set.h
  * @brief Minimalistic hash set implementation.
+ * @note We can define the null set to be a set object with a count of 0. NULL is not a
+ * null set as a consequence of this definition.
  */
 
 #include <stdbool.h>
