@@ -175,7 +175,7 @@ void hash_free(Hash* h) {
  */
 
 size_t hash_count(const Hash* h) {
-    return h ? h->count : 0;
+    return h ? h->count : SIZE_MAX;
 }
 
 size_t hash_capacity(const Hash* h) {
