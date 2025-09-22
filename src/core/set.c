@@ -265,4 +265,46 @@ HashSet* hash_set_intersection(HashSet* a, HashSet* b) {
     return new_set;
 }
 
+// A \ B is set difference between A and B: the set containing
+// all elements of A which are not elements of B.
+// A ∖ B = { x ∈ A : x ∉ B }
+HashSet* hash_set_difference(HashSet* a, HashSet* b) {
+    if (!hash_is_valid(a) || !hash_is_valid(b)) {
+        return NULL;
+    }
+    if (!hash_type_is_valid(a, b)) {
+        return NULL;
+    }
+    if (a == b) {
+        // The difference of a set with itself is the empty set
+        return hash_set_create(1, a->type);
+    }
+    if (hash_set_is_empty(a)) {
+        return hash_set_create(1, a->type);
+    }
+    if (hash_set_is_empty(b)) {
+        return hash_set_clone(a);  // ∀ of x ∈ A are not in B
+    }
+
+    HashSet* new_set = hash_set_create(a->capacity, a->type);
+    if (!new_set) {
+        return NULL;
+    }
+
+    // Add all elements of A which are not in B
+    HashEntry* entry;
+    HashIt it = hash_iter(a);
+    while ((entry = hash_iter_next(&it))) {
+        if (!hash_set_contains(b, entry->key)) {
+            if (!hash_set_add(new_set, entry->key)) {
+                hash_set_free(new_set);
+                return NULL;
+            }
+        }
+    }
+
+    // Return the difference between A and B
+    return new_set;
+}
+
 /** @} */
