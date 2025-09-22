@@ -177,7 +177,7 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
         return NULL;  // undefined behavior
     }
     if (!hash_type_is_valid(a, b)) {
-        LOG_ERROR("HashSet does not match!");
+        LOG_ERROR("HashSet types do not match!");
         return NULL;  // hash types do not match
     }
 
