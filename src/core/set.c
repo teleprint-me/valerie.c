@@ -121,9 +121,10 @@ bool hash_set_is_equal(HashSet* a, HashSet* b) {
 // Add a new value to the set.
 bool hash_set_add(HashSet* set, void* value) {
     if (!hash_is_valid(set) || !value) {
-        return false;  // undefined behavior
+        return false;
     }
-    return hash_map_insert(set, value, HASH_SET_VALUE) == HASH_SUCCESS;
+    HashState state = hash_map_insert(set, value, HASH_SET_VALUE);
+    return state == HASH_SUCCESS || state == HASH_EXISTS;
 }
 
 // Remove an existing value from the set.
