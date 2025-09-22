@@ -26,8 +26,8 @@
  * - Linear probing is used to handle collisions.
  */
 
-#ifndef HASH_MAP_LINEAR_H
-#define HASH_MAP_LINEAR_H
+#ifndef HASH_MAP_H
+#define HASH_MAP_H
 
 #include <stdint.h>
 #include <pthread.h>
@@ -148,4 +148,4 @@ void* hash_map_search(HashMap* map, const void* key);
 }
 #endif
 
-#endif  // HASH_MAP_LINEAR_H
+#endif  // HASH_MAP_H
