@@ -45,8 +45,6 @@ HashState hash_map_insert(HashMap* map, void* key, void* value) {
     }
 
     HashState state;
-    pthread_mutex_lock(&map->lock);
-
     if ((double) map->count / map->capacity > 0.75) {
         if (HASH_SUCCESS != hash_resize(map, map->capacity * 2)) {
             state = HASH_ERROR;
@@ -56,7 +54,6 @@ HashState hash_map_insert(HashMap* map, void* key, void* value) {
     state = hash_insert(map, key, value);
 
 exit:
-    pthread_mutex_unlock(&map->lock);
     return state;
 }
 
@@ -66,11 +63,7 @@ HashState hash_map_resize(HashMap* map, uint64_t new_size) {
         return HASH_ERROR;
     }
 
-    HashState state;
-    pthread_mutex_lock(&map->lock);
-    state = hash_resize(map, new_size);
-    pthread_mutex_unlock(&map->lock);
-    return state;
+    return hash_resize(map, new_size);
 }
 
 HashState hash_map_delete(HashMap* map, const void* key) {
@@ -84,11 +77,7 @@ HashState hash_map_delete(HashMap* map, const void* key) {
         return HASH_ERROR;
     }
 
-    HashState state;
-    pthread_mutex_lock(&map->lock);
-    state = hash_delete(map, key);
-    pthread_mutex_unlock(&map->lock);
-    return state;
+    return hash_delete(map, key);
 }
 
 HashState hash_map_clear(HashMap* map) {
@@ -97,11 +86,7 @@ HashState hash_map_clear(HashMap* map) {
         return HASH_ERROR;
     }
 
-    HashState state;
-    pthread_mutex_lock(&map->lock);
-    state = hash_clear(map);
-    pthread_mutex_unlock(&map->lock);
-    return state;
+    return hash_clear(map);
 }
 
 void* hash_map_search(HashMap* map, const void* key) {
@@ -115,11 +100,7 @@ void* hash_map_search(HashMap* map, const void* key) {
         return NULL;
     }
 
-    void* value = NULL;
-    pthread_mutex_lock(&map->lock);
-    value = hash_search(map, key);
-    pthread_mutex_unlock(&map->lock);
-    return value;
+    return hash_search(map, key);
 }
 
 /** @} */
