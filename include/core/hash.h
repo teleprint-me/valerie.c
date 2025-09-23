@@ -26,6 +26,7 @@
  * Thread Safety:
  *   - The hash interface itself is thread-agnostic.
  *   - **Consumers** must ensure all hash operations are protected with locks as needed.
+ *   - See atomic operations below for details.
  *
  * @note
  * Collision Handling:
