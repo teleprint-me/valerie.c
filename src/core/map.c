@@ -2,28 +2,11 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file map.c
- * @brief Minimalistic hash map implementation providing mapping between integers, strings, and
- * memory addresses.
+ * @brief Minimalistic HashMap implementation providing mapping between
+ * integers, strings, and memory addresses.
  *
- * The Hash Interface is designed to provide a minimal mapping between integers, strings, and
- * memory addresses, much like a dictionary in Python. Users can map integers, strings, and
- * memory addresses to other data types, supporting insertion, search, deletion, and map clearing.
- *
- * @note Comparison functions used with the HashMap must:
- * - Return 0 for equality.
- * - Return a non-zero value for inequality.
- *
- * @note Thread Safety:
- * - The hash map is designed to be thread-safe using mutexes. Ensure that all operations on the
- * hash map are performed within critical sections to avoid race conditions.
- *
- * @note Supported Keys:
- * - Integers (`int32_t` and `int64_t`)
- * - Strings (`char*`)
- * - Memory addresses (`uintptr_t`)
- *
- * @note Probing:
- * - Linear probing is used to handle collisions.
+ * Users can map integers, strings, and memory addresses to other data types,
+ * supporting insert, resize, delete, and clear operations.
  */
 
 #include "core/logger.h"

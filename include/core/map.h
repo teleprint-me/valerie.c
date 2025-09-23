@@ -2,28 +2,37 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file map.h
- * @brief Minimalistic hash map implementation providing mapping between integers, strings, and
- * memory addresses.
+ * @brief Minimalistic HashMap implementation providing mapping between
+ * integers, strings, and memory addresses.
  *
- * The Hash Interface is designed to provide a minimal mapping between integers, strings, and
- * memory addresses, much like a dictionary in Python. Users can map integers, strings, and
- * memory addresses to other data types, supporting insertion, search, deletion, and map clearing.
+ * Users can map integers, strings, and memory addresses to other data types,
+ * supporting insert, resize, delete, and clear operations.
  *
- * @note Comparison functions used with the HashMap must:
- * - Return 0 for equality.
- * - Return a non-zero value for inequality.
+ * @note
+ * Comparison functions used with the hash API **must**:
+ *   - Return `0` for equality.
+ *   - Return non-zero for inequality.
  *
- * @note Thread Safety:
- * - The hash map is designed to be thread-safe using mutexes. Ensure that all operations on the
- * hash map are performed within critical sections to avoid race conditions.
+ * @note
+ * Supported key types:
+ *   - Integers (`int32_t`, `int64_t`)
+ *   - Strings (`char*`, null-terminated)
+ *   - Memory addresses (`uintptr_t`)
  *
- * @note Supported Keys:
- * - Integers (`int32_t` and `int64_t`)
- * - Strings (`char*`)
- * - Memory addresses (`uintptr_t`)
+ * @note
+ * Thread Safety:
+ * - The hash map is designed to be thread-safe using mutexes. Ensure that all operations
+ * on the hash map are performed within critical sections to avoid race conditions.
  *
- * @note Probing:
- * - Linear probing is used to handle collisions.
+ * @note
+ * Collision Handling:
+ *   - Linear probing is used for collision resolution.
+ *
+ * @note
+ * Memory Management:
+ * - By default, the hash table does not deep-copy keys or values; it stores pointers.
+ * - User is responsible for allocating all key/value memory.
+ *   - i.e. Freeing, via iteration/free helpers.
  */
 
 #ifndef HASH_MAP_H
@@ -41,23 +50,13 @@ extern "C" {
 
 /**
  * @typedef HashMap
- * @brief Alias for the base Hash structure, representing a generic hash map (key-value store).
+ * @brief Opaque alias for the base Hash structure, representing a generic map (key-value store).
  *
- * This typedef allows map-specific interfaces to use @c HashMap for clarity,
- * while relying on the underlying @c Hash implementation.
+ * @note
+ * All logic for allocation, lookup, insertion, removal, and cleanup is provided
+ * by hash.c aliasing @c Hash as @c HashMap is never defined separately.
  *
- * The Hash structure contains:
- *   - @c HashEntry* entries:   Array of pointers to entries (key-value pairs)
- *   - @c HashType type:        Key type tag (e.g. int32, int64, str, ptr)
- *   - @c size_t count:         Number of active entries
- *   - @c size_t capacity:      Total capacity of the entries array
- *   - @c size_t size:          Key size in bytes
- *   - @c pthread_mutex_t lock: Mutex for thread safety
- *   - @c HashFn fn:            Hash function pointer
- *   - @c HashCmp cmp:          Comparison function pointer
- *
- * @note All logic for allocation, lookup, insertion, removal, and cleanup is
- *       provided by map.c using this alias; @c HashMap is never defined separately.
+ * Use only via the map interface functions below.
  */
 typedef struct Hash HashMap;
 
