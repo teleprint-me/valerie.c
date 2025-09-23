@@ -5,6 +5,10 @@
  * @brief Minimalistic hash set interface (wrapper over hash map).
  *
  * @note
+ * Null Sets:
+ * The null set is a set object with a count of 0. NULL is never a null set.
+ *
+ * @note
  * Comparison functions used with the hash API **must**:
  *   - Return `0` for equality.
  *   - Return non-zero for inequality.

@@ -2,11 +2,7 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file map.c
- * @brief Minimalistic HashMap implementation providing mapping between
- * integers, strings, and memory addresses.
- *
- * Users can map integers, strings, and memory addresses to other data types,
- * supporting insert, resize, delete, and clear operations.
+ * @brief Minimalistic hash map interface (thin wrapper over hash).
  */
 
 #include "core/logger.h"

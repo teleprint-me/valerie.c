@@ -2,9 +2,8 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file set.h
- * @brief Minimalistic hash set implementation.
- * @note We can define the null set to be a set object with a count of 0. NULL is not a
- * null set as a consequence of this definition.
+ * @brief Minimalistic hash set interface (wrapper over hash map).
+ * @note The null set is a set object with a count of 0. NULL is never a null set.
  */
 
 #include <stdbool.h>
