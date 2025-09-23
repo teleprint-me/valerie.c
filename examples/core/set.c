@@ -30,19 +30,19 @@ int main(void) {
     // Test union
     HashSet* uni = hash_set_union(s1, s2);
     hash_iter_log(uni);
-    assert(hash_set_count(uni) == 4);
+    assert(hash_count(uni) == 4);
 
     // Test intersection
     HashSet* isect = hash_set_intersection(s1, s2);
     hash_iter_log(isect);
-    assert(hash_set_count(isect) == 2);
+    assert(hash_count(isect) == 2);
     assert(hash_set_contains(isect, &b));
     assert(hash_set_contains(isect, &c));
 
     // Test difference
     HashSet* diff = hash_set_difference(s1, s2);
     hash_iter_log(diff);
-    assert(hash_set_count(diff) == 1);
+    assert(hash_count(diff) == 1);
     assert(hash_set_contains(diff, &a));
 
     // Test subset/equality
@@ -53,7 +53,7 @@ int main(void) {
     // Empty set behavior
     HashSet* empty = hash_set_create(1, HASH_INT32);
     HashSet* diff2 = hash_set_difference(s1, empty);
-    assert(hash_set_count(diff2) == hash_set_count(s1));
+    assert(hash_count(diff2) == hash_count(s1));
     assert(hash_set_is_subset(empty, s1));
     assert(hash_set_is_equal(empty, empty));
 

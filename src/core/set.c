@@ -41,23 +41,12 @@ void hash_set_free(HashSet* set) {
  * @{
  */
 
-// The cardinality (or size) of A is the number of elements in A.
-size_t hash_set_count(HashSet* set) {
-    return hash_count(set);
-}
-
-/// ∅ The empty set is the set which contains no elements.
-bool hash_set_is_empty(HashSet* set) {
-    // set is valid and empty
-    return hash_set_count(set) == 0;
-}
-
 // 2 ∈ {1, 2, 3} asserts that 2 is an element of the set {1, 2, 3}.
 bool hash_set_contains(HashSet* set, void* value) {
     if (!hash_is_valid(set)) {
         return false;  // undefined behavior
     }
-    if (hash_set_is_empty(set)) {
+    if (hash_is_empty(set)) {
         return false;  // null set
     }
     return hash_map_search(set, value) == HASH_SET_VALUE;
@@ -71,13 +60,13 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
     if (!hash_cmp_is_valid(a, b)) {
         return false;  // hash types do not match
     }
-    if (hash_set_is_empty(a)) {
+    if (hash_is_empty(a)) {
         return true;  // the empty set is a subset of every set, including the empty set
     }
-    if (hash_set_is_empty(b)) {
+    if (hash_is_empty(b)) {
         return false;  // a non-empty set is not a subset of the empty set
     }
-    if (hash_set_count(a) > hash_set_count(b)) {
+    if (hash_count(a) > hash_count(b)) {
         return false;  // every element of A cannot be in B
     }
 
@@ -105,13 +94,13 @@ bool hash_set_is_equal(HashSet* a, HashSet* b) {
     if (a == b) {
         return true;  // same ptr, must be equal
     }
-    if (hash_set_is_empty(a) && hash_set_is_empty(b)) {
+    if (hash_is_empty(a) && hash_is_empty(b)) {
         return true;  // two empty sets are always equal
     }
-    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
+    if (hash_is_empty(a) || hash_is_empty(b)) {
         return false;  // if one is empty, one is not, then they are not equal
     }
-    if (hash_set_count(a) != hash_set_count(b)) {
+    if (hash_count(a) != hash_count(b)) {
         return false;  // sets must be equal
     }
     // if all elements in a are in b, and counts are equal, then they're equal
@@ -183,17 +172,17 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
     }
 
     // Both empty: result is empty set
-    if (hash_set_is_empty(a) && hash_set_is_empty(b)) {
+    if (hash_is_empty(a) && hash_is_empty(b)) {
         return hash_set_create(1, a->type);
     }
 
     // a empty: A ∪ B = B (clone B)
-    if (hash_set_is_empty(a)) {
+    if (hash_is_empty(a)) {
         return hash_set_clone(b);
     }
 
     // b empty: A ∪ B = A (clone A)
-    if (hash_set_is_empty(b)) {
+    if (hash_is_empty(b)) {
         return hash_set_clone(a);
     }
 
@@ -243,13 +232,13 @@ HashSet* hash_set_intersection(HashSet* a, HashSet* b) {
     }
 
     // If either is empty, intersection is empty.
-    if (hash_set_is_empty(a) || hash_set_is_empty(b)) {
+    if (hash_is_empty(a) || hash_is_empty(b)) {
         return hash_set_create(1, a->type);
     }
 
     // Make new set (max possible = min(a,b) count)
-    size_t min_capacity = hash_set_count(a) < hash_set_count(b) ? hash_set_count(a)
-                                                                : hash_set_count(b);
+    size_t min_capacity = hash_count(a) < hash_count(b) ? hash_count(a)
+                                                                : hash_count(b);
 
     // Allocate min of A and B
     HashSet* new_set = hash_set_create(min_capacity > 0 ? min_capacity : 1, a->type);
@@ -287,10 +276,10 @@ HashSet* hash_set_difference(HashSet* a, HashSet* b) {
         // The difference of a set with itself is the empty set
         return hash_set_create(1, a->type);
     }
-    if (hash_set_is_empty(a)) {
+    if (hash_is_empty(a)) {
         return hash_set_create(1, a->type);
     }
-    if (hash_set_is_empty(b)) {
+    if (hash_is_empty(b)) {
         return hash_set_clone(a);  // ∀ of x ∈ A are not in B
     }
 

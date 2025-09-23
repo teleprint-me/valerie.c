@@ -80,18 +80,6 @@ void hash_set_free(HashSet* set);
 /**  Basic Queries  **/
 
 /**
- * @brief Returns the number of elements in the set.
- * @param set Set to query.
- * @return Element count, or 0 if set is invalid.
- */
-size_t hash_set_count(HashSet* set);
-
-/**
- * @brief Returns true if set is valid and empty.
- */
-bool hash_set_is_empty(HashSet* set);
-
-/**
  * @brief Returns true if set contains the given key.
  * @param set Set to query.
  * @param value Pointer to key (not NULL).

@@ -313,6 +313,11 @@ size_t hash_size(const Hash* h);
 HashType hash_type(const Hash* h);
 
 /**
+ * @brief Returns true if hash table is valid and empty.
+ */
+bool hash_is_empty(Hash* h);
+
+/**
  * @brief Check if a hash table is valid (non-NULL, has storage, capacity > 0).
  *
  * @param h Pointer to the hash table.

@@ -220,6 +220,10 @@ HashType hash_type(const Hash* h) {
     return h ? h->type : HASH_UNK;
 }
 
+bool hash_is_empty(Hash* h) {
+    return hash_count(h) == 0;
+}
+
 bool hash_is_valid(const Hash* h) {
     return h && h->entries && h->capacity > 0;
 }
