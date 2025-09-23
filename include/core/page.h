@@ -25,8 +25,8 @@
  *   - Simplifying retroactive adoption of manual memory tracking.
  */
 
-#ifndef PAGE_ALLOCATOR_H
-#define PAGE_ALLOCATOR_H
+#ifndef HASH_PAGE_H
+#define HASH_PAGE_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -165,4 +165,4 @@ void page_allocator_dump(PageAllocator* allocator);
 }
 #endif
 
-#endif  // PAGE_ALLOCATOR_H
+#endif  // HASH_PAGE_H
