@@ -237,8 +237,7 @@ HashSet* hash_set_intersection(HashSet* a, HashSet* b) {
     }
 
     // Make new set (max possible = min(a,b) count)
-    size_t min_capacity = hash_count(a) < hash_count(b) ? hash_count(a)
-                                                                : hash_count(b);
+    size_t min_capacity = hash_count(a) < hash_count(b) ? hash_count(a) : hash_count(b);
 
     // Allocate min of A and B
     HashSet* new_set = hash_set_create(min_capacity > 0 ? min_capacity : 1, a->type);
