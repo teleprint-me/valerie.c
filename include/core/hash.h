@@ -30,6 +30,12 @@
  * @note
  * Collision Handling:
  *   - Linear probing is used for collision resolution.
+ *
+ * @note
+ * Memory Management:
+ * - By default, the hash table does not deep-copy keys or values; it stores pointers.
+ * - User is responsible for allocating all key/value memory.
+ *   - i.e. Freeing, via iteration/free helpers.
  */
 
 #ifndef HASH_H
