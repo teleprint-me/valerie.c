@@ -68,7 +68,7 @@ bool hash_set_is_subset(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return false;  // undefined behavior
     }
-    if (!hash_type_is_valid(a, b)) {
+    if (!hash_cmp_is_valid(a, b)) {
         return false;  // hash types do not match
     }
     if (hash_set_is_empty(a)) {
@@ -99,7 +99,7 @@ bool hash_set_is_equal(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return false;  // undefined behavior
     }
-    if (!hash_type_is_valid(a, b)) {
+    if (!hash_cmp_is_valid(a, b)) {
         return false;  // hash types do not match
     }
     if (a == b) {
@@ -177,7 +177,7 @@ HashSet* hash_set_union(HashSet* a, HashSet* b) {
         LOG_ERROR("HashSet is invalid!");
         return NULL;  // undefined behavior
     }
-    if (!hash_type_is_valid(a, b)) {
+    if (!hash_cmp_is_valid(a, b)) {
         LOG_ERROR("HashSet types do not match!");
         return NULL;  // hash types do not match
     }
@@ -238,7 +238,7 @@ HashSet* hash_set_intersection(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return NULL;
     }
-    if (!hash_type_is_valid(a, b)) {
+    if (!hash_cmp_is_valid(a, b)) {
         return NULL;
     }
 
@@ -280,7 +280,7 @@ HashSet* hash_set_difference(HashSet* a, HashSet* b) {
     if (!hash_is_valid(a) || !hash_is_valid(b)) {
         return NULL;
     }
-    if (!hash_type_is_valid(a, b)) {
+    if (!hash_cmp_is_valid(a, b)) {
         return NULL;
     }
     if (a == b) {
