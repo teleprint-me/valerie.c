@@ -171,6 +171,36 @@ void hash_free(Hash* h) {
 /** @} */
 
 /**
+ * @section Atomic operations
+ * @{
+ */
+
+int hash_lock(Hash* h) {
+    return pthread_mutex_lock(&h->lock);
+}
+
+int hash_unlock(Hash* h) {
+    return pthread_mutex_unlock(&h->lock);
+}
+
+void hash_lock_pair(Hash* a, Hash* b) {
+    if (a < b) {
+        hash_lock(a);
+        hash_lock(b);
+    } else {
+        hash_lock(b);
+        hash_lock(a);
+    }
+}
+
+void hash_unlock_pair(Hash* a, Hash* b) {
+    hash_unlock(a);
+    hash_unlock(b);
+}
+
+/** @} */
+
+/**
  * @section Hash queries
  */
 

@@ -202,6 +202,80 @@ void hash_free(Hash* h);
 /** @} */
 
 /**
+ * @defgroup hash_atomic Hash Atomic Operations
+ * @brief Atomic lock/unlock helpers for thread-safe hash, map, and set usage.
+ *
+ * @details
+ * These helpers allow clients to explicitly lock and unlock hash-based containers,
+ * enabling fine-grained or compound thread-safe operations.
+ *
+ * The hash interface is thread-agnostic by default; no operations acquire locks internally.
+ * Users must explicitly synchronize access using these functions in multithreaded contexts.
+ *
+ * Example usage:
+ * @code
+ * // Atomic insert
+ * hash_lock(map);
+ * hash_insert(map, key, value);
+ * hash_unlock(map);
+ *
+ * // Atomic set union
+ * hash_lock_pair(set_a, set_b);
+ * HashSet* u = hash_set_union(set_a, set_b);
+ * hash_unlock_pair(set_a, set_b);
+ * @endcode
+ *
+ * @note Always acquire locks in address order when locking multiple containers
+ *       to avoid deadlock (see hash_lock_pair).
+ * @{
+ */
+
+/**
+ * @brief Acquire exclusive lock on a hash container.
+ *
+ * @param h Pointer to Hash, HashMap, or HashSet object.
+ * @return 0 on success, or an error code from pthread_mutex_lock.
+ *
+ * @note Must be paired with hash_unlock. Not reentrant.
+ */
+int hash_lock(Hash* h);
+
+/**
+ * @brief Release exclusive lock on a hash container.
+ *
+ * @param h Pointer to Hash, HashMap, or HashSet object.
+ * @return 0 on success, or an error code from pthread_mutex_unlock.
+ *
+ * @note Must match a preceding hash_lock on the same object.
+ */
+int hash_unlock(Hash* h);
+
+/**
+ * @brief Acquire locks on two hash containers in canonical address order.
+ *
+ * Locks both @a a and @a b in ascending pointer order to prevent deadlock.
+ *
+ * @param a First hash container.
+ * @param b Second hash container.
+ *
+ * @note If a == b, only one lock is acquired.
+ * @note Always unlock both with hash_unlock_pair when done.
+ */
+void hash_lock_pair(Hash* a, Hash* b);
+
+/**
+ * @brief Release locks on two hash containers (in any order).
+ *
+ * @param a First hash container.
+ * @param b Second hash container.
+ *
+ * @note Order does not matter. Must match a preceding hash_lock_pair.
+ */
+void hash_unlock_pair(Hash* a, Hash* b);
+
+/** @} */
+
+/**
  * @defgroup queries Table Queries
  *  @{
  */
