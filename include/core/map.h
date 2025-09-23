@@ -98,7 +98,7 @@ void hash_map_free(HashMap* map);
  * @param map Pointer to the hash map.
  * @param key Pointer to the key to insert.
  * @param value Pointer to the value to associate with the key.
- * @return HASH_MAP_STATE_SUCCESS on success, or an error code.
+ * @return HASH_SUCCESS on success, or an error code.
  *
  * @note Automatically resizes if capacity is insufficient.
  */
@@ -109,7 +109,7 @@ HashState hash_map_insert(HashMap* map, void* key, void* value);
  *
  * @param map Pointer to the hash map.
  * @param new_size Desired new capacity.
- * @return HASH_MAP_STATE_SUCCESS on success, HASH_MAP_STATE_ERROR on failure.
+ * @return HASH_SUCCESS on success, HASH_ERROR on failure.
  */
 HashState hash_map_resize(HashMap* map, size_t new_capacity);
 
@@ -118,7 +118,7 @@ HashState hash_map_resize(HashMap* map, size_t new_capacity);
  *
  * @param map Pointer to the hash map.
  * @param key Pointer to the key to delete.
- * @return HASH_MAP_STATE_SUCCESS if deletion succeeded, HASH_MAP_STATE_KEY_NOT_FOUND if not found.
+ * @return HASH_SUCCESS if deletion succeeded, HASH_NOT_FOUND if not found.
  */
 HashState hash_map_delete(HashMap* map, const void* key);
 
@@ -126,7 +126,7 @@ HashState hash_map_delete(HashMap* map, const void* key);
  * @brief Removes all entries from the hash map.
  *
  * @param map Pointer to the hash map.
- * @return HASH_MAP_STATE_SUCCESS on success, HASH_MAP_STATE_ERROR on failure.
+ * @return HASH_SUCCESS on success, HASH_ERROR on failure.
  */
 HashState hash_map_clear(HashMap* map);
 
