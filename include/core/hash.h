@@ -229,6 +229,13 @@ bool hash_entry_is_valid(const HashEntry* e);
  */
 bool hash_cmp_is_valid(const Hash* a, const Hash* b);
 
+/**
+ * @brief Checks if key type is a supported primative.
+ * @param h Pointer to the hash object.
+ * @return true if valid, false otherwise.
+ */
+bool hash_type_is_valid(const Hash* h);
+
 /** @} */
 
 /**

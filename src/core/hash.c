@@ -202,6 +202,23 @@ bool hash_cmp_is_valid(const Hash* a, const Hash* b) {
     return a->type == b->type;
 }
 
+bool hash_type_is_valid(const Hash* h) {
+    if (!h) {
+        return false;
+    }
+
+    switch (h->type) {
+        case HASH_INT32:
+        case HASH_INT64:
+        case HASH_STR:
+        case HASH_PTR:
+            return true;
+        case HASH_UNK:
+        default:
+            return false;
+    }
+}
+
 /** @} */
 
 /**
@@ -233,7 +250,7 @@ HashEntry* hash_iter_next(HashIt* it) {
 }
 
 void hash_iter_log(Hash* h) {
-    if (!h) {
+    if (!hash_type_is_valid(h)) {
         LOG_ERROR("Error: Invalid hash object: %p", (void*) h);
         return;
     }
