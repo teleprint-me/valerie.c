@@ -1,17 +1,28 @@
 /**
- * @file page.h
- * @brief Page-based memory allocator with metadata tracking.
+ * @file      page.h
+ * @brief     Page-based memory allocator with tracked metadata.
+ * @copyright Copyright © 2023 Austin Berrio
  *
- * This interface provides a simple allocator built on top of a linear-probing hash map.
- * Each allocation is tracked with size and alignment metadata, allowing for:
- * - Manual allocation and deallocation.
- * - Safe reallocation with metadata updates.
- * - Global deallocation of all tracked memory.
+ * Provides a simple allocator for manual memory management, built atop a linear-probing hash map.
+ * Each allocation is tracked via size and alignment metadata, enabling:
+ *   - Manual allocation and deallocation
+ *   - Safe reallocation with metadata updates
+ *   - Bulk deallocation of all tracked memory
  *
- * Internally, the allocator stores metadata (`PageEntry`) in the provided `PageAllocator` context.
+ * The allocator tracks each allocation as a (pointer, metadata) pair, supporting retroactive
+ * addition of externally-allocated memory and robust cleanup.
  *
- * @note This API does not perform internal locking. The caller is responsible for synchronization.
- * @note All allocations and frees must use this API consistently to avoid memory leaks.
+ * @note
+ * - Uses the generic hash interface for metadata management; see hash.h for details.
+ * - The hash API is thread-agnostic: **clients are responsible for locking via hash_lock()
+ *   and hash_unlock()** if using in multithreaded contexts.
+ * - Linear probing handles collisions internally (see hash.h).
+ * - All memory tracked by this allocator must be freed only via this API to avoid leaks.
+ *
+ * Example use cases:
+ *   - Automatic cleanup of multiple allocations in error handling paths.
+ *   - Tracking buffer lifetimes in dynamic or plugin systems.
+ *   - Simplifying retroactive adoption of manual memory tracking.
  */
 
 #ifndef PAGE_ALLOCATOR_H
@@ -20,7 +31,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "core/map.h"
+#include "core/hash.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +40,7 @@ extern "C" {
 /**
  * @brief Alias for the internal hash map tracking page allocations.
  */
-typedef HashMap PageAllocator;
+typedef struct Hash PageAllocator;
 
 /**
  * @name Page Allocation API
@@ -115,10 +126,10 @@ bool page_add(PageAllocator* allocator, void* ptr, size_t size, size_t alignment
 /**
  * @brief Creates a new PageAllocator with address-key tracking.
  *
- * @param initial_size Initial capacity of the allocator's hash map.
+ * @param capacity Initial capacity of the allocator's hash map.
  * @return Pointer to a new PageAllocator, or NULL on failure.
  */
-PageAllocator* page_allocator_create(size_t initial_size);
+PageAllocator* page_allocator_create(size_t capacity);
 
 /**
  * @brief Frees all memory tracked by the allocator and destroys it.

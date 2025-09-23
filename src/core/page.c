@@ -1,11 +1,13 @@
 /**
- * Copyright © 2023 Austin Berrio
- *
- * @file page.c
+ * @file      page.c
+ * @brief     Page-based memory allocator with tracked metadata.
+ * @copyright Copyright © 2023 Austin Berrio
  */
 
 #include "core/memory.h"
 #include "core/logger.h"
+#include "core/hash.h"
+#include "core/map.h"
 #include "core/page.h"
 
 /**
@@ -293,8 +295,8 @@ bool page_add(PageAllocator* allocator, void* ptr, size_t size, size_t alignment
  * @{
  */
 
-PageAllocator* page_allocator_create(size_t initial_size) {
-    return hash_map_create(initial_size, HASH_PTR);
+PageAllocator* page_allocator_create(size_t capacity) {
+    return hash_map_create(capacity, HASH_PTR);
 }
 
 void page_allocator_free(PageAllocator* allocator) {
