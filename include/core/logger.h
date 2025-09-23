@@ -14,6 +14,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>  // IWYU pragma: keep
+#include <string.h>
 #include <stdio.h>
 
 #include <errno.h>  // IWYU pragma: keep
@@ -133,6 +134,10 @@ bool logger_message(Logger* logger, LogLevel log_level, const char* format, ...)
  * @{
  */
 
+// monkey patch to print only the basename of the filepath.
+// this needs to be revisited in the future. this is fine for now.
+#define LOG_BASENAME(path) (strrchr((path), '/') ? strrchr((path), '/') + 1 : (path))
+
 /**
  * @brief Macro to log messages with file, function, and line info.
  *
@@ -143,7 +148,13 @@ bool logger_message(Logger* logger, LogLevel log_level, const char* format, ...)
  */
 #define LOG(logger, level, format, ...) \
     logger_message( \
-        (logger), (level), "[%s:%s:%d] " format "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__ \
+        (logger), \
+        (level), \
+        "[%s:%s:%d] " format "\n", \
+        LOG_BASENAME(__FILE__), \
+        __func__, \
+        __LINE__, \
+        ##__VA_ARGS__ \
     )
 
 /**
