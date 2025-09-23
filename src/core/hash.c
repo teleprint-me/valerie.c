@@ -171,7 +171,7 @@ void hash_free(Hash* h) {
 /** @} */
 
 /**
- * @section Hash utils
+ * @section Hash queries
  */
 
 size_t hash_count(const Hash* h) {
@@ -217,6 +217,183 @@ bool hash_type_is_valid(const Hash* h) {
         default:
             return false;
     }
+}
+
+/** @} */
+
+/**
+ * @section Hash operations
+ */
+
+HashState hash_insert(Hash* h, void* key, void* value) {
+    if (!hash_is_valid(h)) {
+        LOG_ERROR("Invalid hash for internal insert.");
+        return HASH_ERROR;
+    }
+
+    if (!key) {
+        LOG_ERROR("Key is NULL.");
+        return HASH_ERROR;
+    }
+
+    for (size_t i = 0; i < h->capacity; i++) {
+        uint64_t index = h->fn(key, h->capacity, i);
+
+        if (!h->entries[index].key) {
+            h->entries[index].key = key;
+            h->entries[index].value = value;  // values are optional
+            h->count++;
+            return HASH_SUCCESS;
+        } else if (0 == h->cmp(h->entries[index].key, key)) {
+            return HASH_EXISTS;
+        }
+    }
+
+    return HASH_FULL;
+}
+
+HashState hash_resize(Hash* h, size_t new_capacity) {
+    if (!hash_is_valid(h)) {
+        LOG_ERROR("Invalid hash for internal resize.");
+        return HASH_ERROR;
+    }
+
+    if (new_capacity <= h->capacity) {
+        return HASH_SUCCESS;
+    }
+
+    HashEntry* new_entries = calloc(new_capacity, sizeof(HashEntry));
+    if (!new_entries) {
+        LOG_ERROR("Failed to allocate memory for resized hash.");
+        return HASH_ERROR;
+    }
+
+    // Backup
+    HashEntry* old_entries = h->entries;
+    size_t old_capacity = h->capacity;
+
+    // Swap
+    h->entries = new_entries;
+    h->capacity = new_capacity;
+
+    // Probe entries
+    size_t rehashed_count = 0;
+    for (size_t i = 0; i < old_capacity; i++) {
+        HashEntry* entry = &old_entries[i];
+        if (hash_entry_is_valid(entry)) {
+            HashState state = hash_insert(h, entry->key, entry->value);
+            if (HASH_SUCCESS != state) {
+                LOG_ERROR("Failed to rehash key during resize.");
+                free(new_entries);
+                h->entries = old_entries;
+                h->capacity = old_capacity;
+                return state;
+            }
+            rehashed_count++;
+        }
+    }
+
+    h->count = rehashed_count;
+    free(old_entries);
+    return HASH_SUCCESS;
+}
+
+HashState hash_delete(Hash* h, const void* key) {
+    if (!hash_is_valid(h)) {
+        LOG_ERROR("Invalid hash for internal delete.");
+        return HASH_ERROR;
+    }
+
+    if (!key) {
+        LOG_ERROR("Key is NULL.");
+        return HASH_ERROR;
+    }
+
+    for (size_t i = 0; i < h->capacity; i++) {
+        uint64_t index = h->fn(key, h->capacity, i);
+        HashEntry* entry = &h->entries[index];
+
+        if (!hash_entry_is_valid(entry)) {
+            return HASH_NOT_FOUND;  // Stop probing
+        }
+
+        if (0 == h->cmp(entry->key, key)) {
+            // Delete entry
+            entry->key = NULL;
+            entry->value = NULL;
+            h->count--;
+
+            // Rehash the remainder of the probe sequence
+            for (size_t j = i + 1; j < h->capacity; j++) {
+                uint64_t rehash_index = h->fn(key, h->capacity, j);
+                HashEntry* rehash_entry = &h->entries[rehash_index];
+
+                if (!hash_entry_is_valid(rehash_entry)) {
+                    break;
+                }
+
+                void* rehash_key = rehash_entry->key;
+                void* rehash_value = rehash_entry->value;
+
+                rehash_entry->key = NULL;
+                rehash_entry->value = NULL;
+                h->count--;
+
+                // Reinsert into new position
+                HashState state = hash_insert(h, rehash_key, rehash_value);
+                if (HASH_SUCCESS != state) {
+                    LOG_ERROR("Failed to reinsert during delete.");
+                    return HASH_ERROR;
+                }
+            }
+
+            return HASH_SUCCESS;
+        }
+    }
+
+    return HASH_NOT_FOUND;
+}
+
+HashState hash_clear(Hash* h) {
+    if (!hash_is_valid(h)) {
+        LOG_ERROR("Invalid hash for internal clear.");
+        return HASH_ERROR;
+    }
+
+    for (size_t i = 0; i < h->capacity; i++) {
+        h->entries[i].key = NULL;
+        h->entries[i].value = NULL;
+    }
+
+    h->count = 0;
+    return HASH_SUCCESS;
+}
+
+void* hash_search(Hash* h, const void* key) {
+    if (!hash_is_valid(h)) {
+        LOG_ERROR("Invalid hash for internal search.");
+        return NULL;
+    }
+
+    if (!key) {
+        LOG_ERROR("Key is NULL.");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < h->capacity; i++) {
+        uint64_t index = h->fn(key, h->capacity, i);
+        HashEntry* entry = &h->entries[index];
+
+        if (!hash_entry_is_valid(entry)) {
+            return NULL;
+        }
+
+        if (0 == h->cmp(entry->key, key)) {
+            return entry->value;
+        }
+    }
+
+    return NULL;
 }
 
 /** @} */

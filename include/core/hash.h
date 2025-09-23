@@ -1,14 +1,35 @@
 /**
  * @file      hash.h
- * @brief     General-purpose hash and comparison functions for sets/maps in C.
+ * @brief     General-purpose hash table API for sets and maps in C.
  * @copyright Copyright © 2023 Austin Berrio
  *
- * This header provides hash and compare function pointer types, supported key types,
- * and basic hash functions for use in generic hash-based containers.
+ * This header defines the public API for generic hash-based containers,
+ * supporting flexible hash and comparison function pointers for multiple key types.
  *
- * - Supports int32, int64, pointer, and null-terminated string keys.
- * - Designed to be extensible for additional types as needed.
- * - For use in hash set, hash map, and similar data structures.
+ * Features:
+ * - Supports `int32_t`, `int64_t`, C-strings, and pointer keys.
+ * - Extensible design for adding custom key types as needed.
+ * - Usable for both hash sets and hash maps.
+ *
+ * @note
+ * Comparison functions used with the hash API **must**:
+ *   - Return `0` for equality.
+ *   - Return non-zero for inequality.
+ *
+ * @note
+ * Supported key types:
+ *   - Integers (`int32_t`, `int64_t`)
+ *   - Strings (`char*`, null-terminated)
+ *   - Memory addresses (`uintptr_t`)
+ *
+ * @note
+ * Thread Safety:
+ *   - The hash interface itself is thread-agnostic.
+ *   - **Consumers** must ensure all hash operations are protected with locks as needed.
+ *
+ * @note
+ * Collision Handling:
+ *   - Linear probing is used for collision resolution.
  */
 
 #ifndef HASH_H
@@ -121,7 +142,8 @@ typedef struct HashIt {
 typedef void (*HashValueFree)(void*);
 
 /**
- * @section Hash Functions for Supported Types
+ * @defgroup hash Hash Functions for Supported Types
+ * @{
  */
 
 /**
@@ -151,158 +173,180 @@ int hash_str_cmp(const void* a, const void* b);
 /** @} */
 
 /**
- * @section Hash life-cycle
+ * @defgroup hash Hash Table API
+ *  @{
  */
 
 /**
- * @brief Creates a new hash table.
+ * @brief Create a new hash table with the specified capacity and key type.
  *
- * @param capacity Initial capacity of the table.
- * @param type Type of keys (integer, string, or address).
- * @return Pointer to the new hash table, or NULL on failure.
+ * @param capacity  Initial capacity (number of slots). Minimum is 10.
+ * @param type      HashType enum (e.g., HASH_INT32, HASH_STR, etc).
+ * @return          Pointer to new Hash instance, or NULL on allocation failure.
  */
 Hash* hash_create(size_t capacity, HashType type);
 
 /**
- * @brief Frees a hash table and all associated memory.
+ * @brief Free all memory for a hash table, including its internal storage.
  *
  * @param h Pointer to the hash table to free.
  */
 void hash_free(Hash* h);
 
-/** @} */
-
 /**
- * @section Hash utils
- */
-
-/**
- * @brief Returns the current number of active entries in the hash table.
- * @param h Pointer to the hash object.
- * @return Number of active entries, or 0 if invalid.
+ * @brief Return the current number of valid entries in the hash table.
+ *
+ * @param h Pointer to the hash table.
+ * @return  Number of active entries, or 0 if NULL.
  */
 size_t hash_count(const Hash* h);
 
 /**
- * @brief Returns the current capacity (total buckets) of the hash table.
- * @param h Pointer to the hash object.
- * @return Capacity (bucket count), or 0 if invalid.
+ * @brief Return the current capacity (number of slots) of the hash table.
+ *
+ * @param h Pointer to the hash table.
+ * @return  Capacity, or 0 if NULL.
  */
 size_t hash_capacity(const Hash* h);
 
 /**
- * @brief Returns the key size (in bytes) for the hash table.
- * @param h Pointer to the hash object.
- * @return Key size in bytes, or 0 if invalid.
+ * @brief Return the size in bytes of a single key, according to its type.
+ *
+ * @param h Pointer to the hash table.
+ * @return  Key size in bytes, or 0 if NULL.
  */
 size_t hash_size(const Hash* h);
 
 /**
- * @brief Returns the key type (HashType) of the hash table.
- * @param h Pointer to the hash object.
- * @return HashType enum, or HASH_UNK if invalid.
+ * @brief Return the key type (HashType enum) of the hash table.
+ *
+ * @param h Pointer to the hash table.
+ * @return  HashType value.
  */
 HashType hash_type(const Hash* h);
 
 /**
- * @brief Checks if a hash object is valid (not null, has entries, has positive capacity).
- * @param h Pointer to the hash object.
- * @return true if valid, false otherwise.
+ * @brief Check if a hash table is valid (non-NULL, has storage, capacity > 0).
+ *
+ * @param h Pointer to the hash table.
+ * @return  true if valid; false otherwise.
  */
 bool hash_is_valid(const Hash* h);
 
 /**
- * @brief Checks if a hash entry is valid (not null and has a non-null key).
- * @param e Pointer to the hash entry.
- * @return true if valid, false otherwise.
+ * @brief Check if a hash table entry is valid (non-NULL key).
+ *
+ * @param e Pointer to the HashEntry.
+ * @return  true if entry is valid; false otherwise.
  */
 bool hash_entry_is_valid(const HashEntry* e);
 
 /**
- * @brief Compares key types between two hash tables.
+ * @brief Check if two hash tables are comparable (same HashType).
  *
- * Determines if two hash tables have compatible data types.
- *
- * @param a Pointer to a hash object.
- * @param b Pointer to a hash object.
- * @return true if valid, false otherwise.
+ * @param a Pointer to first hash table.
+ * @param b Pointer to second hash table.
+ * @return  true if types match; false otherwise.
  */
 bool hash_cmp_is_valid(const Hash* a, const Hash* b);
 
 /**
- * @brief Checks if key type is a supported primative.
- * @param h Pointer to the hash object.
- * @return true if valid, false otherwise.
+ * @brief Check if a hash table has a recognized and supported HashType.
+ *
+ * @param h Pointer to the hash table.
+ * @return  true if type is valid; false otherwise.
  */
 bool hash_type_is_valid(const Hash* h);
 
-/** @} */
-
 /**
- * @name Hash Iterator
- * @warning Iterators are not thread-safe. External locking is required if the hash table may
- * be mutated concurrently during iteration.
- * @{
+ * @brief Insert a key-value pair into the hash table.
+ *
+ * @param h     Pointer to the hash table.
+ * @param key   Pointer to key data (must match table's key type).
+ * @param value Pointer to value data (may be NULL for set-like usage).
+ * @return      HashState code (HASH_SUCCESS, HASH_EXISTS, etc).
  */
+HashState hash_insert(Hash* h, void* key, void* value);
 
 /**
- * @brief Initializes a hash table iterator.
+ * @brief Resize the hash table to a new capacity (rehashes all keys).
  *
- * Returns an iterator positioned at the start of the table.
- * Pass to hash_map_next() to traverse key-value entries.
+ * @param h            Pointer to the hash table.
+ * @param new_capacity New capacity (must be > current).
+ * @return             HASH_SUCCESS on success; HASH_ERROR or other state on failure.
+ */
+HashState hash_resize(Hash* h, size_t new_capacity);
+
+/**
+ * @brief Remove a key (and value) from the hash table.
  *
- * @param h Pointer to the hash table to iterate.
- * @return Initialized iterator.
+ * @param h   Pointer to the hash table.
+ * @param key Pointer to key data.
+ * @return    HASH_SUCCESS if deleted, HASH_NOT_FOUND if not present.
+ */
+HashState hash_delete(Hash* h, const void* key);
+
+/**
+ * @brief Remove all entries from the hash table, but do not free the table.
+ *
+ * @param h Pointer to the hash table.
+ * @return  HASH_SUCCESS on success; HASH_ERROR on invalid input.
+ */
+HashState hash_clear(Hash* h);
+
+/**
+ * @brief Search for a key in the hash table and return its value.
+ *
+ * @param h   Pointer to the hash table.
+ * @param key Pointer to key data.
+ * @return    Pointer to value if found; NULL otherwise.
+ */
+void* hash_search(Hash* h, const void* key);
+
+/**
+ * @brief Create a new iterator for traversing hash table entries.
+ *
+ * @param h Pointer to the hash table.
+ * @return  HashIt iterator struct.
  */
 HashIt hash_iter(Hash* h);
 
 /**
- * @brief Validates the hash table iterator.
+ * @brief Check if an iterator is valid (table and entries are non-NULL).
  *
- * @param iter Pointer to an iterator.
- * @return true if valid, else false.
+ * @param it Pointer to the iterator.
+ * @return   true if valid; false otherwise.
  */
 bool hash_iter_is_valid(HashIt* it);
 
 /**
- * @brief Advances the iterator and returns the next valid entry.
+ * @brief Get the next valid entry in the hash table (iterates forward).
  *
- * Skips empty or deleted buckets. Returns entries in arbitrary order
- * (not sorted). Returns NULL when all entries are exhausted.
- *
- * @param iter Pointer to an iterator. Must not be NULL.
- * @return Pointer to the next valid HashEntry, or NULL if done.
+ * @param it Pointer to the iterator.
+ * @return   Pointer to HashEntry, or NULL if end reached.
  */
 HashEntry* hash_iter_next(HashIt* it);
 
 /**
- * @brief Write hash table meta data to standard output.
+ * @brief Print debug info and all valid keys in the table to the logger.
  *
  * @param h Pointer to the hash table.
  */
 void hash_iter_log(Hash* h);
 
 /**
- * @brief Iterates and frees all keys and values in the hash table.
+ * @brief Free all keys (always allocated) and values (using value_free) in the table.
  *
- * Frees each key using free(), and each value with either
- * the provided value_free() function, or free(), if non-NULL.
- * Does not free values if value_free() is NULL.
- * Does not deallocate the hash table structure itself.
- *
- * @param h Pointer to the hash table.
- * @param value_free Optional callback to free value pointers (may be NULL).
+ * @param h          Pointer to the hash table.
+ * @param value_free Function pointer to free value memory (NULL to ignore values).
  */
 void hash_iter_free_kv(Hash* h, HashValueFree value_free);
 
 /**
- * @brief Frees all keys and values, then deallocates the entire table.
+ * @brief Free all keys/values in the table and then free the table itself.
  *
- * Calls hash_map_iter_free_kv() with the standard free() function,
- * then releases the table with hash_map_free().
- *
- * @param h Pointer to the hash table.
- * @param value_free Optional callback to free value pointers (may be NULL).
+ * @param h          Pointer to the hash table.
+ * @param value_free Function pointer to free value memory (NULL to ignore values).
  */
 void hash_iter_free_all(Hash* h, HashValueFree value_free);
 
