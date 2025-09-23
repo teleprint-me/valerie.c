@@ -4,15 +4,32 @@
  * @file set.h
  * @brief Minimalistic hash set interface (wrapper over hash map).
  *
- * @note Thread Safety:
- *   - All set operations are thread-safe (via internal mutex in HashSet).
- *   - Do not mutate the same set from multiple threads without synchronization.
+ * @note
+ * Comparison functions used with the hash API **must**:
+ *   - Return `0` for equality.
+ *   - Return non-zero for inequality.
  *
- * @note Supported key types:
- *   - int32_t, int64_t, uintptr_t, char*
+ * @note
+ * Supported key types:
+ *   - Integers (`int32_t`, `int64_t`)
+ *   - Strings (`char*`, null-terminated)
+ *   - Memory addresses (`uintptr_t`)
  *
- * @note The null set is a valid set object with count 0.
- *   - NULL pointers are never valid sets.
+ * @note
+ * Thread Safety:
+ *   - The hash interface itself is thread-agnostic.
+ *   - **Consumers** must ensure all hash operations are protected with locks as needed.
+ *   - See hash_lock() and hash_unlock() in hash.h for details.
+ *
+ * @note
+ * Collision Handling:
+ *   - Linear probing is used for collision resolution.
+ *
+ * @note
+ * Memory Management:
+ * - By default, the hash table does not deep-copy keys or values; it stores pointers.
+ * - User is responsible for allocating all key/value memory.
+ *   - i.e. Freeing, via iteration/free helpers.
  *
  * @ref https://discrete.openmathbooks.org/dmoi3.html
  * @ref https://discrete.openmathbooks.org/dmoi3/sec_intro-sets.html

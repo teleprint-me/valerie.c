@@ -2,8 +2,7 @@
  * Copyright © 2023 Austin Berrio
  *
  * @file map.h
- * @brief Minimalistic HashMap implementation providing mapping between
- * integers, strings, and memory addresses.
+ * @brief Minimalistic hash map interface (thin wrapper over hash).
  *
  * Users can map integers, strings, and memory addresses to other data types,
  * supporting insert, resize, delete, and clear operations.
@@ -21,8 +20,9 @@
  *
  * @note
  * Thread Safety:
- * - The hash map is designed to be thread-safe using mutexes. Ensure that all operations
- * on the hash map are performed within critical sections to avoid race conditions.
+ *   - The hash interface itself is thread-agnostic.
+ *   - **Consumers** must ensure all hash operations are protected with locks as needed.
+ *   - See hash_lock() and hash_unlock() in hash.h for details.
  *
  * @note
  * Collision Handling:
