@@ -142,7 +142,7 @@ typedef struct HashIt {
 typedef void (*HashValueFree)(void*);
 
 /**
- * @defgroup hash Hash Functions for Supported Types
+ * @defgroup functions Functions for Supported Types
  * @{
  */
 
@@ -173,7 +173,7 @@ int hash_str_cmp(const void* a, const void* b);
 /** @} */
 
 /**
- * @defgroup hash Hash Table API
+ * @defgroup lifecycle Table Life-cycle
  *  @{
  */
 
@@ -192,6 +192,13 @@ Hash* hash_create(size_t capacity, HashType type);
  * @param h Pointer to the hash table to free.
  */
 void hash_free(Hash* h);
+
+/** @} */
+
+/**
+ * @defgroup queries Table Queries
+ *  @{
+ */
 
 /**
  * @brief Return the current number of valid entries in the hash table.
@@ -258,6 +265,13 @@ bool hash_cmp_is_valid(const Hash* a, const Hash* b);
  */
 bool hash_type_is_valid(const Hash* h);
 
+/** @} */
+
+/**
+ * @defgroup operations Table Operations
+ *  @{
+ */
+
 /**
  * @brief Insert a key-value pair into the hash table.
  *
@@ -302,6 +316,13 @@ HashState hash_clear(Hash* h);
  * @return    Pointer to value if found; NULL otherwise.
  */
 void* hash_search(Hash* h, const void* key);
+
+/** @} */
+
+/**
+ * @defgroup iterator Table Iterator
+ *  @{
+ */
 
 /**
  * @brief Create a new iterator for traversing hash table entries.
