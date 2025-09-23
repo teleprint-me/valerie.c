@@ -266,6 +266,13 @@ bool hash_iter_is_valid(HashIt* it);
 HashEntry* hash_iter_next(HashIt* it);
 
 /**
+ * @brief Write hash table meta data to standard output.
+ *
+ * @param h Pointer to the hash table.
+ */
+void hash_iter_log(Hash* h);
+
+/**
  * @brief Iterates and frees all keys and values in the hash table.
  *
  * Frees each key using free(), and each value with either

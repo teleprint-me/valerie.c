@@ -11,47 +11,6 @@
 
 #include "core/set.h"
 
-void hash_set_print(Hash* h) {
-    if (!h) {
-        printf("Error: Invalid hash object: %p\n", (void*) h);
-        return;
-    }
-
-    printf("size: %zu\n", h->size);
-    printf("capacity: %zu\n", h->capacity);
-    printf("count: %zu\n", h->count);
-    printf("type: %d\n", h->type);
-
-    bool valid_type = true;
-
-    HashEntry* entry;
-    HashIt it = hash_iter(h);
-    while ((entry = hash_iter_next(&it))) {
-        switch (h->type) {
-            case HASH_INT32:
-                printf("key: %d\n", *(int32_t*) entry->key);
-                break;
-            case HASH_INT64:
-                printf("key: %ld\n", *(int64_t*) entry->key);
-                break;
-            case HASH_STR:
-                printf("key: %s\n", (uint8_t*) entry->key);
-                break;
-            case HASH_PTR:
-                printf("key: %p\n", (uint8_t*) entry->key);
-                break;
-            default:
-                printf("Error: Invalid hash type!\n");
-                valid_type = false;
-                break;
-        }
-        if (!valid_type) {
-            break;
-        }
-    }
-    printf("\n");
-}
-
 int main(void) {
     // Integer set
     HashSet* s1 = hash_set_create(8, HASH_INT32);
@@ -65,24 +24,24 @@ int main(void) {
     hash_set_add(s2, &c);
     hash_set_add(s2, &d);
 
-    hash_set_print(s1);
-    hash_set_print(s2);
+    hash_iter_log(s1);
+    hash_iter_log(s2);
 
     // Test union
     HashSet* uni = hash_set_union(s1, s2);
-    hash_set_print(uni);
+    hash_iter_log(uni);
     assert(hash_set_count(uni) == 4);
 
     // Test intersection
     HashSet* isect = hash_set_intersection(s1, s2);
-    hash_set_print(isect);
+    hash_iter_log(isect);
     assert(hash_set_count(isect) == 2);
     assert(hash_set_contains(isect, &b));
     assert(hash_set_contains(isect, &c));
 
     // Test difference
     HashSet* diff = hash_set_difference(s1, s2);
-    hash_set_print(diff);
+    hash_iter_log(diff);
     assert(hash_set_count(diff) == 1);
     assert(hash_set_contains(diff, &a));
 

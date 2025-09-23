@@ -232,6 +232,40 @@ HashEntry* hash_iter_next(HashIt* it) {
     return NULL;
 }
 
+void hash_iter_log(Hash* h) {
+    if (!h) {
+        LOG_ERROR("Error: Invalid hash object: %p", (void*) h);
+        return;
+    }
+
+    LOG_INFO("size: %zu", h->size);
+    LOG_INFO("capacity: %zu", h->capacity);
+    LOG_INFO("count: %zu", h->count);
+    LOG_INFO("type: %d", h->type);
+
+    HashEntry* entry;
+    HashIt it = hash_iter(h);
+    while ((entry = hash_iter_next(&it))) {
+        switch (h->type) {
+            case HASH_INT32:
+                LOG_INFO("key: %d", *(int32_t*) entry->key);
+                break;
+            case HASH_INT64:
+                LOG_INFO("key: %ld", *(int64_t*) entry->key);
+                break;
+            case HASH_STR:
+                LOG_INFO("key: %s", (uint8_t*) entry->key);
+                break;
+            case HASH_PTR:
+                LOG_INFO("key: %p", (uint8_t*) entry->key);
+                break;
+            default:
+                LOG_ERROR("Error: Invalid hash type: %d", h->type);
+                break;
+        }
+    }
+}
+
 void hash_iter_free_kv(Hash* h, HashValueFree value_free) {
     if (h) {
         HashEntry* entry;
