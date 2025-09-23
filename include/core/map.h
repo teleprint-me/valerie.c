@@ -1,8 +1,7 @@
 /**
- * Copyright © 2023 Austin Berrio
- *
  * @file map.h
  * @brief Minimalistic hash map interface (thin wrapper over hash).
+ * @copyright Copyright © 2023 Austin Berrio
  *
  * Users can map integers, strings, and memory addresses to other data types,
  * supporting insert, resize, delete, and clear operations.

@@ -1,8 +1,7 @@
 /**
- * Copyright © 2023 Austin Berrio
- *
  * @file map.c
  * @brief Minimalistic hash map interface (thin wrapper over hash).
+ * @copyright Copyright © 2023 Austin Berrio
  */
 
 #include "core/logger.h"

@@ -1,8 +1,7 @@
 /**
- * Copyright © 2023 Austin Berrio
- *
  * @file set.h
  * @brief Minimalistic hash set interface (wrapper over hash map).
+ * @copyright Copyright © 2023 Austin Berrio
  *
  * @note
  * Null Sets:

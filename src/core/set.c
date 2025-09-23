@@ -1,9 +1,7 @@
 /**
- * Copyright © 2023 Austin Berrio
- *
- * @file set.h
+ * @file set.c
  * @brief Minimalistic hash set interface (wrapper over hash map).
- * @note The null set is a set object with a count of 0. NULL is never a null set.
+ * @copyright Copyright © 2023 Austin Berrio
  */
 
 #include <stdbool.h>
