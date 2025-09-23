@@ -87,7 +87,6 @@ void hash_map_free(HashMap* map);
 
 /**
  * @name Core Hash Operations
- * @note Thread-safe: acquires internal lock during operation.
  * @{
  */
 
