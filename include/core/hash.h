@@ -106,7 +106,7 @@ typedef uint64_t (*HashFn)(const void* key, uint64_t size, uint64_t i);
  * @brief Comparison function pointer type.
  * @param a  Pointer to first key.
  * @param b  Pointer to second key.
- * @return 0 if equal, <0 if a < b, >0 if a > b.
+ * @return 0 for equality. Negative or positive value otherwise.
  */
 typedef int (*HashCmp)(const void* a, const void* b);
 
