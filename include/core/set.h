@@ -36,6 +36,10 @@ extern "C" {
  * @typedef HashSet
  * @brief Opaque alias for the base Hash structure, representing a generic set.
  *
+ * @note
+ * All logic for allocation, lookup, insertion, removal, and cleanup is provided
+ * by hash.c aliasing @c Hash as @c HashSet is never defined separately.
+ *
  * Use only via the set interface functions below.
  */
 typedef struct Hash HashSet;
