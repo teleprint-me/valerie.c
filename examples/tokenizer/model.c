@@ -19,6 +19,7 @@
 #include "core/strext.h"
 #include "core/map.h"
 #include "core/set.h"
+#include "core/sort.h"
 
 #include "tokenizer/vocab.h"
 #include "tokenizer/bpe.h"
@@ -133,6 +134,9 @@ char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
             return NULL;
         }
     }
+
+    // Sort the output array of tokens
+    heap_sort_str(tokens, token_count);
 
     // set the output token count
     *out_count = token_count;
