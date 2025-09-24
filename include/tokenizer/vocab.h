@@ -80,7 +80,7 @@ void vocab_map_print(HashMap* m);
  * @brief Saves a vocab map to a binary file.
  *
  * Writes a compact, versioned binary format:
- *   [int32] magic ('vox\0')
+ *   [int32] magic ('syms')
  *   [int32] version (currently 1)
  *   [int32] count (number of entries)
  *   [int32] size  (hash map capacity)

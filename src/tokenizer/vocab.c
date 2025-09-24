@@ -68,7 +68,7 @@ void vocab_map_print(HashMap* m) {
 /**
  * Vocab serialization
  * Format:
- *   [int32] magic ('vox\0')
+ *   [int32] magic ('syms')
  *   [int32] version (currently 1)
  *   [int32] count (number of entries)
  *   [int32] size  (hash map capacity used for init)
@@ -97,18 +97,18 @@ bool vocab_map_save(HashMap* m, const char* path) {
 
     // Place holders for future macros
     // Using int keeps things simple for now
-    int magic = VOCAB_MAGIC;  // vox magic
+    int magic = VOCAB_MAGIC;  // magic
     fwrite(&magic, sizeof(int), 1, file);
 
-    int version = VOCAB_VERSION;  // vox version
+    int version = VOCAB_VERSION;  // version
     fwrite(&version, sizeof(int), 1, file);
 
     // number of elements in the map (for reading)
-    int count = hash_count(m);  // vox has n elements
+    int count = hash_count(m);  // has n elements
     fwrite(&count, sizeof(int), 1, file);
 
     // number of bytes allocated (for initialization)
-    int capacity = hash_capacity(m);  // vox has n bytes
+    int capacity = hash_capacity(m);  // has n bytes
     fwrite(&capacity, sizeof(int), 1, file);
 
     HashEntry* entry;
@@ -147,7 +147,7 @@ HashMap* vocab_map_load(const char* path) {
 
     // Read and validate vocab magic
     int magic = 0;
-    fread(&magic, sizeof(char), 1, file);
+    fread(&magic, sizeof(int), 1, file);
     if (magic != VOCAB_MAGIC) {
         fclose(file);
         return NULL;
@@ -155,7 +155,7 @@ HashMap* vocab_map_load(const char* path) {
 
     // Read and validate vocab version
     int version = 0;
-    fread(&version, sizeof(char), 1, file);
+    fread(&version, sizeof(int), 1, file);
     if (version != VOCAB_VERSION) {
         fclose(file);
         return NULL;
@@ -163,11 +163,11 @@ HashMap* vocab_map_load(const char* path) {
 
     // Get the number of kv pairs in the vocab
     int count = 0;
-    fread(&count, sizeof(char), 1, file);
+    fread(&count, sizeof(int), 1, file);
 
     // Get the number of bytes required for the map
     int size = 0;
-    fread(&size, sizeof(char), 1, file);
+    fread(&size, sizeof(int), 1, file);
 
     // Allocate the map
     HashMap* m = hash_map_create(size, HASH_STR);
@@ -179,7 +179,7 @@ HashMap* vocab_map_load(const char* path) {
     for (int i = 0; i < count; i++) {
         // Get the key length
         int k_len = 0;
-        fread(&k_len, sizeof(char), 1, file);
+        fread(&k_len, sizeof(int), 1, file);
 
         // Get the key
         char* k = calloc(k_len + 1, sizeof(char));
@@ -188,7 +188,7 @@ HashMap* vocab_map_load(const char* path) {
 
         // Get the value
         int* v = calloc(1, sizeof(int));
-        fread(v, sizeof(char), 1, file);
+        fread(v, sizeof(int), 1, file);
 
         // m : k -> v
         hash_map_insert(m, k, v);
