@@ -32,6 +32,7 @@ typedef struct SpecialToken {
     char* eos;  // <|eos|>
     char* pad;  // <|pad|>
     char* unk;  // <|unk|>
+    int count;
 } SpecialToken;
 
 typedef struct Tokenizer {
@@ -114,29 +115,39 @@ HashSet* generate_set(BPEModel* model) {
 }
 
 char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
-    // create the core token list
-    size_t token_count = 0;
-    char** tokens = calloc(1, sizeof(char*));
-
-    // add special tokens to start of array
-    tokens = string_append(special->bos, tokens, &token_count);
-    tokens = string_append(special->eos, tokens, &token_count);
-    tokens = string_append(special->pad, tokens, &token_count);
-    tokens = string_append(special->unk, tokens, &token_count);
+    // create core token list
+    size_t core_count = 0;
+    // create a shallow copy
+    char** core = calloc(1, sizeof(char*));
 
     // add core token set to list
     HashEntry* entry = NULL;
     HashIt it = hash_iter(set);
     while ((entry = hash_iter_next(&it))) {
-        tokens = string_append(entry->key, tokens, &token_count);
-        if (!tokens) {
-            string_split_free(tokens, token_count);
+        /// @note does **not** internally alloc
+        core = string_append(entry->key, core, &core_count);
+        if (!core) {
+            free(core);
             return NULL;
         }
     }
 
-    // Sort the output array of tokens
-    heap_sort_str(tokens, token_count);
+    // Sort the core token array
+    heap_sort_str(core, core_count);
+
+    // Create the output token list
+    size_t token_count = 0;
+    char** tokens = calloc(1, sizeof(char*));
+    
+    // add special tokens to start of array
+    tokens = string_append(strdup(special->bos), tokens, &token_count);
+    tokens = string_append(strdup(special->eos), tokens, &token_count);
+    tokens = string_append(strdup(special->pad), tokens, &token_count);
+    tokens = string_append(strdup(special->unk), tokens, &token_count);
+
+    for (size_t i = 0; i < core_count; i++) {
+        tokens = string_append(strdup(core[i]), tokens, &token_count);
+    }
 
     // set the output token count
     *out_count = token_count;
