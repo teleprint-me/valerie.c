@@ -143,6 +143,27 @@ int string_compare(const char* a, const char* b) {
     return 0;  // equal
 }
 
+char** string_insert(const char* src, char** parts, size_t* count, size_t index) {
+    if (!src || !parts || !count || index > *count) {
+        return NULL;
+    }
+
+    char** temp = realloc(parts, sizeof(char*) * (*count + 1));
+    if (!temp) {
+        return NULL;
+    }
+    parts = temp;
+
+    // Shift up everything after index
+    for (size_t i = *count; i > index; --i) {
+        parts[i] = parts[i - 1];
+    }
+
+    parts[index] = (char*) src;
+    (*count)++;
+    return parts;
+}
+
 char** string_append(const char* src, char** parts, size_t* count) {
     if (!src || !parts || !count) {
         return NULL;

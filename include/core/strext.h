@@ -93,6 +93,23 @@ char* string_concat(const char* dst, const char* src);
 int string_compare(const char* a, const char* b);
 
 /**
+ * @brief Inserts a given string into a dynamic array of strings at a specified index.
+ *
+ * @param src      The string to be inserted.
+ * @param parts    Dynamic array of pointers (may be reallocated). Must not be NULL.
+ * @param count    Pointer to the current count. Will be incremented on success.
+ * @param index    The index at which the new string will be inserted.
+ *
+ * @return         New pointer to the (possibly reallocated) array, or NULL on error.
+ *
+ * @note src is not duplicated and references the input string.
+ * @note Caller must assign the return value back to parts.
+ * @note On allocation failure, no memory is leaked.
+ * @note The appended entry is always a heap-allocated, null-terminated copy.
+ */
+char** string_insert(const char* src, char** parts, size_t* count, size_t index);
+
+/**
  * @brief Appends a pointer to a dynamic array of char* pointers, resizing as needed.
  *
  * @param src      Pointer to add to the array.
@@ -100,6 +117,7 @@ int string_compare(const char* a, const char* b);
  * @param count    Pointer to the current count. Will be incremented on success.
  * @return         New pointer to the (possibly reallocated) array, or NULL on error.
  *
+ * @note src is not duplicated and references the input string.
  * @note Caller must assign the return value back to the parts variable.
  *       (e.g., parts = string_append(...))
  * @note The array is grown by one; previous contents are preserved.
@@ -117,6 +135,7 @@ char** string_append(const char* src, char** parts, size_t* count);
  * @param count Pointer to the current count; will be incremented on success.
  * @return      New pointer to the (possibly reallocated) array, or NULL on error.
  *
+ * @note src is not duplicated and references the input string.
  * @note Caller must assign the return value back to parts.
  * @note On allocation failure, no memory is leaked.
  * @note The appended entry is always a heap-allocated, null-terminated copy.
@@ -133,6 +152,7 @@ char** string_append_n(const char* src, const size_t n, char** parts, size_t* co
  * @param count  Pointer to the current count; incremented on success.
  * @return       Pointer to the (possibly reallocated) array, or NULL on error.
  *
+ * @note src is not duplicated and references the input string.
  * @note Caller must assign the return value back to the parts variable.
  * @note If [start, end) is empty, appends an empty string.
  * @note On allocation failure, no memory is leaked.
