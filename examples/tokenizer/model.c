@@ -32,7 +32,6 @@ typedef struct SpecialToken {
     char* eos;  // <|eos|>
     char* pad;  // <|pad|>
     char* unk;  // <|unk|>
-    int count;
 } SpecialToken;
 
 typedef struct Tokenizer {
@@ -45,7 +44,7 @@ typedef struct Tokenizer {
     char** id_to_token;  // char** is more efficient and is also O(1)
 } Tokenizer;
 
-HashMap* generate_ascii(void) {
+HashMap* token_create_ascii(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
     if (!latin1) {
         return NULL;
@@ -66,7 +65,13 @@ HashMap* generate_ascii(void) {
     return latin1;
 }
 
-HashSet* generate_set(BPEModel* model) {
+void token_free_ascii(HashMap* ascii) {
+    if (ascii) {
+        hash_iter_free_all(ascii, free);  // free key-value pairs
+    }
+}
+
+HashSet* token_create_set(BPEModel* model) {
     // create the core token set
     HashSet* set = hash_set_create(model->capacity, HASH_STR);
     if (!set) {
@@ -74,7 +79,7 @@ HashSet* generate_set(BPEModel* model) {
     }
 
     // generate base tokens for OOV
-    HashMap* ascii = generate_ascii();
+    HashMap* ascii = token_create_ascii();
     if (!ascii) {
         hash_set_free(set);
     }
@@ -114,7 +119,13 @@ HashSet* generate_set(BPEModel* model) {
     return set;
 }
 
-char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
+void token_free_set(HashSet* tokens) {
+    if (tokens) {
+        hash_iter_free_all(tokens, NULL);  // only free keys!
+    }
+}
+
+char** token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
     // create core token list
     size_t core_count = 0;
     // create a shallow copy
@@ -124,7 +135,7 @@ char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
     HashEntry* entry = NULL;
     HashIt it = hash_iter(set);
     while ((entry = hash_iter_next(&it))) {
-        /// @note does **not** internally alloc
+        /// @note does **not** duplicate keys
         core = string_append(entry->key, core, &core_count);
         if (!core) {
             free(core);
@@ -138,7 +149,7 @@ char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
     // Create the output token list
     size_t token_count = 0;
     char** tokens = calloc(1, sizeof(char*));
-    
+
     // add special tokens to start of array
     tokens = string_append(strdup(special->bos), tokens, &token_count);
     tokens = string_append(strdup(special->eos), tokens, &token_count);
@@ -154,6 +165,12 @@ char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
 
     // return the token list
     return tokens;
+}
+
+void token_free(char** tokens, size_t token_count) {
+    if (tokens && token_count > 0) {
+        string_split_free(tokens, token_count);
+    }
 }
 
 /**
