@@ -18,6 +18,7 @@
 #include "core/path.h"
 #include "core/strext.h"
 #include "core/map.h"
+#include "core/set.h"
 
 #include "tokenizer/vocab.h"
 #include "tokenizer/bpe.h"
@@ -35,20 +36,20 @@ typedef struct SpecialToken {
 typedef struct Tokenizer {
     int magic;
     int version;
-    BPEModel* model;
+    int vocab_size;  // number of id to tokens
     SpecialToken* special;
     HashMap* ascii;
     HashMap* token_to_id;
-    HashMap* id_to_token;
+    char** id_to_token;  // char** is more efficient and is also O(1)
 } Tokenizer;
 
-// exact bijection: 0..255
-HashMap* ascii_generate(void) {
+HashMap* generate_ascii(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
     if (!latin1) {
         return NULL;
     }
 
+    // exact bijection: 0..255
     for (size_t i = 0; i < 256; i++) {
         char* k = calloc(2, sizeof(char));
         *k = i;
@@ -61,6 +62,83 @@ HashMap* ascii_generate(void) {
     }
 
     return latin1;
+}
+
+HashSet* generate_set(BPEModel* model) {
+    // create the core token set
+    HashSet* set = hash_set_create(model->capacity, HASH_STR);
+    if (!set) {
+        return NULL;
+    }
+
+    // generate base tokens for OOV
+    HashMap* ascii = generate_ascii();
+    if (!ascii) {
+        hash_set_free(set);
+    }
+
+    // Add base tokens for OOV
+    HashEntry* entry;
+    HashIt it = hash_iter(ascii);
+    while ((entry = hash_iter_next(&it))) {
+        // returns true on success
+        hash_set_add(set, strdup(entry->key));
+    }
+
+    // parse out merges from model
+    for (size_t i = 0; i < model->count; i++) {
+        // get the current merge
+        BPEMerge merge = model->merges[i];
+
+        // parse out the tuple from the current merge pair
+        size_t tuple_count;
+        char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
+        if (tuple_count != 2) {
+            string_split_free(tuple, tuple_count);
+            vocab_map_free(ascii);
+            return NULL;
+        }
+        const char* a = tuple[0];
+        const char* b = tuple[1];
+
+        // merge pair: t : a + b
+        char* token = string_concat(a, b);
+
+        // add the token to the set
+        hash_set_add(set, token);
+    }
+
+    // return the token set
+    return set;
+}
+
+char** generate_tokens(HashSet* set, SpecialToken* special, size_t* out_count) {
+    // create the core token list
+    size_t token_count = 0;
+    char** tokens = calloc(1, sizeof(char*));
+
+    // add special tokens to start of array
+    tokens = string_append(special->bos, tokens, &token_count);
+    tokens = string_append(special->eos, tokens, &token_count);
+    tokens = string_append(special->pad, tokens, &token_count);
+    tokens = string_append(special->unk, tokens, &token_count);
+
+    // add core token set to list
+    HashEntry* entry = NULL;
+    HashIt it = hash_iter(set);
+    while ((entry = hash_iter_next(&it))) {
+        tokens = string_append(entry->key, tokens, &token_count);
+        if (!tokens) {
+            string_split_free(tokens, token_count);
+            return NULL;
+        }
+    }
+
+    // set the output token count
+    *out_count = token_count;
+
+    // return the token list
+    return tokens;
 }
 
 /**
