@@ -202,12 +202,7 @@ HashMap* bpe_merges(HashMap* vocab, const char* best_pair) {
         while (i < sym_count) {
             if (i + 1 < sym_count && strcmp(syms[i], a) == 0 && strcmp(syms[i + 1], b) == 0) {
                 // Merge: concat a + b
-                size_t merge_count = strlen(a) + strlen(b) + 1;
-                char* merge = malloc(merge_count);
-                strcpy(merge, a);
-                strcat(merge, b);
-
-                out[out_count++] = merge;
+                out[out_count++] = string_concat(a, b);
                 i += 2;  // skip b
             } else {
                 out[out_count++] = strdup(syms[i]);
