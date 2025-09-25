@@ -416,12 +416,14 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
         char k[2] = {text[i], 0};
 
         int* v = hash_map_search(t->token_to_id, k);
-        if (!v && t->special) {
+        if (v) {
+            ids[i] = *v;
+        } else if (t->special && t->special->unk) {
             v = hash_map_search(t->token_to_id, t->special->unk);
+            ids[i] = (v) ? *v : -1;
         } else {
-            *v = -1;
+            ids[i] = -1;  // no unk, just use -1
         }
-        ids[i] = *v;
     }
 
     return ids;
