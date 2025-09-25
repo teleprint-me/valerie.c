@@ -317,30 +317,45 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     // generate base tokens for OOV
     t->ascii = ascii_create();
     if (!t->ascii) {
-        free(t);
+        tokenizer_free(t);
     }
 
-    // generate unique intermediary token set
-    HashSet* set = token_set_create(model, t->ascii);
-    if (!set) {
-        free(t);
+    // generate unique token set (IR)
+    HashSet* vocab = token_set_create(model, t->ascii);
+    if (!vocab) {
+        tokenizer_free(t);
         return NULL;
     }
+
     // generate v : i -> t
-    t->id_to_token = id_to_token_create(set, special, &t->vocab_size);
-    // clean up IR
-    token_set_free(set);
+    t->id_to_token = id_to_token_create(vocab, special, &t->vocab_size);
+    if (!t->id_to_token) {
+        token_set_free(vocab);
+        tokenizer_free(t);
+        return NULL;
+    }
+
+    // clean up unique token set
+    token_set_free(vocab);
 
     // generate v : t -> i
     t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
+    if (!t->token_to_id) {
+        tokenizer_free(t);
+        return NULL;
+    }
 
     HashMap* ranks = token_rank_create(model);
     if (!ranks) {
-        free(t);
+        tokenizer_free(t);
         return NULL;
     }
 
     t->scores = token_score_create(t->token_to_id, ranks);
+    if (!t->scores) {
+        tokenizer_free(t);
+        return NULL;
+    }
 
     return t;
 }
