@@ -45,7 +45,7 @@ typedef struct Tokenizer {
 } Tokenizer;
 
 /**
- * tokenizer clean up
+ * @section Tokenizer clean up
  * @{
  */
 
@@ -117,7 +117,8 @@ void tokenizer_free(Tokenizer* t) {
 /** @} */
 
 /**
- * Tokenizer pipeline
+ * @section Tokenizer pipeline
+ * @{
  */
 
 HashMap* ascii_create(void) {
