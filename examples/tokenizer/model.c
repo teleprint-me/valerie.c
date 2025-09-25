@@ -158,6 +158,9 @@ char** token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
         tokens = string_append(strdup(core[i]), tokens, &token_count);
     }
 
+    // clean up pre-tokens
+    free(core);
+
     // set the output token count
     *out_count = token_count;
 
