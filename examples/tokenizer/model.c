@@ -154,7 +154,6 @@ HashSet* token_set_create(BPEModel* model, HashMap* ascii) {
         size_t tuple_count;
         char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
         if (tuple_count != 2) {
-            ascii_free(ascii);
             token_set_free(set);
             string_split_free(tuple, tuple_count);
             return NULL;
@@ -167,6 +166,9 @@ HashSet* token_set_create(BPEModel* model, HashMap* ascii) {
 
         // add the token to the set
         hash_set_add(set, token);
+
+        // free the tuple
+        string_split_free(tuple, tuple_count);
     }
 
     // return the token set
@@ -268,6 +270,9 @@ HashMap* token_rank_create(BPEModel* model) {
 
         // map token to id
         hash_map_insert(ranks, token, id);
+
+        // free the tuple
+        string_split_free(tuple, tuple_count);
     }
 
     return ranks;  // v : t -> i
