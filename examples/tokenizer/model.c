@@ -439,29 +439,36 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
     if (add_bos && t->special && t->special->bos) {
     }
 
-    HashEntry* entry;
-    HashIt it = hash_iter(t->scores);
-    while ((entry = hash_iter_next(&it))) {
+    while (true) {
         float best_score = -INFINITY;
         int best_id = -1;
 
+        // scan for best merge pair
         for (size_t i = 0; i < id_count - 1; i++) {
-            // get current ids
-            int id_a = ids[i];
-            int id_b = ids[i + 1];
+            // get ids
+            int id_a = ids[i];  // current
+            int id_b = ids[i + 1];  // next
 
             // token is unknown and there is no sub
             if (id_a == -1 || id_b == -1) {
                 continue;
             }
 
-            // get token pair
+            // probe for a valid merge pair
             char* a = t->id_to_token[id_a];
             char* b = t->id_to_token[id_b];
+            char* merge = string_concat(a, b);
+
+            // probe for a valid score
+            float* score = hash_map_search(t->scores, merge);
+            if (score && *score > best_score) {
+                best_score = *score;
+                best_id = i;
+            }
         }
 
         if (best_id == -1) {
-            break;  // no more merges
+            break;  // no merges left
         }
     }
 
