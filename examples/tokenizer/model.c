@@ -199,7 +199,7 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count
     return tokens;
 }
 
-HashMap* token_to_id_create(char** id_to_tokens, size_t token_count) {
+HashMap* token_to_id_create(char** id_to_token, size_t token_count) {
     HashMap* tokens = hash_map_create(1, HASH_STR);  // str -> id
     if (!tokens) {
         return NULL;
@@ -207,7 +207,7 @@ HashMap* token_to_id_create(char** id_to_tokens, size_t token_count) {
 
     for (size_t i = 0; i < token_count; i++) {
         // shared reference is not to be freed!
-        if (HASH_SUCCESS != hash_map_insert(tokens, id_to_tokens[i], &i)) {
+        if (HASH_SUCCESS != hash_map_insert(tokens, id_to_token[i], &i)) {
             hash_map_free(tokens);
             return NULL;
         }
