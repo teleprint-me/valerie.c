@@ -356,9 +356,6 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
 
     // Clean up rank map
     token_rank_free(ranks);
-    if (!t->scores) {
-        goto fail;
-    }
 
     return t;
 
