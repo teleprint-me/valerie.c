@@ -42,25 +42,49 @@ typedef struct Tokenizer {
     int vocab_size;  // number of ids to tokens
 } Tokenizer;
 
-void token_free_ascii(HashMap* ascii) {
+void ascii_free(HashMap* ascii) {
     if (ascii) {
         hash_iter_free_all(ascii, free);  // free key-value pairs
     }
 }
 
-void token_free_set(HashSet* tokens) {
+void token_set_free(HashSet* tokens) {
     if (tokens) {
         hash_iter_free_all(tokens, NULL);  // only free keys!
     }
 }
 
-void token_free(char** tokens, size_t token_count) {
+void id_to_token_free(char** tokens, size_t token_count) {
     if (tokens && token_count > 0) {
-        string_split_free(tokens, token_count);
+        string_split_free(tokens, token_count);  // free everything!
     }
 }
 
-HashMap* token_create_ascii(void) {
+void token_to_id_free(HashMap* tokens) {
+    if (tokens) {
+        hash_free(tokens);  // do not free keys or values!
+    }
+}
+
+void special_token_free(SpecialToken* special) {
+    if (special) {
+        if (special->bos) {
+            free(special->bos);
+        }
+        if (special->eos) {
+            free(special->eos);
+        }
+        if (special->pad) {
+            free(special->pad);
+        }
+        if (special->unk) {
+            free(special->unk);
+        }
+        free(special);
+    }
+}
+
+HashMap* ascii_create(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
     if (!latin1) {
         return NULL;
@@ -81,7 +105,7 @@ HashMap* token_create_ascii(void) {
     return latin1;
 }
 
-HashSet* token_create_set(BPEModel* model) {
+HashSet* token_set_create(BPEModel* model) {
     // create the core token set
     HashSet* set = hash_set_create(model->capacity, HASH_STR);
     if (!set) {
@@ -89,7 +113,7 @@ HashSet* token_create_set(BPEModel* model) {
     }
 
     // generate base tokens for OOV
-    HashMap* ascii = token_create_ascii();
+    HashMap* ascii = ascii_create();
     if (!ascii) {
         hash_set_free(set);
     }
@@ -111,8 +135,8 @@ HashSet* token_create_set(BPEModel* model) {
         size_t tuple_count;
         char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
         if (tuple_count != 2) {
-            token_free_ascii(ascii);
-            token_free_set(set);
+            ascii_free(ascii);
+            token_set_free(set);
             string_split_free(tuple, tuple_count);
             return NULL;
         }
@@ -130,7 +154,7 @@ HashSet* token_create_set(BPEModel* model) {
     return set;
 }
 
-char** token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
+char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
     // create core token list
     size_t core_count = 0;
     // create a shallow copy
