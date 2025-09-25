@@ -33,7 +33,7 @@ ptrdiff_t string_diff(const char* start, const char* end);
 /**
  * @brief Allocates a new null-terminated copy of the input string.
  *
- * @param start Pointer to a null-terminated UTF-8 string.
+ * @param start Pointer to a null-terminated string.
  * @return      Newly allocated buffer, or NULL on error. Caller must free.
  */
 char* string_copy(const char* start);
@@ -65,8 +65,8 @@ char* string_copy_slice(const char* start, const char* end);
 /**
  * @brief Allocates and returns a new string which is the concatenation of dst and src.
  *
- * @param dst  Pointer to a null-terminated UTF-8 string (left operand).
- * @param src  Pointer to a null-terminated UTF-8 string (right operand).
+ * @param dst  Pointer to a null-terminated string (left operand).
+ * @param src  Pointer to a null-terminated string (right operand).
  * @return     Newly allocated buffer, or NULL on allocation error or invalid input.
  *             Caller must free the returned buffer.
  *
@@ -76,12 +76,12 @@ char* string_copy_slice(const char* start, const char* end);
 char* string_concat(const char* dst, const char* src);
 
 /**
- * @brief Compares two null-terminated UTF-8 byte strings lexicographically.
+ * @brief Compares two null-terminated strings lexicographically.
  *
  * Performs a byte-wise comparison of the two strings.
  *
- * @param a Pointer to the first null-terminated UTF-8 string.
- * @param b Pointer to the second null-terminated UTF-8 string.
+ * @param a Pointer to the first null-terminated string.
+ * @param b Pointer to the second null-terminated string.
  * @return
  *   - 0 if strings are equal,
  *   - -1 if a < b,
@@ -160,7 +160,7 @@ char** string_append_n(const char* src, const size_t n, char** parts, size_t* co
 char** string_append_slice(const char* start, const char* end, char** parts, size_t* count);
 
 /**
- * @brief Splits a UTF-8 byte string into individual bytes as null-terminated strings.
+ * @brief Splits a string into individual bytes as null-terminated strings.
  *
  * @param src   Pointer to the null-terminated byte string.
  * @param count Pointer to count, set to number of parts on return.
@@ -195,7 +195,7 @@ void string_split_free(char** parts, size_t count);
 char** string_split_space(const char* src, size_t* count);
 
 /**
- * @brief Splits a UTF-8 string by the specified delimiter (literal byte sequence).
+ * @brief Splits a string by the specified delimiter.
  *
  * @param src   Null-terminated input string.
  * @param delim Null-terminated delimiter string (multi-byte supported).
@@ -209,9 +209,9 @@ char** string_split_space(const char* src, size_t* count);
 char** string_split_delim(const char* src, const char* delim, size_t* count);
 
 /**
- * @brief Splits a UTF-8 byte string into parts matching a PCRE2 regex pattern.
+ * @brief Splits a string into parts matching a PCRE2 regex pattern.
  *
- * @param src      Null-terminated UTF-8 byte string.
+ * @param src      Null-terminated string.
  * @param pattern  Null-terminated regex pattern (PCRE2).
  * @param count    Output: number of parts.
  * @return         Array of pointers to null-terminated substrings (each newly allocated),
