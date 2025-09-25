@@ -44,10 +44,14 @@ typedef struct Tokenizer {
     int vocab_size;  // number of ids to tokens
 } Tokenizer;
 
-void ascii_free(HashMap* ascii) {
-    if (ascii) {
-        hash_iter_free_all(ascii, free);  // free key-value pairs
+void token_map_free(HashMap* m) {
+    if (m) {
+        hash_iter_free_all(m, free);  // free everything!
     }
+}
+
+void ascii_free(HashMap* ascii) {
+    token_map_free(ascii);  // free kv-pairs
 }
 
 void token_set_free(HashSet* tokens) {
@@ -69,13 +73,11 @@ void token_to_id_free(HashMap* tokens) {
 }
 
 void token_rank_free(HashMap* ranks) {
-    if (ranks) {
-        hash_iter_free_all(ranks, free);
-    }
+    token_map_free(ranks);
 }
 
 void token_score_free(HashMap* scores) {
-    token_rank_free(scores);
+    token_map_free(scores);
 }
 
 void special_token_free(SpecialToken* special) {
