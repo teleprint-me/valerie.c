@@ -401,6 +401,32 @@ fail:
  * @{
  */
 
+int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
+    if (!t || !text) {
+        return NULL;
+    }
+
+    size_t id_count = strlen(text);
+    int* ids = calloc(strlen(text), sizeof(int));
+    if (!ids) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < id_count; i++) {
+        char k[2] = {text[i], 0};
+
+        int* v = hash_map_search(t->token_to_id, k);
+        if (!v && t->special) {
+            v = hash_map_search(t->token_to_id, t->special->unk);
+        } else {
+            *v = -1;
+        }
+        ids[i] = *v;
+    }
+
+    return ids;
+}
+
 /** @} */
 
 /**
