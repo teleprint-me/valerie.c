@@ -211,7 +211,7 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count
     *out_count = token_count;
 
     // return the token list
-    return tokens;
+    return tokens;  // v : i -> t
 }
 
 HashMap* token_to_id_create(char** id_to_token, size_t token_count) {
@@ -228,7 +228,7 @@ HashMap* token_to_id_create(char** id_to_token, size_t token_count) {
         }
     }
 
-    return tokens;
+    return tokens;  // v : t -> i
 }
 
 HashMap* token_rank_create(BPEModel* model) {
@@ -291,7 +291,7 @@ HashMap* token_score_create(HashMap* token_to_id, HashMap* ranks) {
         hash_map_insert(scores, strdup(entry->key), score);
     }
 
-    return scores;
+    return scores;  // v : t -> f
 }
 
 /**
