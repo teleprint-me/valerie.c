@@ -44,6 +44,11 @@ typedef struct Tokenizer {
     int vocab_size;  // number of ids to tokens
 } Tokenizer;
 
+/**
+ * tokenizer clean up
+ * @{
+ */
+
 void token_map_free(HashMap* m) {
     if (m) {
         hash_iter_free_all(m, free);  // free everything!
@@ -108,6 +113,12 @@ void tokenizer_free(Tokenizer* t) {
         free(t);
     }
 }
+
+/** @} */
+
+/**
+ * Tokenizer pipeline
+ */
 
 HashMap* ascii_create(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
@@ -368,6 +379,8 @@ fail:
     tokenizer_free(t);
     return NULL;
 }
+
+/** @} */
 
 /**
  * @struct CLIParams
