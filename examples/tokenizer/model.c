@@ -484,13 +484,23 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // @todo: Serialize the model to output_dir/bpe.model or similar
+    // @todo: Serialize the model to output_dir/model.bpe or similar
     // Example:
-    // char* out_path = path_join(cli.output_dir, "bpe.model");
+    // char* out_path = path_join(cli.output_dir, "model.bpe");
     // bpe_save(model, out_path);
     // free(out_path);
 
+    // null out special tokens for now
+    Tokenizer* t = tokenizer_create(model, NULL);
+    if (!t) {
+        bpe_free(model);
+        vocab_map_free(vocab);
+        cli_free(&cli);
+        return EXIT_FAILURE;
+    }
+
     // Clean up
+    tokenizer_free(t);
     bpe_free(model);
     vocab_map_free(vocab);
     cli_free(&cli);
