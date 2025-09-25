@@ -39,8 +39,26 @@ typedef struct Tokenizer {
     HashMap* ascii;  // out of vocab table
     HashMap* token_to_id;  // v : tok -> id is O(1), worst is O(n)
     char** id_to_token;  // char** is more efficient and is also O(1)
-    int vocab_size;  // number of id to tokens
+    int vocab_size;  // number of ids to tokens
 } Tokenizer;
+
+void token_free_ascii(HashMap* ascii) {
+    if (ascii) {
+        hash_iter_free_all(ascii, free);  // free key-value pairs
+    }
+}
+
+void token_free_set(HashSet* tokens) {
+    if (tokens) {
+        hash_iter_free_all(tokens, NULL);  // only free keys!
+    }
+}
+
+void token_free(char** tokens, size_t token_count) {
+    if (tokens && token_count > 0) {
+        string_split_free(tokens, token_count);
+    }
+}
 
 HashMap* token_create_ascii(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
@@ -61,12 +79,6 @@ HashMap* token_create_ascii(void) {
     }
 
     return latin1;
-}
-
-void token_free_ascii(HashMap* ascii) {
-    if (ascii) {
-        hash_iter_free_all(ascii, free);  // free key-value pairs
-    }
 }
 
 HashSet* token_create_set(BPEModel* model) {
@@ -117,12 +129,6 @@ HashSet* token_create_set(BPEModel* model) {
     return set;
 }
 
-void token_free_set(HashSet* tokens) {
-    if (tokens) {
-        hash_iter_free_all(tokens, NULL);  // only free keys!
-    }
-}
-
 char** token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
     // create core token list
     size_t core_count = 0;
@@ -166,12 +172,6 @@ char** token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
 
     // return the token list
     return tokens;
-}
-
-void token_free(char** tokens, size_t token_count) {
-    if (tokens && token_count > 0) {
-        string_split_free(tokens, token_count);
-    }
 }
 
 /**
