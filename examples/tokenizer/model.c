@@ -111,8 +111,9 @@ HashSet* token_create_set(BPEModel* model) {
         size_t tuple_count;
         char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
         if (tuple_count != 2) {
+            token_free_ascii(ascii);
+            token_free_set(set);
             string_split_free(tuple, tuple_count);
-            vocab_map_free(ascii);
             return NULL;
         }
         const char* a = tuple[0];
