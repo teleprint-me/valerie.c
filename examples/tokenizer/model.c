@@ -200,10 +200,12 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
     char** tokens = calloc(1, sizeof(char*));
 
     // add special tokens to start of array
-    tokens = string_append(strdup(special->bos), tokens, &token_count);
-    tokens = string_append(strdup(special->eos), tokens, &token_count);
-    tokens = string_append(strdup(special->pad), tokens, &token_count);
-    tokens = string_append(strdup(special->unk), tokens, &token_count);
+    if (special) {
+        tokens = string_append(strdup(special->bos), tokens, &token_count);
+        tokens = string_append(strdup(special->eos), tokens, &token_count);
+        tokens = string_append(strdup(special->pad), tokens, &token_count);
+        tokens = string_append(strdup(special->unk), tokens, &token_count);
+    }
 
     for (size_t i = 0; i < core_count; i++) {
         tokens = string_append(strdup(core[i]), tokens, &token_count);
@@ -300,13 +302,17 @@ HashMap* token_score_create(HashMap* token_to_id, HashMap* ranks) {
 }
 
 Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
+    if (!model) {
+        return NULL;
+    }
+
     Tokenizer* t = malloc(sizeof(Tokenizer));
     if (!t) {
         return NULL;
     }
 
     // now owns special tokens
-    t->special = special;
+    t->special = special;  // optional
 
     // generate base tokens for OOV
     t->ascii = ascii_create();
