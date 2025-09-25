@@ -62,7 +62,7 @@ void id_to_token_free(char** tokens, size_t token_count) {
 
 void token_to_id_free(HashMap* tokens) {
     if (tokens) {
-        hash_free(tokens);  // do not free keys or values!
+        hash_map_free(tokens);  // do not free keys or values!
     }
 }
 
@@ -196,6 +196,23 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count
     *out_count = token_count;
 
     // return the token list
+    return tokens;
+}
+
+HashMap* token_to_id_create(char** id_to_tokens, size_t token_count) {
+    HashMap* tokens = hash_map_create(1, HASH_STR);  // str -> id
+    if (!tokens) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < token_count; i++) {
+        // shared reference is not to be freed!
+        if (HASH_SUCCESS != hash_map_insert(tokens, id_to_tokens[i], &i)) {
+            hash_map_free(tokens);
+            return NULL;
+        }
+    }
+
     return tokens;
 }
 
