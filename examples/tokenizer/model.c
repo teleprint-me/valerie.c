@@ -306,58 +306,61 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
         return NULL;
     }
 
-    Tokenizer* t = malloc(sizeof(Tokenizer));
+    Tokenizer* t = calloc(1, sizeof(Tokenizer));
     if (!t) {
         return NULL;
     }
 
-    // now owns special tokens
-    t->special = special;  // optional
+    // Owns special tokens
+    t->special = special;  // Optional (can be NULL)
 
-    // generate base tokens for OOV
+    // Build ASCII table
     t->ascii = ascii_create();
     if (!t->ascii) {
-        tokenizer_free(t);
+        goto fail;
     }
 
-    // generate unique token set (IR)
+    // Create vocab token set
     HashSet* vocab = token_set_create(model, t->ascii);
     if (!vocab) {
-        tokenizer_free(t);
-        return NULL;
+        goto fail;
     }
 
-    // generate v : i -> t
+    // id_to_token (array) and vocab_size
     t->id_to_token = id_to_token_create(vocab, special, &t->vocab_size);
     if (!t->id_to_token) {
         token_set_free(vocab);
-        tokenizer_free(t);
-        return NULL;
+        goto fail;
     }
-
-    // clean up unique token set
+    // Clean up vocab token set
     token_set_free(vocab);
 
-    // generate v : t -> i
+    // token_to_id (map)
     t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
     if (!t->token_to_id) {
-        tokenizer_free(t);
-        return NULL;
+        goto fail;
     }
 
+    // ranks (for BPE merges)
     HashMap* ranks = token_rank_create(model);
     if (!ranks) {
-        tokenizer_free(t);
-        return NULL;
+        goto fail;
     }
 
+    // scores (for greedy BPE merges)
     t->scores = token_score_create(t->token_to_id, ranks);
+    // Clean up rank map
+    token_rank_free(ranks);
     if (!t->scores) {
-        tokenizer_free(t);
-        return NULL;
+        goto fail;
     }
 
     return t;
+
+fail:
+    // Free all partially allocated fields (handles NULLs fine)
+    tokenizer_free(t);
+    return NULL;
 }
 
 /**
