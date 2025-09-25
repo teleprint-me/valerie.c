@@ -98,6 +98,17 @@ void special_token_free(SpecialToken* special) {
     }
 }
 
+void tokenizer_free(Tokenizer* t) {
+    if (t) {
+        special_token_free(t->special);
+        ascii_free(t->ascii);
+        token_score_free(t->scores);
+        token_to_id_free(t->token_to_id);
+        id_to_token_free(t->id_to_token, t->vocab_size);
+        free(t);
+    }
+}
+
 HashMap* ascii_create(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
     if (!latin1) {
@@ -119,17 +130,11 @@ HashMap* ascii_create(void) {
     return latin1;
 }
 
-HashSet* token_set_create(BPEModel* model) {
+HashSet* token_set_create(BPEModel* model, HashMap* ascii) {
     // create the core token set
     HashSet* set = hash_set_create(model->capacity, HASH_STR);
     if (!set) {
         return NULL;
-    }
-
-    // generate base tokens for OOV
-    HashMap* ascii = ascii_create();
-    if (!ascii) {
-        hash_set_free(set);
     }
 
     // Add base tokens for OOV
@@ -168,7 +173,7 @@ HashSet* token_set_create(BPEModel* model) {
     return set;
 }
 
-char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count) {
+char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
     // create core token list
     size_t core_count = 0;
     // create a shallow copy
@@ -214,13 +219,13 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count
     return tokens;  // v : i -> t
 }
 
-HashMap* token_to_id_create(char** id_to_token, size_t token_count) {
+HashMap* token_to_id_create(char** id_to_token, int token_count) {
     HashMap* tokens = hash_map_create(1, HASH_STR);  // str -> id
     if (!tokens) {
         return NULL;
     }
 
-    for (size_t i = 0; i < token_count; i++) {
+    for (size_t i = 0; i < (size_t) token_count; i++) {
         // shared reference is not to be freed!
         if (HASH_SUCCESS != hash_map_insert(tokens, id_to_token[i], &i)) {
             hash_map_free(tokens);
@@ -292,6 +297,46 @@ HashMap* token_score_create(HashMap* token_to_id, HashMap* ranks) {
     }
 
     return scores;  // v : t -> f
+}
+
+Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
+    Tokenizer* t = malloc(sizeof(Tokenizer));
+    if (!t) {
+        return NULL;
+    }
+
+    // now owns special tokens
+    t->special = special;
+
+    // generate base tokens for OOV
+    t->ascii = ascii_create();
+    if (!t->ascii) {
+        free(t);
+    }
+
+    // generate unique intermediary token set
+    HashSet* set = token_set_create(model, t->ascii);
+    if (!set) {
+        free(t);
+        return NULL;
+    }
+    // generate v : i -> t
+    t->id_to_token = id_to_token_create(set, special, &t->vocab_size);
+    // clean up IR
+    token_set_free(set);
+
+    // generate v : t -> i
+    t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
+
+    HashMap* ranks = token_rank_create(model);
+    if (!ranks) {
+        free(t);
+        return NULL;
+    }
+
+    t->scores = token_score_create(t->token_to_id, ranks);
+
+    return t;
 }
 
 /**
