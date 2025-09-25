@@ -349,6 +349,11 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
 
     // scores (for greedy BPE merges)
     t->scores = token_score_create(t->token_to_id, ranks);
+    if (!t->scores) {
+        token_rank_free(ranks);
+        goto fail;
+    }
+
     // Clean up rank map
     token_rank_free(ranks);
     if (!t->scores) {
