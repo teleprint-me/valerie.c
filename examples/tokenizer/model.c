@@ -35,13 +35,11 @@ typedef struct SpecialToken {
 } SpecialToken;
 
 typedef struct Tokenizer {
-    int magic;
-    int version;
-    int vocab_size;  // number of id to tokens
     SpecialToken* special;
     HashMap* ascii;
     HashMap* token_to_id;
     char** id_to_token;  // char** is more efficient and is also O(1)
+    int vocab_size;  // number of id to tokens
 } Tokenizer;
 
 HashMap* token_create_ascii(void) {
