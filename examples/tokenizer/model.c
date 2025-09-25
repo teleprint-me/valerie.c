@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "core/path.h"
@@ -37,6 +38,7 @@ typedef struct SpecialToken {
 typedef struct Tokenizer {
     SpecialToken* special;  // guidance markers
     HashMap* ascii;  // out of vocab table
+    HashMap* scores;  // greedy merges using scores
     HashMap* token_to_id;  // v : tok -> id is O(1), worst is O(n)
     char** id_to_token;  // char** is more efficient and is also O(1)
     int vocab_size;  // number of ids to tokens
@@ -64,6 +66,16 @@ void token_to_id_free(HashMap* tokens) {
     if (tokens) {
         hash_map_free(tokens);  // do not free keys or values!
     }
+}
+
+void token_rank_free(HashMap* ranks) {
+    if (ranks) {
+        hash_iter_free_all(ranks, free);
+    }
+}
+
+void token_score_free(HashMap* scores) {
+    token_rank_free(scores);
 }
 
 void special_token_free(SpecialToken* special) {
@@ -177,6 +189,7 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, size_t* out_count
 
     // Create the output token list
     size_t token_count = 0;
+    // primary owner for allocated vocab mappings
     char** tokens = calloc(1, sizeof(char*));
 
     // add special tokens to start of array
@@ -214,6 +227,69 @@ HashMap* token_to_id_create(char** id_to_token, size_t token_count) {
     }
 
     return tokens;
+}
+
+HashMap* token_rank_create(BPEModel* model) {
+    HashMap* ranks = hash_map_create(1, HASH_STR);  // str -> int
+    if (!ranks) {
+        return NULL;
+    }
+
+    // scores require cononical ordering and requires merges as the src
+    for (size_t i = 0; i < model->count; i++) {
+        BPEMerge merge = model->merges[i];
+
+        // parse out the tuple from the current merge pair
+        size_t tuple_count;
+        char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
+        if (tuple_count != 2) {
+            string_split_free(tuple, tuple_count);
+            token_score_free(ranks);
+            return NULL;
+        }
+        const char* a = tuple[0];
+        const char* b = tuple[1];
+
+        // merge pair: t : a + b
+        char* token = string_concat(a, b);
+
+        // copy id
+        int* id = malloc(sizeof(int));
+        *id = i;  // order matters!
+
+        // map token to id
+        hash_map_insert(ranks, token, id);
+    }
+
+    return ranks;  // v : t -> i
+}
+
+HashMap* token_score_create(HashMap* token_to_id, HashMap* ranks) {
+    HashMap* scores = hash_map_create(1, HASH_STR);  // str -> float
+    if (!scores) {
+        return NULL;
+    }
+
+    HashEntry* entry;
+    HashIt it = hash_iter(token_to_id);
+    while ((entry = hash_iter_next(&it))) {
+        // get the id for the current score
+        int* id = hash_map_search(ranks, entry->key);
+        // allocate memory to score
+        float* score = malloc(sizeof(float));
+
+        // calc score
+        if (!id) {
+            *score = -INFINITY;  // no rank
+        } else {
+            *score = -logf(*id + 1);
+        }
+
+        // do not share refs!
+        hash_map_insert(scores, strdup(entry->key), score);
+    }
+
+    return scores;
 }
 
 /**
