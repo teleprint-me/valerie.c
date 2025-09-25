@@ -401,11 +401,7 @@ fail:
  * @{
  */
 
-int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
-    if (!t || !text) {
-        return NULL;
-    }
-
+int* encode_text_to_id(Tokenizer* t, char* text) {
     size_t id_count = strlen(text);
     int* ids = calloc(strlen(text), sizeof(int));
     if (!ids) {
@@ -420,9 +416,34 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
             ids[i] = *v;
         } else if (t->special && t->special->unk) {
             v = hash_map_search(t->token_to_id, t->special->unk);
-            ids[i] = (v) ? *v : -1;
+            ids[i] = (v) ? *v : -1;  // if -1, unk is not mapped!
         } else {
             ids[i] = -1;  // no unk, just use -1
+        }
+    }
+
+    return ids;
+}
+
+int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
+    if (!t || !text) {
+        return NULL;
+    }
+
+    size_t id_count = strlen(text);
+    int* ids = encode_text_to_id(t, text);
+    if (!ids) {
+        return NULL;
+    }
+
+    HashEntry* entry;
+    HashIt it = hash_iter(t->scores);
+    while ((entry = hash_iter_next(&it))) {
+        float best_score = -INFINITY;
+        int best_id = -1;
+
+        if (best_id == -1) {
+            break;  // no more merges
         }
     }
 
