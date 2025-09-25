@@ -328,12 +328,12 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
 
     // id_to_token (array) and vocab_size
     t->id_to_token = id_to_token_create(vocab, special, &t->vocab_size);
-    if (!t->id_to_token) {
-        token_set_free(vocab);
-        goto fail;
-    }
+
     // Clean up vocab token set
     token_set_free(vocab);
+    if (!t->id_to_token) {
+        goto fail;
+    }
 
     // token_to_id (map)
     t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
@@ -349,13 +349,12 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
 
     // scores (for greedy BPE merges)
     t->scores = token_score_create(t->token_to_id, ranks);
-    if (!t->scores) {
-        token_rank_free(ranks);
-        goto fail;
-    }
 
     // Clean up rank map
     token_rank_free(ranks);
+    if (!t->scores) {
+        goto fail;
+    }
 
     return t;
 
