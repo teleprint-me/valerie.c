@@ -470,6 +470,25 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
         if (best_id == -1) {
             break;  // no merges left
         }
+
+        // merge tokens
+        char* a = t->id_to_token[ids[best_id]];  // current
+        char* b = t->id_to_token[ids[best_id + 1]];  // next
+        char* merge = string_concat(a, b);  // a + b
+
+        // get best merge id
+        int* merge_id = hash_map_search(t->token_to_id, merge);
+        free(merge);  // free temp key
+        if (!merge_id) {
+            break;
+        }
+
+        // update current best merge id
+        ids[best_id] = *merge_id;
+        // remove next best merge id
+        memmove(&ids[best_id + 1], &ids[best_id + 2], (id_count - best_id - 2) * sizeof(int));
+        // update count for removing next merge id
+        id_count--;
     }
 
     if (add_eos && t->special && t->special->eos) {
