@@ -35,9 +35,9 @@ typedef struct SpecialToken {
 } SpecialToken;
 
 typedef struct Tokenizer {
-    SpecialToken* special;
-    HashMap* ascii;
-    HashMap* token_to_id;
+    SpecialToken* special;  // guidance markers
+    HashMap* ascii;  // out of vocab table
+    HashMap* token_to_id;  // v : tok -> id is O(1), worst is O(n)
     char** id_to_token;  // char** is more efficient and is also O(1)
     int vocab_size;  // number of id to tokens
 } Tokenizer;
