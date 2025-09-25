@@ -2,7 +2,6 @@
  * @file   examples/tokenizer/model.c
  * @brief  Driver for training and serializing a BPE tokenizer model (Valerie, C)
  * @copyright Copyright © 2025 Austin Berrio
- * @author Austin Berrio
  *
  * @todo Implement tokenizer serialization once model format is decided.
  * @ref arXiv:1508.07909v5 [cs.CL] 10 Jun 2016
@@ -120,6 +119,20 @@ void tokenizer_free(Tokenizer* t) {
  * @section Tokenizer pipeline
  * @{
  */
+
+SpecialToken* special_default_create(void) {
+    SpecialToken* special = malloc(sizeof(SpecialToken));
+    if (!special) {
+        return NULL;
+    }
+
+    special->bos = strdup("<|bos|>");
+    special->eos = strdup("<|eos|>");
+    special->pad = strdup("<|pad|>");
+    special->unk = strdup("<|unk|>");
+
+    return special;
+}
 
 HashMap* ascii_create(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
@@ -384,6 +397,13 @@ fail:
 /** @} */
 
 /**
+ * @section Tokenizer encoder and decoder
+ * @{
+ */
+
+/** @} */
+
+/**
  * @struct CLIParams
  * @brief Command-line parameters for tokenizer training.
  */
@@ -505,8 +525,9 @@ int main(int argc, const char* argv[]) {
     // bpe_save(model, out_path);
     // free(out_path);
 
-    // null out special tokens for now
-    Tokenizer* t = tokenizer_create(model, NULL);
+    // Add default special tokens
+    SpecialToken* special = special_default_create();
+    Tokenizer* t = tokenizer_create(model, special);
     if (!t) {
         bpe_free(model);
         vocab_map_free(vocab);
