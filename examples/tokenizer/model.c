@@ -113,16 +113,23 @@ void tokenizer_free(Tokenizer* t) {
  * @{
  */
 
-SpecialToken* token_special_create(void) {
+char* token_special_default(const char* tok, const char* def) {
+    if (!tok) {
+        return strdup(def);
+    }
+    return strdup(tok);  // accept ownership
+}
+
+SpecialToken* token_special_create(char* bos, char* eos, char* pad, char* unk) {
     SpecialToken* special = malloc(sizeof(SpecialToken));
     if (!special) {
         return NULL;
     }
 
-    special->bos = strdup("<|bos|>");
-    special->eos = strdup("<|eos|>");
-    special->pad = strdup("<|pad|>");
-    special->unk = strdup("<|unk|>");
+    special->bos = token_special_default(bos, "<|bos|>");
+    special->eos = token_special_default(eos, "<|eos|>");
+    special->pad = token_special_default(pad, "<|pad|>");
+    special->unk = token_special_default(unk, "<|unk|>");
 
     return special;
 }
@@ -686,7 +693,7 @@ int main(int argc, const char* argv[]) {
     // free(out_path);
 
     // Add default special tokens
-    SpecialToken* special = token_special_create();
+    SpecialToken* special = token_special_create(NULL, NULL, NULL, NULL);
     if (!special || !special->bos || !special->eos || !special->pad || !special->unk) {
         fprintf(stderr, "Failed to create special tokens.\n");
         return EXIT_FAILURE;
