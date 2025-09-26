@@ -45,13 +45,13 @@ int main(void) {
 
     // Do NOT call hash_map_clear(map) here!
     // Instead, just free all entries and the map in one go:
-    hash_iter_free_all(map, free);
+    hash_iter_free_all(map, free, free);
     map = NULL;
 
     printf("[PASS] All core smoke tests succeeded.\n");
     return EXIT_SUCCESS;
 
 fail:
-    if (map) hash_iter_free_all(map, free);
+    if (map) hash_iter_free_all(map, free, free);
     return EXIT_FAILURE;
 }

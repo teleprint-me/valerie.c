@@ -146,7 +146,7 @@ typedef struct HashIt {
  *
  * @param value Pointer to the value to free.
  */
-typedef void (*HashValueFree)(void*);
+typedef void (*HashKVFree)(void*);
 
 /**
  * @defgroup functions Functions for Supported Types
@@ -445,17 +445,19 @@ void hash_iter_log(Hash* h);
  * @brief Free all keys (always allocated) and values (using value_free) in the table.
  *
  * @param h          Pointer to the hash table.
+ * @param key_free   Function pointer to free key memory (NULL for no value cleanup).
  * @param value_free Function pointer to free value memory (NULL for no value cleanup).
  */
-void hash_iter_free_kv(Hash* h, HashValueFree value_free);
+void hash_iter_free_kv(Hash* h, HashKVFree key_free, HashKVFree value_free);
 
 /**
  * @brief Free all keys/values in the table and then free the table itself.
  *
  * @param h          Pointer to the hash table.
+ * @param key_free   Function pointer to free key memory (NULL for no value cleanup).
  * @param value_free Function pointer to free value memory (NULL for no value cleanup).
  */
-void hash_iter_free_all(Hash* h, HashValueFree value_free);
+void hash_iter_free_all(Hash* h, HashKVFree key_free, HashKVFree value_free);
 
 /** @} */
 

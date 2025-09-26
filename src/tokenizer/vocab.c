@@ -48,7 +48,7 @@ HashMap* vocab_map_copy(HashMap* m) {
 // Free the vocabulary mapping
 void vocab_map_free(HashMap* m) {
     if (m) {
-        hash_iter_free_all(m, free);
+        hash_iter_free_all(m, free, free);
     }
 }
 

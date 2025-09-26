@@ -50,9 +50,7 @@ typedef struct Tokenizer {
  */
 
 void token_map_free(HashMap* m) {
-    if (m) {
-        hash_iter_free_all(m, free);  // free everything!
-    }
+    hash_iter_free_all(m, free, free);  // free everything!
 }
 
 void ascii_free(HashMap* ascii) {
@@ -60,15 +58,11 @@ void ascii_free(HashMap* ascii) {
 }
 
 void token_set_free(HashSet* tokens) {
-    if (tokens) {
-        hash_iter_free_all(tokens, NULL);  // only free keys!
-    }
+    hash_iter_free_all(tokens, free, NULL);  // only free keys!
 }
 
 void id_to_token_free(char** tokens, size_t token_count) {
-    if (tokens && token_count > 0) {
-        string_split_free(tokens, token_count);  // free everything!
-    }
+    string_split_free(tokens, token_count);  // free everything!
 }
 
 void token_to_id_free(HashMap* tokens) {

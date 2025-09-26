@@ -494,13 +494,15 @@ void hash_iter_log(Hash* h) {
     }
 }
 
-void hash_iter_free_kv(Hash* h, HashValueFree value_free) {
+void hash_iter_free_kv(Hash* h, HashKVFree key_free, HashKVFree value_free) {
     if (h) {
         HashEntry* entry;
         HashIt it = hash_iter(h);
         while ((entry = hash_iter_next(&it))) {
             // Keys are always allocated
-            free(entry->key);  // Restricted by HashType
+            if (key_free) {
+                free(entry->key);  // Restricted by HashType
+            }
 
             // Values are optional (May be NULL)
             if (value_free) {
@@ -510,8 +512,8 @@ void hash_iter_free_kv(Hash* h, HashValueFree value_free) {
     }
 }
 
-void hash_iter_free_all(Hash* h, HashValueFree value_free) {
-    hash_iter_free_kv(h, value_free);
+void hash_iter_free_all(Hash* h, HashKVFree key_free, HashKVFree value_free) {
+    hash_iter_free_kv(h, key_free, value_free);
     hash_free(h);
 }
 
