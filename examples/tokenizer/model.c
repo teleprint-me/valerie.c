@@ -549,7 +549,7 @@ char* tokenizer_decode(Tokenizer* t, int* ids, size_t id_count) {
     char** text = calloc(1, sizeof(char*));
     for (size_t i = 0; i < id_count; i++) {
         char* token = t->id_to_token[ids[i]];
-        text = string_append(token, text, &text_count);
+        text = string_append(strdup(token), text, &text_count);
     }
 
     char* result = string_join(text, text_count, "");
@@ -703,9 +703,16 @@ int main(int argc, const char* argv[]) {
     int id_count;
     int* ids = tokenizer_encode(t, "Hello, world!", &id_count, false, false);
     if (!ids) {
-        fprintf(stderr, "Failed to create ids!\n");
+        fprintf(stderr, "Failed to encode text!\n");
         return EXIT_FAILURE;
     }
+
+    char* text = tokenizer_decode(t, ids, id_count);
+    if (!text) {
+        fprintf(stderr, "Failed to decode ids!\n");
+    }
+    printf("%s\n", text);
+    free(text);
     free(ids);
 
     // Clean up
