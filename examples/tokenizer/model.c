@@ -74,9 +74,7 @@ void id_to_token_free(char** tokens, size_t token_count) {
 }
 
 void token_to_id_free(HashMap* tokens) {
-    if (tokens) {
-        hash_map_free(tokens);  // do not free keys or values!
-    }
+    token_map_free(tokens);
 }
 
 void token_rank_free(HashMap* ranks) {
@@ -250,21 +248,28 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
     return tokens;  // v : i -> t
 }
 
-HashMap* token_to_id_create(char** id_to_token, int token_count) {
-    HashMap* tokens = hash_map_create(1, HASH_STR);  // str -> id
-    if (!tokens) {
+HashMap* token_to_id_create(char** id_to_token, int id_count) {
+    if (!id_to_token || !*id_to_token || id_count < 0) {
         return NULL;
     }
 
-    for (size_t i = 0; i < (size_t) token_count; i++) {
+    HashMap* token_to_id = hash_map_create(1, HASH_STR);  // str -> id
+    if (!token_to_id) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < (size_t) id_count; i++) {
         // shared reference is not to be freed!
-        if (HASH_SUCCESS != hash_map_insert(tokens, id_to_token[i], &i)) {
-            hash_map_free(tokens);
+        char* token = strdup(id_to_token[i]);
+        int* id = malloc(sizeof(int));
+        *id = i;
+        if (HASH_SUCCESS != hash_map_insert(token_to_id, token, id)) {
+            hash_map_free(token_to_id);
             return NULL;
         }
     }
 
-    return tokens;  // v : t -> i
+    return token_to_id;  // v : t -> i
 }
 
 HashMap* token_rank_create(BPEModel* model) {
@@ -434,13 +439,14 @@ int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_e
         char token[2] = {text[i], 0};
 
         int* id = hash_map_search(t->token_to_id, token);
-        if (id) {
-            ids[id_count++] = *id;
-        } else if (t->special && t->special->unk) {
-            id = hash_map_search(t->token_to_id, t->special->unk);
-            ids[id_count++] = (id) ? *id : -1;  // if -1, unk is not mapped!
+        if (!id) {
+            int* unk_id = NULL;
+            if (t->special && t->special->unk) {
+                unk_id = hash_map_search(t->token_to_id, t->special->unk);
+            }
+            ids[id_count++] = (unk_id) ? *unk_id : -1;  // if -1, unk is not mapped!
         } else {
-            ids[id_count++] = -1;  // no unk, just use -1
+            ids[id_count++] = *id;
         }
     }
 
@@ -694,12 +700,13 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // int id_count;
-    // int* ids = tokenizer_encode(t, "Hello, world!", &id_count, false, false);
-    // if (!ids) {
-    //     fprintf(stderr, "Failed to create ids!\n");
-    //     return EXIT_FAILURE;
-    // }
+    int id_count;
+    int* ids = tokenizer_encode(t, "Hello, world!", &id_count, false, false);
+    if (!ids) {
+        fprintf(stderr, "Failed to create ids!\n");
+        return EXIT_FAILURE;
+    }
+    free(ids);
 
     // Clean up
     tokenizer_free(t);
