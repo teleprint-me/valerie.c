@@ -39,7 +39,6 @@ typedef struct SpecialToken {
 
 typedef struct Tokenizer {
     SpecialToken* special;  // guidance markers
-    HashMap* ascii;  // out of vocab table
     HashMap* scores;  // greedy merges using scores
     HashMap* token_to_id;  // v : tok -> id is O(1), worst is O(n)
     char** id_to_token;  // char** is more efficient and is also O(1)
@@ -108,7 +107,6 @@ void special_token_free(SpecialToken* special) {
 void tokenizer_free(Tokenizer* t) {
     if (t) {
         special_token_free(t->special);
-        ascii_free(t->ascii);
         token_score_free(t->scores);
         token_to_id_free(t->token_to_id);
         id_to_token_free(t->id_to_token, t->vocab_size);
@@ -356,13 +354,14 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     t->special = special;  // Optional (can be NULL)
 
     // Build ASCII table
-    t->ascii = ascii_create();
-    if (!t->ascii) {
+    HashMap* ascii = ascii_create();
+    if (!ascii) {
         goto fail;
     }
 
     // Create vocab token set
-    HashSet* vocab = token_set_create(model, t->ascii);
+    HashSet* vocab = token_set_create(model, ascii);
+    ascii_free(ascii);
     if (!vocab) {
         goto fail;
     }
