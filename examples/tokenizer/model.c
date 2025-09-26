@@ -129,7 +129,7 @@ char* token_special_default(const char* tok, const char* def) {
     }
 
     // no pre-defined tokens were given
-    return NULL;  // user error
+    return NULL;  // alleged user error
 }
 
 SpecialToken* token_special_create(char* bos, char* eos, char* pad, char* unk) {
@@ -699,10 +699,9 @@ int main(int argc, const char* argv[]) {
     }
 
     // @todo: Serialize the model to output_dir/model.bpe or similar
-    // Example:
-    // char* out_path = path_join(cli.output_dir, "model.bpe");
-    // bpe_save(model, out_path);
-    // free(out_path);
+    char* out_path = path_join(cli.output_dir, "model.bpe");
+    bpe_save(model, out_path);
+    free(out_path);
 
     // Add default special tokens
     SpecialToken* special = token_special_create(NULL, NULL, NULL, NULL);
