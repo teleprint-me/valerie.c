@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include "core/path.h"
@@ -401,44 +402,39 @@ fail:
  * @{
  */
 
-int* encode_text_to_id(Tokenizer* t, char* text) {
-    size_t id_count = strlen(text);
-    int* ids = calloc(strlen(text), sizeof(int));
+int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
+    if (!t || !text) {
+        return NULL;  // invalid input
+    }
+
+    // create base ids
+    size_t id_count = strlen(text) + 4;  // +4 for special ids
+    int* ids = calloc(id_count, sizeof(int));
     if (!ids) {
         return NULL;
     }
 
+    // pre-init ids to discover end-of-seq and resize to fit
     for (size_t i = 0; i < id_count; i++) {
-        char k[2] = {text[i], 0};
+        ids[i] = INT_MIN;
+    }
 
-        int* v = hash_map_search(t->token_to_id, k);
-        if (v) {
-            ids[i] = *v;
+    // pre-process input text to id
+    for (size_t i = 0; i < id_count; i++) {
+        char token[2] = {text[i], 0};
+
+        int* id = hash_map_search(t->token_to_id, token);
+        if (id) {
+            ids[i] = *id;
         } else if (t->special && t->special->unk) {
-            v = hash_map_search(t->token_to_id, t->special->unk);
-            ids[i] = (v) ? *v : -1;  // if -1, unk is not mapped!
+            id = hash_map_search(t->token_to_id, t->special->unk);
+            ids[i] = (id) ? *id : -1;  // if -1, unk is not mapped!
         } else {
             ids[i] = -1;  // no unk, just use -1
         }
     }
 
-    return ids;
-}
-
-int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
-    if (!t || !text) {
-        return NULL;
-    }
-
-    size_t id_count = strlen(text);
-    int* ids = encode_text_to_id(t, text);
-    if (!ids) {
-        return NULL;
-    }
-
-    if (add_bos && t->special && t->special->bos) {
-    }
-
+    // greed merges using scores
     while (true) {
         float best_score = -INFINITY;
         int best_id = -1;
@@ -491,9 +487,31 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
         id_count--;
     }
 
-    if (add_eos && t->special && t->special->eos) {
+    // recalc max base count
+    id_count = strlen(text) + 4;
+    for (size_t i = 0; i < id_count; i++) {
+        if (ids[i] == INT_MIN) {
+            id_count = i;
+            break;  // end of seq
+        }
     }
 
+    // insert special bos if enabled and present
+    if (add_bos && t->special && t->special->bos) {
+        int* id = hash_map_search(t->token_to_id, t->special->bos);
+        for (size_t i = id_count; i > 0; --i) {
+            ids[i] = ids[i - 1];  // shift everything upward
+        }
+        ids[0] = id ? *id : -1;  // add bos
+    }
+
+    // append special eos if enabled and present
+    if (add_eos && t->special && t->special->eos) {
+        int* id = hash_map_search(t->token_to_id, t->special->eos);
+        ids[id_count] = id ? *id : -1;
+    }
+
+    // return predicted tokens
     return ids;
 }
 
