@@ -34,8 +34,6 @@ typedef struct SpecialToken {
     char* eos;  // <|eos|>
     char* pad;  // <|pad|>
     char* unk;  // <|unk|>
-    int count;  // -1 if none
-    int capacity;  // total capacity for all token strlens
 } SpecialToken;
 
 typedef struct Tokenizer {
