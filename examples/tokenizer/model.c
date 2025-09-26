@@ -697,8 +697,9 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
     printf("vocab size: %d\n", t->vocab_size);
+    printf("model:\n");
     for (int i = 0; i < t->vocab_size; i++) {
-        printf("id: %d token: %s\n", i, t->id_to_token[i]);
+        printf("  %03d -> %s\n", i, t->id_to_token[i]);
     }
 
     printf("Encoding:\n");
