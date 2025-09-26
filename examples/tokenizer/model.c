@@ -113,35 +113,16 @@ void tokenizer_free(Tokenizer* t) {
  * @{
  */
 
-/**
- * @param tok A string pointing to a user defined special token.
- * @param def A string pointing to the default special token.
- */
-char* token_special_default(const char* tok, const char* def) {
-    // look for a user defined token first
-    if (tok) {
-        return strdup(tok);
-    }
-
-    // try to set a default token if tok is undefined
-    if (def) {
-        return strdup(def);
-    }
-
-    // no pre-defined tokens were given
-    return NULL;  // alleged user error
-}
-
 SpecialToken* token_special_create(char* bos, char* eos, char* pad, char* unk) {
     SpecialToken* special = malloc(sizeof(SpecialToken));
     if (!special) {
         return NULL;
     }
 
-    special->bos = token_special_default(bos, "<|bos|>");
-    special->eos = token_special_default(eos, "<|eos|>");
-    special->pad = token_special_default(pad, "<|pad|>");
-    special->unk = token_special_default(unk, "<|unk|>");
+    special->bos = bos ? strdup(bos) : strdup("<|bos|>");
+    special->eos = eos ? strdup(eos) : strdup("<|eos|>");
+    special->pad = pad ? strdup(pad) : strdup("<|pad|>");
+    special->unk = unk ? strdup(unk) : strdup("<|unk|>");
 
     return special;
 }
@@ -217,6 +198,10 @@ HashSet* token_set_create(BPEModel* model, HashMap* ascii) {
 }
 
 char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
+    if (!set || !special) {
+        return NULL;
+    }
+
     // create core token list
     size_t core_count = 0;
     // create a shallow copy
@@ -243,12 +228,10 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
     char** tokens = calloc(1, sizeof(char*));
 
     // add special tokens to start of array
-    if (special) {
-        tokens = string_append(strdup(special->bos), tokens, &token_count);
-        tokens = string_append(strdup(special->eos), tokens, &token_count);
-        tokens = string_append(strdup(special->pad), tokens, &token_count);
-        tokens = string_append(strdup(special->unk), tokens, &token_count);
-    }
+    tokens = string_append(strdup(special->bos), tokens, &token_count);
+    tokens = string_append(strdup(special->eos), tokens, &token_count);
+    tokens = string_append(strdup(special->pad), tokens, &token_count);
+    tokens = string_append(strdup(special->unk), tokens, &token_count);
 
     for (size_t i = 0; i < core_count; i++) {
         tokens = string_append(strdup(core[i]), tokens, &token_count);
@@ -424,6 +407,97 @@ fail:
     tokenizer_free(t);
     return NULL;
 }
+
+/** @} */
+
+/**
+ * Model persistence
+ * @{
+ */
+
+bool tokenizer_save(Tokenizer* t, const char* path) {
+    char* dirname = path_dirname(path);
+    path_mkdir(dirname);
+    free(dirname);
+
+    FILE* file = fopen(path, "wb");
+    if (!file) {
+        return false;
+    }
+
+    int magic = TOKENIZER_MAGIC;
+    fwrite(&magic, sizeof(int), 1, file);
+
+    int version = TOKENIZER_VERSION;
+    fwrite(&version, sizeof(int), 1, file);
+
+    // special tokens
+
+    // bos
+    int bos_len = strlen(t->special->bos);
+    fwrite(&bos_len, sizeof(int), 1, file);
+    fwrite(t->special->bos, sizeof(char), bos_len, file);
+
+    // eos
+    int eos_len = strlen(t->special->eos);
+    fwrite(&eos_len, sizeof(int), 1, file);
+    fwrite(t->special->eos, sizeof(char), eos_len, file);
+
+    // pad
+    int pad_len = strlen(t->special->pad);
+    fwrite(&pad_len, sizeof(int), 1, file);
+    fwrite(t->special->pad, sizeof(char), pad_len, file);
+
+    // unk
+    int unk_len = strlen(t->special->unk);
+    fwrite(&unk_len, sizeof(int), 1, file);
+    fwrite(t->special->unk, sizeof(char), unk_len, file);
+
+    // scores (HashMap)
+    HashEntry* e;
+    HashIt it = hash_iter(t->scores);
+    while ((e = hash_iter_next(&it))) {
+        // get the token
+        char* k = e->key;
+        int k_len = strlen(k);
+        fwrite(&k_len, sizeof(int), 1, file);
+        fwrite(k, sizeof(char), k_len, file);
+
+        // get the token score
+        float v = *(float*) e->value;
+        fwrite(&v, sizeof(float), 1, file);
+    }
+
+    // token-to-id (HashMap)
+    e = NULL;
+    it = hash_iter(t->token_to_id);
+    while ((e = hash_iter_next(&it))) {
+        // get the token
+        char* k = e->key;
+        int k_len = strlen(k);
+        fwrite(&k_len, sizeof(int), 1, file);
+        fwrite(k, sizeof(char), k_len, file);
+
+        // get the token id
+        int v = *(int*) e->value;
+        fwrite(&v, sizeof(int), 1, file);
+    }
+
+    // number of id-to-tokens
+    fwrite(&t->vocab_size, sizeof(int), 1, file);
+
+    // id-to-token (char**)
+    for (int i = 0; i < t->vocab_size; i++) {
+        char* k = t->id_to_token[i];
+        int k_len = strlen(k);
+        fwrite(&k_len, sizeof(int), 1, file);
+        fwrite(k, sizeof(char), k_len, file);
+    }
+
+    return true;
+}
+
+Tokenizer* tokenizer_load(const char* path);
 
 /** @} */
 
