@@ -11,6 +11,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <math.h>
 #include <limits.h>
@@ -134,6 +135,10 @@ HashMap* ascii_create(void) {
 
     // exact bijection: 0..255
     for (size_t i = 0; i < 256; i++) {
+        if (!isprint(i)) {
+            continue;  // only include printable chars
+        }
+
         char* k = calloc(2, sizeof(char));
         *k = (uint8_t) i;
         k[1] = '\0';
@@ -691,19 +696,30 @@ int main(int argc, const char* argv[]) {
         cli_free(&cli);
         return EXIT_FAILURE;
     }
+    printf("vocab size: %d\n", t->vocab_size);
+    for (int i = 0; i < t->vocab_size; i++) {
+        printf("id: %d token: %s\n", i, t->id_to_token[i]);
+    }
 
+    printf("Encoding:\n");
     int id_count;
     int* ids = tokenizer_encode(t, "Hello, world!", &id_count, false, false);
     if (!ids) {
         fprintf(stderr, "Failed to encode text!\n");
         return EXIT_FAILURE;
     }
+    printf("%d ids: ", id_count);
+    for (int i = 0; i < id_count; i++) {
+        printf("%d ", ids[i]);
+    }
+    printf("\n");
 
+    printf("Decoding:\n");
     char* text = tokenizer_decode(t, ids, id_count);
     if (!text) {
         fprintf(stderr, "Failed to decode ids!\n");
     }
-    printf("%s\n", text);
+    printf("text: %s\n", text);
     free(text);
     free(ids);
 
