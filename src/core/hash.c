@@ -499,9 +499,9 @@ void hash_iter_free_kv(Hash* h, HashKVFree key_free, HashKVFree value_free) {
         HashEntry* entry;
         HashIt it = hash_iter(h);
         while ((entry = hash_iter_next(&it))) {
-            // Keys are always allocated
+            // Keys are optional (May be NULL)
             if (key_free) {
-                free(entry->key);  // Restricted by HashType
+                key_free(entry->key);  // Restricted by HashType
             }
 
             // Values are optional (May be NULL)
