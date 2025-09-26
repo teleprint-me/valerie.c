@@ -418,7 +418,11 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
     }
 
     // create base ids
-    size_t id_count = strlen(text) + 4;  // +4 for special ids
+    size_t id_count = strlen(text);
+    if (t->special && t->special->count != -1 && t->special->capacity > 0) {
+        id_count += t->special->capacity;  // +n bytes for special tokens
+    }
+
     int* ids = calloc(id_count, sizeof(int));
     if (!ids) {
         return NULL;
