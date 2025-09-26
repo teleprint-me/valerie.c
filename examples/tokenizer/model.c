@@ -457,6 +457,7 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
 
             // probe for a valid score
             float* score = hash_map_search(t->scores, merge);
+            free(merge); // clean up
             if (score && *score > best_score) {
                 best_score = *score;
                 best_id = i;
@@ -474,7 +475,7 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
 
         // get best merge id
         int* merge_id = hash_map_search(t->token_to_id, merge);
-        free(merge);  // free temp key
+        free(merge);  // clean up
         if (!merge_id) {
             break;
         }
@@ -488,7 +489,6 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
     }
 
     // recalc max base count
-    id_count = strlen(text) + 4;
     for (size_t i = 0; i < id_count; i++) {
         if (ids[i] == INT_MIN) {
             id_count = i;
