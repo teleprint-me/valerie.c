@@ -113,11 +113,23 @@ void tokenizer_free(Tokenizer* t) {
  * @{
  */
 
+/**
+ * @param tok A string pointing to a user defined special token.
+ * @param def A string pointing to the default special token.
+ */
 char* token_special_default(const char* tok, const char* def) {
-    if (!tok) {
+    // look for a user defined token first
+    if (tok) {
+        return strdup(tok);
+    }
+
+    // try to set a default token if tok is undefined
+    if (def) {
         return strdup(def);
     }
-    return strdup(tok);  // accept ownership
+
+    // no pre-defined tokens were given
+    return NULL;  // user error
 }
 
 SpecialToken* token_special_create(char* bos, char* eos, char* pad, char* unk) {
