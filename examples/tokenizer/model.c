@@ -152,7 +152,7 @@ HashMap* ascii_create(void) {
     // exact bijection: 0..255
     for (size_t i = 0; i < 256; i++) {
         char* k = calloc(2, sizeof(char));
-        *k = i;
+        *k = (uint8_t) i;
         k[1] = '\0';
 
         int* v = malloc(sizeof(int));
