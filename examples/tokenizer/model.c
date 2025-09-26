@@ -128,18 +128,10 @@ SpecialToken* special_default_create(void) {
         return NULL;
     }
 
-    char* bos = strdup("<|bos|>");
-    char* eos = strdup("<|bos|>");
-    char* pad = strdup("<|eos|>");
-    char* unk = strdup("<|unk|>");
-
-    special->bos = bos;
-    special->eos = eos;
-    special->pad = pad;
-    special->unk = unk;
-
-    special->count = 4;
-    special->capacity = strlen(bos) + strlen(eos) + strlen(pad) + strlen(unk) + 1;
+    special->bos = strdup("<|bos|>");
+    special->eos = strdup("<|eos|>");
+    special->pad = strdup("<|pad|>");
+    special->unk = strdup("<|unk|>");
 
     return special;
 }
@@ -689,6 +681,11 @@ int main(int argc, const char* argv[]) {
 
     // Add default special tokens
     SpecialToken* special = special_default_create();
+    if (!special || !special->bos || !special->eos || !special->pad || !special->unk) {
+        fprintf(stderr, "Failed to create special tokens.\n");
+        return EXIT_FAILURE;
+    }
+
     Tokenizer* t = tokenizer_create(model, special);
     if (!t) {
         bpe_free(model);
