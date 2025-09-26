@@ -108,7 +108,7 @@ char* path_basename(const char* path) {
 }
 
 // Concatenate two path components, inserting a '/' if needed
-char* path_cat(const char* root, const char* sub) {
+char* path_join(const char* root, const char* sub) {
     if (!path_is_valid(root) || !path_is_valid(sub)) {
         return NULL;
     }
@@ -177,7 +177,7 @@ char** path_list_dirs(const char* dirname, size_t* count) {
             continue;
         }
 
-        char* fullpath = path_cat(dirname, entry->d_name);
+        char* fullpath = path_join(dirname, entry->d_name);
         if (!path_is_dir(fullpath)) {
             free(fullpath);
             continue;
@@ -214,7 +214,7 @@ char** path_list_files(const char* dirname, size_t* count) {
             continue;
         }
 
-        char* fullpath = path_cat(dirname, entry->d_name);
+        char* fullpath = path_join(dirname, entry->d_name);
         if (!path_is_file(fullpath)) {
             free(fullpath);
             continue;
