@@ -54,7 +54,7 @@ void token_map_free(HashMap* m) {
     hash_iter_free_all(m, free, free);  // free everything!
 }
 
-void ascii_free(HashMap* ascii) {
+void token_ascii_free(HashMap* ascii) {
     token_map_free(ascii);  // free kv-pairs
 }
 
@@ -78,7 +78,7 @@ void token_score_free(HashMap* scores) {
     token_map_free(scores);
 }
 
-void special_token_free(SpecialToken* special) {
+void token_special_free(SpecialToken* special) {
     if (special) {
         if (special->bos) {
             free(special->bos);
@@ -98,7 +98,7 @@ void special_token_free(SpecialToken* special) {
 
 void tokenizer_free(Tokenizer* t) {
     if (t) {
-        special_token_free(t->special);
+        token_special_free(t->special);
         token_score_free(t->scores);
         token_to_id_free(t->token_to_id);
         id_to_token_free(t->id_to_token, t->vocab_size);
@@ -113,7 +113,7 @@ void tokenizer_free(Tokenizer* t) {
  * @{
  */
 
-SpecialToken* special_default_create(void) {
+SpecialToken* token_special_create(void) {
     SpecialToken* special = malloc(sizeof(SpecialToken));
     if (!special) {
         return NULL;
@@ -127,7 +127,7 @@ SpecialToken* special_default_create(void) {
     return special;
 }
 
-HashMap* ascii_create(void) {
+HashMap* token_ascii_create(void) {
     HashMap* latin1 = hash_map_create(256, HASH_STR);
     if (!latin1) {
         return NULL;
@@ -350,7 +350,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     t->special = special;  // Optional (can be NULL)
 
     // Build ASCII table
-    HashMap* ascii = ascii_create();
+    HashMap* ascii = token_ascii_create();
     if (!ascii) {
         LOG_ERROR("Failed to create ascii map.");
         goto fail;
@@ -358,7 +358,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
 
     // Create vocab token set
     HashSet* vocab = token_set_create(model, ascii);
-    ascii_free(ascii);
+    token_ascii_free(ascii);
     if (!vocab) {
         LOG_ERROR("Failed to create vocab set.");
         goto fail;
@@ -683,7 +683,7 @@ int main(int argc, const char* argv[]) {
     // free(out_path);
 
     // Add default special tokens
-    SpecialToken* special = special_default_create();
+    SpecialToken* special = token_special_create();
     if (!special || !special->bos || !special->eos || !special->pad || !special->unk) {
         fprintf(stderr, "Failed to create special tokens.\n");
         return EXIT_FAILURE;
