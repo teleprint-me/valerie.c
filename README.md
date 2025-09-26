@@ -35,6 +35,7 @@ Valerie's BPE tokenizer is currently **ASCII-only** for simplicity; Unicode (UTF
 3. **Token frequency mapping:** Count occurrences of each token.
 4. **Vocabulary build:** Construct a symbol table mapping tokens to frequencies.
 5. **BPE training:** Iteratively merge the most frequent symbol pairs.
+6. **Tokenizer model:** Construct the tokenizer model from the bpe merges.
 
 **Typical Workflow:**
 
@@ -53,10 +54,10 @@ Valerie's BPE tokenizer is currently **ASCII-only** for simplicity; Unicode (UTF
 
 - Shows tokens and frequencies after each step.
 - Prints BPE merge steps and selected pairs.
-- Final model is saved to the specified output directory.
 
 **Planned:**
 
+- Final model is saved to the specified output directory.
 - Full Unicode (grapheme) support.
 - Model serialization, validation, and extensibility.
 
