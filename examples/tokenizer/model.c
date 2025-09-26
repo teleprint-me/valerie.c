@@ -33,6 +33,8 @@ typedef struct SpecialToken {
     char* eos;  // <|eos|>
     char* pad;  // <|pad|>
     char* unk;  // <|unk|>
+    int count;  // -1 if none
+    int capacity;  // total capacity for all token strlens
 } SpecialToken;
 
 typedef struct Tokenizer {
@@ -127,10 +129,18 @@ SpecialToken* special_default_create(void) {
         return NULL;
     }
 
-    special->bos = strdup("<|bos|>");
-    special->eos = strdup("<|eos|>");
-    special->pad = strdup("<|pad|>");
-    special->unk = strdup("<|unk|>");
+    char* bos = strdup("<|bos|>");
+    char* eos = strdup("<|bos|>");
+    char* pad = strdup("<|eos|>");
+    char* unk = strdup("<|unk|>");
+
+    special->bos = bos;
+    special->eos = eos;
+    special->pad = pad;
+    special->unk = unk;
+
+    special->count = 4;
+    special->capacity = strlen(bos) + strlen(eos) + strlen(pad) + strlen(unk) + 1;
 
     return special;
 }
@@ -457,7 +467,7 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
 
             // probe for a valid score
             float* score = hash_map_search(t->scores, merge);
-            free(merge); // clean up
+            free(merge);  // clean up
             if (score && *score > best_score) {
                 best_score = *score;
                 best_id = i;
