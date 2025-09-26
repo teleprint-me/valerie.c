@@ -18,6 +18,7 @@
 
 #include "core/path.h"
 #include "core/strext.h"
+#include "core/logger.h"
 #include "core/map.h"
 #include "core/set.h"
 #include "core/sort.h"
@@ -347,6 +348,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
 
     Tokenizer* t = calloc(1, sizeof(Tokenizer));
     if (!t) {
+        LOG_ERROR("Failed to create tokenizer.");
         return NULL;
     }
 
@@ -356,6 +358,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     // Build ASCII table
     HashMap* ascii = ascii_create();
     if (!ascii) {
+        LOG_ERROR("Failed to create ascii map.");
         goto fail;
     }
 
@@ -363,6 +366,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     HashSet* vocab = token_set_create(model, ascii);
     ascii_free(ascii);
     if (!vocab) {
+        LOG_ERROR("Failed to create vocab set.");
         goto fail;
     }
 
@@ -372,18 +376,21 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     // Clean up vocab token set
     token_set_free(vocab);
     if (!t->id_to_token) {
+        LOG_ERROR("Failed to create id to token map.");
         goto fail;
     }
 
     // token_to_id (map)
     t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
     if (!t->token_to_id) {
+        LOG_ERROR("Failed to create token to id map.");
         goto fail;
     }
 
     // ranks (for BPE merges)
     HashMap* ranks = token_rank_create(model);
     if (!ranks) {
+        LOG_ERROR("Failed to create rank map.");
         goto fail;
     }
 
@@ -393,6 +400,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     // Clean up rank map
     token_rank_free(ranks);
     if (!t->scores) {
+        LOG_ERROR("Failed to create score map.");
         goto fail;
     }
 
@@ -534,6 +542,27 @@ int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_e
     return ids;
 }
 
+char* tokenizer_decode(Tokenizer* t, int* ids, size_t id_count) {
+    if (!t || !ids || id_count == 0) {
+        return NULL;
+    }
+
+    size_t text_count = 0;
+    char** text = calloc(1, sizeof(char*));
+    for (size_t i = 0; i < id_count; i++) {
+        char* token = t->id_to_token[ids[i]];
+        text = string_append(token, text, &text_count);
+    }
+
+    char* result = string_join(text, text_count, "");
+    string_split_free(text, text_count);
+    if (!result) {
+        return NULL;
+    }
+
+    return result;
+}
+
 /** @} */
 
 /**
@@ -667,6 +696,13 @@ int main(int argc, const char* argv[]) {
         cli_free(&cli);
         return EXIT_FAILURE;
     }
+
+    // int id_count;
+    // int* ids = tokenizer_encode(t, "Hello, world!", &id_count, false, false);
+    // if (!ids) {
+    //     fprintf(stderr, "Failed to create ids!\n");
+    //     return EXIT_FAILURE;
+    // }
 
     // Clean up
     tokenizer_free(t);
