@@ -139,12 +139,12 @@ typedef struct HashIt {
 } HashIt;
 
 /**
- * @brief Callback type for freeing hash values.
+ * @brief Callback type for freeing hash keys and or values.
  *
- * Defines a function pointer type for freeing value pointers
- * during hash table iteration or cleanup operations.
+ * Defines a function pointer type for freeing key and or value
+ * pointers during hash table iteration or cleanup operations.
  *
- * @param value Pointer to the value to free.
+ * @param value Pointer to the key and or value to free.
  */
 typedef void (*HashKVFree)(void*);
 
