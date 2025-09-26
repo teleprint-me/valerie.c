@@ -365,7 +365,7 @@ Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
     // Clean up vocab token set
     token_set_free(vocab);
     if (!t->id_to_token) {
-        LOG_ERROR("Failed to create id to token map.");
+        LOG_ERROR("Failed to create id to token array.");
         goto fail;
     }
 
