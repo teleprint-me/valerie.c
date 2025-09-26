@@ -411,39 +411,36 @@ fail:
  * @{
  */
 
-int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
+int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_eos) {
     if (!t || !text) {
         return NULL;  // invalid input
     }
 
-    // create base ids
-    size_t id_count = strlen(text);
-    if (t->special && t->special->count != -1 && t->special->capacity > 0) {
-        id_count += t->special->capacity;  // +n bytes for special tokens
-    }
+    // Count ids
+    *n = 0;
+    size_t id_count = 0;
 
-    int* ids = calloc(id_count, sizeof(int));
+    // Count number of bytes in text
+    size_t text_len = strlen(text);
+
+    // Allocate space to base ids
+    int* ids = calloc(text_len, sizeof(int));
     if (!ids) {
         return NULL;
     }
 
-    // pre-init ids to discover end-of-seq and resize to fit
-    for (size_t i = 0; i < id_count; i++) {
-        ids[i] = INT_MIN;
-    }
-
-    // pre-process input text to id
-    for (size_t i = 0; i < id_count; i++) {
+    // encode input text to ids
+    for (size_t i = 0; i < text_len; i++) {
         char token[2] = {text[i], 0};
 
         int* id = hash_map_search(t->token_to_id, token);
         if (id) {
-            ids[i] = *id;
+            ids[id_count++] = *id;
         } else if (t->special && t->special->unk) {
             id = hash_map_search(t->token_to_id, t->special->unk);
-            ids[i] = (id) ? *id : -1;  // if -1, unk is not mapped!
+            ids[id_count++] = (id) ? *id : -1;  // if -1, unk is not mapped!
         } else {
-            ids[i] = -1;  // no unk, just use -1
+            ids[id_count++] = -1;  // no unk, just use -1
         }
     }
 
@@ -481,9 +478,18 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
             break;  // no merges left
         }
 
+        // get token ids
+        int id_a = ids[best_id];  // current
+        int id_b = ids[best_id + 1];  // next
+
+        // token is unknown and there is no sub
+        if (id_a == -1 || id_b == -1) {
+            continue;
+        }
+
         // merge tokens
-        char* a = t->id_to_token[ids[best_id]];  // current
-        char* b = t->id_to_token[ids[best_id + 1]];  // next
+        char* a = t->id_to_token[id_a];  // current
+        char* b = t->id_to_token[id_b];  // next
         char* merge = string_concat(a, b);  // a + b
 
         // get best merge id
@@ -501,14 +507,6 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
         id_count--;
     }
 
-    // recalc max base count
-    for (size_t i = 0; i < id_count; i++) {
-        if (ids[i] == INT_MIN) {
-            id_count = i;
-            break;  // end of seq
-        }
-    }
-
     // insert special bos if enabled and present
     if (add_bos && t->special && t->special->bos) {
         int* id = hash_map_search(t->token_to_id, t->special->bos);
@@ -516,13 +514,21 @@ int* tokenizer_encode(Tokenizer* t, char* text, bool add_bos, bool add_eos) {
             ids[i] = ids[i - 1];  // shift everything upward
         }
         ids[0] = id ? *id : -1;  // add bos
+        id_count++;
     }
 
     // append special eos if enabled and present
     if (add_eos && t->special && t->special->eos) {
         int* id = hash_map_search(t->token_to_id, t->special->eos);
         ids[id_count] = id ? *id : -1;
+        id_count++;
     }
+
+    /// @todo Shrink the id buffer to fit id count.
+    /// the number of ids will always be less than the number of input bytes.
+
+    // Update final id count
+    *n = id_count;
 
     // return predicted tokens
     return ids;
