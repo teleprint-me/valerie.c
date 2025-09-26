@@ -669,6 +669,12 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    if (path_is_file(cli.output_dir)) {
+        fprintf(stderr, "Error: Output directory can not be a file.\n");
+        cli_free(&cli);
+        return EXIT_FAILURE;
+    }
+
     // Ensure output directory exists (or create it)
     if (!path_is_dir(cli.output_dir)) {
         if (!path_mkdir(cli.output_dir)) {
