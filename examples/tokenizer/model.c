@@ -528,7 +528,10 @@ int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_e
     }
 
     /// @todo Shrink the id buffer to fit id count.
-    /// the number of ids will always be less than the number of input bytes.
+    /// Number of ids will always be less than the number of input bytes.
+    if (id_count < text_len) {
+        ids = realloc(ids, id_count * sizeof(int));
+    }
 
     // Update final id count
     *n = id_count;
