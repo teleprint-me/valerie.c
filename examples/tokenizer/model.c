@@ -207,7 +207,7 @@ char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
     HashEntry* entry = NULL;
     HashIt it = hash_iter(set);
     while ((entry = hash_iter_next(&it))) {
-        /// @note does **not** duplicate keys
+        /// @note Do **not** duplicate keys!
         core = string_append(entry->key, core, &core_count);
         if (!core) {
             free(core);
