@@ -310,6 +310,7 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         // Update
         internal_vocab = new_vocab;
     }
+    printf("\n");
 
     /// @note ASAN doesn't catch this.
     vocab_map_free(internal_vocab);  // Always free before exiting.
