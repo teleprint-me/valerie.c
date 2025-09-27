@@ -536,7 +536,7 @@ Tokenizer* tokenizer_load(const char* path) {
         char* special = calloc(len + 1, sizeof(char));
         fread(special, sizeof(char), len, file);
         special[len] = 0;
-        ((char**)&t->special->bos)[i] = special;
+        ((char**) &t->special->bos)[i] = special;
     }
 
     // scores (HashMap)
@@ -902,9 +902,10 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // @todo: Serialize the model to output_dir/model.bpe or similar
-    char* out_path = path_join(cli.output_dir, "model.bpe");
+    // Serialize merges to output_dir
+    char* out_path = path_join(cli.output_dir, "bpe.model");
     bpe_save(model, out_path);
+    printf("Saved merges to %s\n", out_path);
     free(out_path);
 
     // Add default special tokens
@@ -926,6 +927,12 @@ int main(int argc, const char* argv[]) {
     for (int i = 0; i < t->vocab_size; i++) {
         printf("  %03d -> %s\n", i, t->id_to_token[i]);
     }
+
+    // Serialize tokenizer to output_dir
+    out_path = path_join(cli.output_dir, "tokenizer.model");
+    tokenizer_save(t, out_path);
+    printf("Saved tokenizer to %s\n", out_path);
+    free(out_path);
 
     printf("Encoding:\n");
     int id_count;
