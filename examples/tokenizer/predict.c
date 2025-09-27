@@ -20,7 +20,7 @@
 
 /**
  * @struct CLIParams
- * @brief Command-line parameters for tokenizer training.
+ * @brief Command-line parameters.
  */
 struct CLIParams {
     const char** argv;
@@ -34,7 +34,7 @@ struct CLIParams {
 };
 
 /**
- * @brief Print usage instructions for the tokenizer trainer.
+ * @brief Print usage instructions.
  */
 void cli_usage(const char* prog) {
     printf("Usage: %s --model S [--verbose] [--help]\n", prog);
@@ -80,6 +80,8 @@ void cli_parse(struct CLIParams* cli) {
             cli->prompt = strdup(cli->argv[++i]);
         } else if (cli_is_flag(cli->argv[i], "--add-bos", "-b")) {
             cli->add_bos = true;
+        } else if (cli_is_flag(cli->argv[i], "--add-bos", "-b")) {
+            cli->add_eos = true;
         } else if (cli_is_flag(cli->argv[i], "--verbose", "-v")) {
             cli->verbose = true;
         } else if (cli_is_flag(cli->argv[i], "--help", "-h")) {
