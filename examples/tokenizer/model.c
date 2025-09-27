@@ -515,17 +515,13 @@ Tokenizer* tokenizer_load(const char* path) {
     }
 
     int magic;
-    if (fread(&magic, sizeof(int), 1, file) != 1) {
-        goto fail_file;
-    }
+    fread(&magic, sizeof(int), 1, file);
     if (magic != TOKENIZER_MAGIC) {
         goto fail_file;
     }
 
     int version;
-    if (fread(&version, sizeof(int), 1, file) != 1) {
-        goto fail_file;
-    }
+    fread(&version, sizeof(int), 1, file);
     if (version != TOKENIZER_VERSION) {
         goto fail_file;
     }
@@ -535,40 +531,79 @@ Tokenizer* tokenizer_load(const char* path) {
         goto fail_tokenizer;
     }
 
-    SpecialToken* special = malloc(sizeof(SpecialToken));
-    if (!special) {
-        goto fail_special;
+    // special tokens
+    t->special = malloc(sizeof(SpecialToken));
+    if (!t->special) {
+        goto fail_tokenizer;
     }
 
-    HashMap* scores = hash_map_create(1, HASH_STR);
-    if (!scores) {
-        goto fail_scores;
+    // bos
+    int bos_len;
+    fread(&bos_len, sizeof(int), 1, file);
+    t->special->bos = calloc(bos_len + 1, sizeof(char));
+    fread(t->special->bos, sizeof(char), bos_len, file);
+    t->special->bos[bos_len] = 0;
+
+    // eos
+    int eos_len;
+    fread(&eos_len, sizeof(int), 1, file);
+    t->special->eos = calloc(eos_len + 1, sizeof(char));
+    fread(t->special->eos, sizeof(char), eos_len, file);
+    t->special->eos[eos_len] = 0;
+
+    // pad
+    int pad_len;
+    fread(&pad_len, sizeof(int), 1, file);
+    t->special->pad = calloc(pad_len + 1, sizeof(char));
+    fread(t->special->pad, sizeof(char), pad_len, file);
+    t->special->pad[pad_len] = 0;
+
+    // unk
+    int unk_len;
+    fread(&unk_len, sizeof(int), 1, file);
+    t->special->unk = calloc(unk_len + 1, sizeof(char));
+    fread(t->special->unk, sizeof(char), unk_len, file);
+    t->special->unk[unk_len] = 0;
+
+    // scores (HashMap)
+    int score_count;
+    fread(&score_count, sizeof(int), 1, file);
+
+    t->scores = hash_map_create(score_count, HASH_STR);
+    if (!t->scores) {
+        goto fail_tokenizer;
     }
 
-    HashMap* token_to_id = hash_map_create(1, HASH_STR);
-    if (!token_to_id) {
-        goto fail_token_to_id;
+    for (int i = 0; i < score_count; i++) {
+        // read token
+        int k_len;
+        fread(&k_len, sizeof(int), 1, file);
+        char* token = calloc(k_len + 1, sizeof(char));
+        fread(token, sizeof(char), k_len, file);
+        token[k_len] = 0;
+
+        // read score
+        float v;
+        fread(&v, sizeof(float), 1, file);
+        float* score = malloc(sizeof(float));
+        *score = v;
+
+        // map token to score
+        hash_map_insert(t->scores, token, score);
     }
 
-    char** id_to_token = malloc(1 * sizeof(char*));
-    if (!id_to_token) {
-        goto fail_id_to_token;
+    t->token_to_id = hash_map_create(1, HASH_STR);
+    if (!t->token_to_id) {
+        goto fail_tokenizer;
     }
 
-    t->special = special;
-    t->scores = scores;
-    t->token_to_id = token_to_id;
-    t->id_to_token = id_to_token;
+    t->id_to_token = malloc(1 * sizeof(char*));
+    if (!t->id_to_token) {
+        goto fail_tokenizer;
+    }
+
     return t;
 
-fail_id_to_token:
-    id_to_token_free(id_to_token, t->vocab_size);
-fail_token_to_id:
-    token_to_id_free(token_to_id);
-fail_scores:
-    token_score_free(scores);
-fail_special:
-    token_special_free(special);
 fail_tokenizer:
     tokenizer_free(t);
 fail_file:
