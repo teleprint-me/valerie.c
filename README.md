@@ -26,40 +26,65 @@ cmake --build build -j $(nproc)
 
 ## Tokenizer
 
-Valerie's BPE tokenizer is currently **ASCII-only** for simplicity; Unicode (UTF-8 grapheme) support is planned.
+Valerie includes an **ASCII-only Byte-Pair Encoding (BPE) tokenizer** designed for transparency and ease of extension. Unicode (UTF-8 grapheme) support is planned.
 
-**Pipeline:**
+### Workflow
 
-1. **Corpus aggregation:** Concatenate input text into a single file.
-2. **Pre-tokenization:** Split text into tokens (whitespace or regex).
-3. **Token frequency mapping:** Count occurrences of each token.
-4. **Vocabulary build:** Construct a symbol table mapping tokens to frequencies.
-5. **BPE training:** Iteratively merge the most frequent symbol pairs.
-6. **Tokenizer model:** Construct the tokenizer model from the bpe merges.
+1. **Train the model:** Build and serialize a BPE tokenizer from a plaintext corpus.
+2. **Predict:** Encode and decode text using a trained model.
 
-**Typical Workflow:**
+### Commands
+
+#### Train
+
+Build and save a tokenizer model:
 
 ```sh
-# Build base vocabulary from text
-./build/examples/tokenizer/vocab --vocab samples/simple.txt
-
-# Train BPE model with N merges
-./build/examples/tokenizer/bpe --vocab samples/simple.txt --merges 10
-
-# Build and serialize tokenizer model
-./build/examples/tokenizer/model --input samples/simple.txt --output models
+./build/examples/tokenizer/train --input S --output S [--merges N] [--verbose]
 ```
 
-*Output:*
+* `--input`, `-i`   Path to input plaintext corpus (required)
+* `--output`, `-o`  Directory to save the tokenizer model (required)
+* `--merges`, `-m`  Number of BPE merge steps (default: 10)
+* `--verbose`, `-v` Enable debug/verbose output
 
-- Shows tokens and frequencies after each step.
-- Prints BPE merge steps and selected pairs.
+#### Predict
+
+Encode and decode text with a trained model:
+
+```sh
+./build/examples/tokenizer/predict --model S --prompt S [options]
+```
+
+* `--model`, `-m`   Path to tokenizer model file (required)
+* `--prompt`, `-p`  Input text to encode and decode (required)
+* `--add-bos`, `-b` Add BOS marker
+* `--add-eos`, `-e` Add EOS marker
+* `--verbose`, `-v` Enable debug output
+
+### Example
+
+**Train:**
+
+```sh
+./build/examples/tokenizer/train -i samples/simple.txt -o models -m 10
+```
+
+**Predict:**
+
+```sh
+./build/examples/tokenizer/predict -m models/tokenizer.model -p 'Hello, world!'
+```
+
+*Typical output:*
+
+* Prints tokens, frequencies, and merge steps when training.
+* Lists vocabulary and encodings when predicting.
 
 **Planned:**
 
-- Final model is saved to the specified output directory.
-- Full Unicode (grapheme) support.
-- Model serialization, validation, and extensibility.
+* Unicode grapheme support
+* Model extensibility and validation
 
 ## License
 
