@@ -504,7 +504,61 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
     return true;
 }
 
-Tokenizer* tokenizer_load(const char* path);
+Tokenizer* tokenizer_load(const char* path) {
+    if (!path_is_file(path)) {
+        return NULL;
+    }
+
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        goto fail_file;
+    }
+
+    Tokenizer* t = malloc(sizeof(Tokenizer));
+    if (!t) {
+        goto fail_tokenizer;
+    }
+
+    SpecialToken* special = malloc(sizeof(SpecialToken));
+    if (!special) {
+        goto fail_special;
+    }
+
+    HashMap* scores = hash_map_create(1, HASH_STR);
+    if (!scores) {
+        goto fail_scores;
+    }
+
+    HashMap* token_to_id = hash_map_create(1, HASH_STR);
+    if (!token_to_id) {
+        goto fail_token_to_id;
+    }
+
+    char** id_to_token = malloc(1 * sizeof(char*));
+    if (!id_to_token) {
+        goto fail_id_to_token;
+    }
+
+    t->special = special;
+    t->scores = scores;
+    t->token_to_id = token_to_id;
+    t->id_to_token = id_to_token;
+    return t;
+
+fail_id_to_token:
+    id_to_token_free(id_to_token, t->vocab_size);
+fail_token_to_id:
+    token_to_id_free(token_to_id);
+fail_scores:
+    token_score_free(scores);
+fail_special:
+    token_special_free(special);
+fail_tokenizer:
+    tokenizer_free(t);
+fail_file:
+    fclose(file);
+    return NULL;
+}
 
 /** @} */
 
