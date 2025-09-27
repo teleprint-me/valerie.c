@@ -741,13 +741,21 @@ char* tokenizer_decode(Tokenizer* t, int* ids, size_t id_count) {
     size_t text_count = 0;
     char** text = calloc(1, sizeof(char*));
     for (size_t i = 0; i < id_count; i++) {
-        char* token = t->id_to_token[ids[i]];
+        int id = ids[i];
+        if (id < 0 || id >= t->vocab_size) {
+            LOG_ERROR("Invalid id at index %zu: %d (id_count=%zu)", i, id, id_count);
+            string_split_free(text, text_count);
+            return NULL;  // out of bounds!
+        }
+
+        char* token = t->id_to_token[id];
         text = string_append(strdup(token), text, &text_count);
     }
 
     char* result = string_join(text, text_count, "");
     string_split_free(text, text_count);
     if (!result) {
+        LOG_ERROR("Failed to build decoded text.");
         return NULL;
     }
 
