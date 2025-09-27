@@ -4,7 +4,7 @@ set(EXAMPLES
     "vocab"
     "bpe"
     "train"
-    "model"
+    "predict"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/tokenizer)

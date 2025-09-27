@@ -1,6 +1,6 @@
 /**
- * @file   examples/tokenizer/model.c
- * @brief  Driver for training and serializing a BPE tokenizer model (Valerie, C)
+ * @file   examples/tokenizer/predict.c
+ * @brief  Driver for loading and predicting model input ids
  * @copyright Copyright © 2025 Austin Berrio
  *
  * @ref https://arxiv.org/abs/1508.07909v5
