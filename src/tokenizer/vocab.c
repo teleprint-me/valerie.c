@@ -53,14 +53,16 @@ void vocab_map_free(HashMap* m) {
 }
 
 // Flush vocab to standard output
-void vocab_map_print(HashMap* m) {
+void vocab_map_log(HashMap* m) {
     HashEntry* entry;
     HashIt it = hash_iter(m);
+    printf("Vocab:\n");
     while ((entry = hash_iter_next(&it))) {
         char* tok = entry->key;
         int* freq = entry->value;
-        printf("tok=`%s` | freq=`%d`\n", tok, *freq);
+        printf("  %s -> %d\n", tok, *freq);
     }
+    printf("\n");
 }
 
 /** @} */

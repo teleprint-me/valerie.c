@@ -262,7 +262,7 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         // Build symbol pairs from vocab
         HashMap* pairs = bpe_pairs(internal_vocab);
         if (verbose) {
-            vocab_map_print(pairs);  // debug
+            vocab_map_log(pairs);  // debug
         }
 
         // Calculate the best pairs
@@ -299,7 +299,7 @@ BPEModel* bpe_train(HashMap* vocab, size_t n_merges, bool verbose) {
         // Merge all matching pairs
         HashMap* new_vocab = bpe_merges(internal_vocab, best_pair);
         if (verbose) {
-            vocab_map_print(new_vocab);
+            vocab_map_log(new_vocab);
         }
 
         // Clean up

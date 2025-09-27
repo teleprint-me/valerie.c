@@ -62,11 +62,11 @@ void vocab_map_free(HashMap* m);
 /**
  * @brief Prints all tokens and frequencies in a vocab map to stdout.
  *
- * Format: tok=`<token>` | freq=`<count>`
+ * Format: <token> -> <frequency>
  *
  * @param m Pointer to the vocab map (HashMap*), or NULL.
  */
-void vocab_map_print(HashMap* m);
+void vocab_map_log(HashMap* m);
 
 /** @} */
 

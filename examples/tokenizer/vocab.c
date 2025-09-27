@@ -73,7 +73,7 @@ int main(int argc, const char* argv[]) {
     HashMap* vocab = vocab_build(cli.vocab_path);
 
     // Observe mapped results
-    vocab_map_print(vocab);
+    vocab_map_log(vocab);
 
     // Clean up
     vocab_map_free(vocab);

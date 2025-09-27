@@ -90,7 +90,7 @@ int main(int argc, const char* argv[]) {
     // Build word frequencies from text file
     HashMap* vocab = vocab_build(cli.vocab_path);
     if (cli.debug) {
-        vocab_map_print(vocab);
+        vocab_map_log(vocab);
     }
 
     BPEModel* model = bpe_train(vocab, cli.merges, cli.debug);
