@@ -179,6 +179,7 @@ int main(int argc, const char* argv[]) {
         for (int i = 0; i < t->vocab_size; i++) {
             printf("  %03d -> %s\n", i, t->id_to_token[i]);
         }
+        printf("\n");
     }
 
     // Serialize tokenizer to output_dir
