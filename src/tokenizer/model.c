@@ -566,7 +566,7 @@ Tokenizer* tokenizer_load(const char* path) {
         *id = v;
 
         // map token to id
-        hash_map_insert(t->scores, token, id);
+        hash_map_insert(t->token_to_id, token, id);
     }
 
     // id-to-tokens (char**)
