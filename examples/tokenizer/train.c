@@ -40,11 +40,11 @@ struct CLIParams {
  */
 void cli_usage(const char* prog) {
     printf("Usage: %s --input S --output S [--merges N] [--verbose]\n", prog);
-    printf("  --input   S     Input plaintext corpus file (required)\n");
-    printf("  --output  S     Output directory for tokenizer model (required)\n");
-    printf("  --merges  N     Number of BPE merges (default: 10)\n");
-    printf("  --verbose | -v  Enable debug/verbose output\n");
-    printf("  --help    | -h  Show this help message\n");
+    printf("  --input    -i  Input plaintext corpus file (required)\n");
+    printf("  --output   -o  Output directory for tokenizer model (required)\n");
+    printf("  --merges   -m  Number of BPE merges (default: 10)\n");
+    printf("  --verbose  -v  Enable debug/verbose output\n");
+    printf("  --help     -h  Show this help message\n");
 }
 
 /**
@@ -53,6 +53,14 @@ void cli_usage(const char* prog) {
 void cli_free(struct CLIParams* cli) {
     free(cli->input_path);
     free(cli->output_dir);
+}
+
+bool cli_is_arg(const char* argv, const char* l, const char* s, int argc, int i) {
+    return (strcmp(argv, l) == 0 || strcmp(argv, s) == 0) && i + 1 < argc;
+}
+
+bool cli_is_flag(const char* argv, const char* l, const char* s) {
+    return strcmp(argv, l) == 0 || strcmp(argv, s) == 0;
 }
 
 /**
@@ -66,18 +74,18 @@ void cli_parse(struct CLIParams* cli) {
     cli->verbose = false;
 
     for (int i = 1; i < cli->argc; ++i) {
-        if (strcmp(cli->argv[i], "--input") == 0 && i + 1 < cli->argc) {
+        if (cli_is_arg(cli->argv[i], "--input", "-i", cli->argc, i)) {
             cli->input_path = strdup(cli->argv[++i]);
-        } else if (strcmp(cli->argv[i], "--output") == 0 && i + 1 < cli->argc) {
+        } else if (cli_is_arg(cli->argv[i], "--output", "-o", cli->argc, i)) {
             cli->output_dir = strdup(cli->argv[++i]);
-        } else if (strcmp(cli->argv[i], "--merges") == 0 && i + 1 < cli->argc) {
+        } else if (cli_is_arg(cli->argv[i], "--merges", "-m", cli->argc, i)) {
             cli->merges = atoi(cli->argv[++i]);
             if (cli->merges < 1) {
                 cli->merges = 10;
             }
-        } else if (strcmp(cli->argv[i], "--verbose") == 0 || strcmp(cli->argv[i], "-v") == 0) {
+        } else if (cli_is_flag(cli->argv[i], "--verbose", "-v")) {
             cli->verbose = true;
-        } else if (strcmp(cli->argv[i], "--help") == 0 || strcmp(cli->argv[i], "-h") == 0) {
+        } else if (cli_is_flag(cli->argv[i], "--help", "-h")) {
             cli_usage(cli->argv[0]);
             cli_free(cli);
             exit(EXIT_SUCCESS);
