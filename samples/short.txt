@@ -1,6 +1,22 @@
 blue
 berry
 blueberry
+low
+lower
+new
+newer
+newest
+widest
+he
+she
+hello
+world
+their
+there
+they're
+old
+older
+oldest
 Hello, World!
 Hello, world!
 hello, world!
@@ -19,19 +35,3 @@ I'm going to the store, and I'm coming back.
 She looked at the book, and looked again.
 The dog wagged it's tail.
 I got to say hi to howdy who is a dog and said, "Hi, howdy!".
-low
-lower
-new
-newer
-newest
-widest
-he
-she
-hello
-world
-their
-there
-they're
-old
-older
-oldest
