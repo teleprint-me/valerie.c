@@ -3,6 +3,7 @@
 set(EXAMPLES
     "vocab"
     "bpe"
+    "train"
     "model"
 )
 
