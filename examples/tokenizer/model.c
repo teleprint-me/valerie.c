@@ -454,6 +454,9 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
     fwrite(t->special->unk, sizeof(char), unk_len, file);
 
     // scores (HashMap)
+    int score_count = hash_count(t->scores);
+    fwrite(&score_count, sizeof(int), 1, file);
+
     HashEntry* e;
     HashIt it = hash_iter(t->scores);
     while ((e = hash_iter_next(&it))) {
@@ -469,6 +472,9 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
     }
 
     // token-to-id (HashMap)
+    int token_to_id_count = hash_count(t->token_to_id);
+    fwrite(&token_to_id_count, sizeof(int), 1, file);
+
     e = NULL;
     it = hash_iter(t->token_to_id);
     while ((e = hash_iter_next(&it))) {
@@ -483,7 +489,7 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
         fwrite(&v, sizeof(int), 1, file);
     }
 
-    // number of id-to-tokens
+    // id-to-tokens count
     fwrite(&t->vocab_size, sizeof(int), 1, file);
 
     // id-to-token (char**)
