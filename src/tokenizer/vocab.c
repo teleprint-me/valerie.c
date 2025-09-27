@@ -1,7 +1,7 @@
 /**
- * @copyright Copyright © 2025 Austin Berrio
  * @file      tokenizer/vocab.h
  * @brief     Vocabulary mapping and serialization utilities for tokenization pipelines.
+ * @copyright Copyright © 2025 Austin Berrio
  *
  * Provides utilities for building, saving, loading, and printing vocabulary maps
  * using a string-to-int frequency mapping (HashMap).
