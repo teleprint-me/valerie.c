@@ -43,7 +43,7 @@ void cli_usage(const char* prog) {
     printf("  --input    -i  Input plaintext corpus file (required)\n");
     printf("  --output   -o  Output directory for tokenizer model (required)\n");
     printf("  --merges   -m  Number of BPE merges (default: 10)\n");
-    printf("  --verbose  -v  Enable debug/verbose output\n");
+    printf("  --verbose  -v  Enable debug output\n");
     printf("  --help     -h  Show this help message\n");
 }
 

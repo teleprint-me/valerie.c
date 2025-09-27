@@ -43,10 +43,10 @@ Build and save a tokenizer model:
 ./build/examples/tokenizer/train --input S --output S [--merges N] [--verbose]
 ```
 
-* `--input`, `-i`   Path to input plaintext corpus (required)
-* `--output`, `-o`  Directory to save the tokenizer model (required)
-* `--merges`, `-m`  Number of BPE merge steps (default: 10)
-* `--verbose`, `-v` Enable debug/verbose output
+- `--input`, `-i`   Path to input plaintext corpus (required)
+- `--output`, `-o`  Directory to save the tokenizer model (required)
+- `--merges`, `-m`  Number of BPE merge steps (default: 10)
+- `--verbose`, `-v` Enable debug output
 
 #### Predict
 
@@ -56,11 +56,11 @@ Encode and decode text with a trained model:
 ./build/examples/tokenizer/predict --model S --prompt S [options]
 ```
 
-* `--model`, `-m`   Path to tokenizer model file (required)
-* `--prompt`, `-p`  Input text to encode and decode (required)
-* `--add-bos`, `-b` Add BOS marker
-* `--add-eos`, `-e` Add EOS marker
-* `--verbose`, `-v` Enable debug output
+- `--model`, `-m`   Path to tokenizer model file (required)
+- `--prompt`, `-p`  Input text to encode and decode (required)
+- `--add-bos`, `-b` Add BOS marker
+- `--add-eos`, `-e` Add EOS marker
+- `--verbose`, `-v` Enable debug output
 
 ### Example
 
@@ -78,13 +78,13 @@ Encode and decode text with a trained model:
 
 *Typical output:*
 
-* Prints tokens, frequencies, and merge steps when training.
-* Lists vocabulary and encodings when predicting.
+- Prints tokens, frequencies, and merge steps when training.
+- Lists vocabulary and encodings when predicting.
 
 **Planned:**
 
-* Unicode grapheme support
-* Model extensibility and validation
+- Unicode grapheme support
+- Model extensibility and validation
 
 ## License
 

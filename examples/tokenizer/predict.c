@@ -42,7 +42,7 @@ void cli_usage(const char* prog) {
     printf("  --prompt   -p  Input text to encode and decode (required)\n");
     printf("  --add-bos  -b  Enable bos marker\n");
     printf("  --add-eos  -e  Enable eos marker\n");
-    printf("  --verbose  -v  Enable debug/verbose output\n");
+    printf("  --verbose  -v  Enable debug output\n");
     printf("  --help     -h  Show this help message\n");
 }
 
