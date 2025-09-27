@@ -26,11 +26,11 @@ struct CLIParams {
     const char** argv;
     int argc;
 
-    char* model_path;  ///< Input text corpus (plaintext)
+    char* model_path;
     char* prompt;
     bool add_bos;
     bool add_eos;
-    bool verbose;  ///< Enable verbose/debug output
+    bool verbose;
 };
 
 /**
@@ -51,6 +51,7 @@ void cli_usage(const char* prog) {
  */
 void cli_free(struct CLIParams* cli) {
     free(cli->model_path);
+    free(cli->prompt);
 }
 
 bool cli_is_arg(const char* argv, const char* l, const char* s, int argc, int i) {
