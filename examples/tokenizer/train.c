@@ -116,14 +116,16 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Validate output directory
     if (path_is_file(cli.output_dir)) {
         fprintf(stderr, "Error: Output directory can not be a file.\n");
         cli_free(&cli);
         return EXIT_FAILURE;
     }
 
-    // Ensure output directory exists (or create it)
+    // Ensure output directory exists
     if (!path_is_dir(cli.output_dir)) {
+        // Create output directory if it doesn't exist
         if (!path_mkdir(cli.output_dir)) {
             fprintf(stderr, "Error: Could not create output directory '%s'.\n", cli.output_dir);
             cli_free(&cli);
@@ -138,9 +140,6 @@ int main(int argc, const char* argv[]) {
         cli_free(&cli);
         return EXIT_FAILURE;
     }
-    if (cli.verbose) {
-        vocab_map_print(vocab);
-    }
 
     // Train BPE merges
     BPEModel* model = bpe_train(vocab, (size_t) cli.merges, cli.verbose);
@@ -151,10 +150,18 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    if (cli.verbose) {
+        printf("BPEModel:\n");
+        for (size_t i = 0; i < model->count; i++) {
+            printf("  %s -> %d\n", model->merges[i].pair, model->merges[i].freq);
+        }
+        printf("\n");
+    }
+
     // Serialize merges to output_dir
     char* out_path = path_join(cli.output_dir, "bpe.model");
     bpe_save(model, out_path);
-    printf("Saved merges to %s\n", out_path);
+    printf("Saved merges to %s\n\n", out_path);
     free(out_path);
 
     // Add default special tokens
@@ -185,7 +192,7 @@ int main(int argc, const char* argv[]) {
     // Serialize tokenizer to output_dir
     out_path = path_join(cli.output_dir, "tokenizer.model");
     tokenizer_save(t, out_path);
-    printf("Saved tokenizer to %s\n", out_path);
+    printf("Saved tokenizer to %s\n\n", out_path);
     free(out_path);
 
     printf("Encoding:\n");
