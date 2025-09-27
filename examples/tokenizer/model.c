@@ -514,6 +514,22 @@ Tokenizer* tokenizer_load(const char* path) {
         goto fail_file;
     }
 
+    int magic;
+    if (fread(&magic, sizeof(int), 1, file) != 1) {
+        goto fail_file;
+    }
+    if (magic != TOKENIZER_MAGIC) {
+        goto fail_file;
+    }
+
+    int version;
+    if (fread(&version, sizeof(int), 1, file) != 1) {
+        goto fail_file;
+    }
+    if (version != TOKENIZER_VERSION) {
+        goto fail_file;
+    }
+
     Tokenizer* t = malloc(sizeof(Tokenizer));
     if (!t) {
         goto fail_tokenizer;
