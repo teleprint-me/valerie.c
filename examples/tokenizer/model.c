@@ -530,19 +530,13 @@ Tokenizer* tokenizer_load(const char* path) {
     }
 
     // fingers crossed!
-    char* special[] = {
-        t->special->bos,
-        t->special->eos,
-        t->special->pad,
-        t->special->unk,
-    };
-
     for (size_t i = 0; i < 4; i++) {
         int len;
         fread(&len, sizeof(int), 1, file);
-        special[i] = calloc(len + 1, sizeof(char));
-        fread(special[i], sizeof(char), len, file);
-        special[i][len] = 0;
+        char* special = calloc(len + 1, sizeof(char));
+        fread(special, sizeof(char), len, file);
+        special[len] = 0;
+        ((char**)&t->special->bos)[i] = special;
     }
 
     // scores (HashMap)
