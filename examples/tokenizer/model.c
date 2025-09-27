@@ -572,14 +572,51 @@ Tokenizer* tokenizer_load(const char* path) {
         hash_map_insert(t->scores, token, score);
     }
 
-    t->token_to_id = hash_map_create(1, HASH_STR);
+    // token-to-id (HashMap)
+    int token_to_id_count;
+    fread(&token_to_id_count, sizeof(int), 1, file);
+
+    t->token_to_id = hash_map_create(token_to_id_count, HASH_STR);
     if (!t->token_to_id) {
         goto fail_tokenizer;
     }
 
-    t->id_to_token = malloc(1 * sizeof(char*));
+    for (int i = 0; i < token_to_id_count; i++) {
+        // read token
+        int k_len;
+        fread(&k_len, sizeof(int), 1, file);
+        char* token = calloc(k_len + 1, sizeof(char));
+        fread(token, sizeof(char), k_len, file);
+        token[k_len] = 0;
+
+        // read id
+        int v;
+        fread(&v, sizeof(int), 1, file);
+        int* id = malloc(sizeof(int));
+        *id = v;
+
+        // map token to id
+        hash_map_insert(t->scores, token, id);
+    }
+
+    // id-to-tokens (char**)
+    fread(&t->vocab_size, sizeof(int), 1, file);
+
+    t->id_to_token = calloc(t->vocab_size, sizeof(char*));
     if (!t->id_to_token) {
         goto fail_tokenizer;
+    }
+
+    for (int i = 0; i < t->vocab_size; i++) {
+        // read token
+        int k_len;
+        fread(&k_len, sizeof(int), 1, file);
+        char* k = calloc(k_len, sizeof(char));
+        fread(k, sizeof(char), k_len, file);
+        k[k_len] = 0;
+
+        // map id to token
+        t->id_to_token[i] = k;
     }
 
     fclose(file);
