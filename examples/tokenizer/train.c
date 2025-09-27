@@ -171,10 +171,14 @@ int main(int argc, const char* argv[]) {
         cli_free(&cli);
         return EXIT_FAILURE;
     }
-    printf("vocab size: %d\n", t->vocab_size);
-    printf("model:\n");
-    for (int i = 0; i < t->vocab_size; i++) {
-        printf("  %03d -> %s\n", i, t->id_to_token[i]);
+
+    // Print debug info if enabled
+    if (cli.verbose) {
+        printf("vocab size: %d\n", t->vocab_size);
+        printf("model:\n");
+        for (int i = 0; i < t->vocab_size; i++) {
+            printf("  %03d -> %s\n", i, t->id_to_token[i]);
+        }
     }
 
     // Serialize tokenizer to output_dir
