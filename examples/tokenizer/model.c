@@ -500,6 +500,7 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
         fwrite(k, sizeof(char), k_len, file);
     }
 
+    fclose(file);
     return true;
 }
 
