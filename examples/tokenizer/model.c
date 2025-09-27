@@ -432,26 +432,18 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
     fwrite(&version, sizeof(int), 1, file);
 
     // special tokens
+    char* special[] = {
+        t->special->bos,
+        t->special->eos,
+        t->special->pad,
+        t->special->unk,
+    };
 
-    // bos
-    int bos_len = strlen(t->special->bos);
-    fwrite(&bos_len, sizeof(int), 1, file);
-    fwrite(t->special->bos, sizeof(char), bos_len, file);
-
-    // eos
-    int eos_len = strlen(t->special->eos);
-    fwrite(&eos_len, sizeof(int), 1, file);
-    fwrite(t->special->eos, sizeof(char), eos_len, file);
-
-    // pad
-    int pad_len = strlen(t->special->pad);
-    fwrite(&pad_len, sizeof(int), 1, file);
-    fwrite(t->special->pad, sizeof(char), pad_len, file);
-
-    // unk
-    int unk_len = strlen(t->special->unk);
-    fwrite(&unk_len, sizeof(int), 1, file);
-    fwrite(t->special->unk, sizeof(char), unk_len, file);
+    for (size_t i = 0; i < 4; i++) {
+        int len = strlen(special[i]);
+        fwrite(&len, sizeof(int), 1, file);
+        fwrite(special[i], sizeof(char), len, file);
+    }
 
     // scores (HashMap)
     int score_count = hash_count(t->scores);
@@ -537,33 +529,21 @@ Tokenizer* tokenizer_load(const char* path) {
         goto fail_tokenizer;
     }
 
-    // bos
-    int bos_len;
-    fread(&bos_len, sizeof(int), 1, file);
-    t->special->bos = calloc(bos_len + 1, sizeof(char));
-    fread(t->special->bos, sizeof(char), bos_len, file);
-    t->special->bos[bos_len] = 0;
+    // fingers crossed!
+    char* special[] = {
+        t->special->bos,
+        t->special->eos,
+        t->special->pad,
+        t->special->unk,
+    };
 
-    // eos
-    int eos_len;
-    fread(&eos_len, sizeof(int), 1, file);
-    t->special->eos = calloc(eos_len + 1, sizeof(char));
-    fread(t->special->eos, sizeof(char), eos_len, file);
-    t->special->eos[eos_len] = 0;
-
-    // pad
-    int pad_len;
-    fread(&pad_len, sizeof(int), 1, file);
-    t->special->pad = calloc(pad_len + 1, sizeof(char));
-    fread(t->special->pad, sizeof(char), pad_len, file);
-    t->special->pad[pad_len] = 0;
-
-    // unk
-    int unk_len;
-    fread(&unk_len, sizeof(int), 1, file);
-    t->special->unk = calloc(unk_len + 1, sizeof(char));
-    fread(t->special->unk, sizeof(char), unk_len, file);
-    t->special->unk[unk_len] = 0;
+    for (size_t i = 0; i < 4; i++) {
+        int len;
+        fread(&len, sizeof(int), 1, file);
+        special[i] = calloc(len + 1, sizeof(char));
+        fread(special[i], sizeof(char), len, file);
+        special[i][len] = 0;
+    }
 
     // scores (HashMap)
     int score_count;
@@ -602,6 +582,7 @@ Tokenizer* tokenizer_load(const char* path) {
         goto fail_tokenizer;
     }
 
+    fclose(file);
     return t;
 
 fail_tokenizer:
