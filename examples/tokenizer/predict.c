@@ -126,6 +126,9 @@ int main(int argc, const char* argv[]) {
         }
     }
 
+    printf("Prompt:\n");
+    printf("%s\n\n", cli.prompt);
+
     printf("Encoding:\n");
     int id_count;
     int* ids = tokenizer_encode(t, cli.prompt, &id_count, cli.add_bos, cli.add_eos);
@@ -137,7 +140,7 @@ int main(int argc, const char* argv[]) {
     for (int i = 0; i < id_count; i++) {
         printf("%d ", ids[i]);
     }
-    printf("\n");
+    printf("\n\n");
 
     printf("Decoding:\n");
     char* text = tokenizer_decode(t, ids, id_count);
