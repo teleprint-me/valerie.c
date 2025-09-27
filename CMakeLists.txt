@@ -52,6 +52,7 @@ add_library(valerie SHARED
     # Tokenizer modules
     "src/tokenizer/vocab.c"  # String-to-int frequency vocab map
     "src/tokenizer/bpe.c"    # Byte Pair Encoding (BPE) algorithms
+    "src/tokenizer/model.c"
 )
 
 target_include_directories(valerie PUBLIC include)

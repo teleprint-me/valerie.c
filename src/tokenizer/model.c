@@ -1,0 +1,757 @@
+/**
+ * @file      tokenizer/model.c
+ * @brief     BPE tokenizer model interface for Valerie
+ * @copyright Copyright © 2025 Austin Berrio
+ *
+ * @ref https://arxiv.org/abs/1508.07909v5
+ * @ref https://arxiv.org/abs/2505.24689
+ * @ref https://aclanthology.org/2025.coling-main.400/
+ */
+
+#include <stdbool.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#include <math.h>
+#include <limits.h>
+#include <stdio.h>
+
+#include "core/path.h"
+#include "core/strext.h"
+#include "core/logger.h"
+#include "core/map.h"
+#include "core/set.h"
+#include "core/sort.h"
+
+#include "tokenizer/bpe.h"
+#include "tokenizer/model.h"
+
+/**
+ * @section Tokenizer clean up
+ * @{
+ */
+
+void token_map_free(HashMap* m) {
+    hash_iter_free_all(m, free, free);  // free everything!
+}
+
+void token_ascii_free(HashMap* ascii) {
+    token_map_free(ascii);  // free kv-pairs
+}
+
+void token_set_free(HashSet* tokens) {
+    hash_iter_free_all(tokens, free, NULL);  // only free keys!
+}
+
+void id_to_token_free(char** tokens, size_t token_count) {
+    string_split_free(tokens, token_count);  // free everything!
+}
+
+void token_to_id_free(HashMap* tokens) {
+    token_map_free(tokens);
+}
+
+void token_rank_free(HashMap* ranks) {
+    token_map_free(ranks);
+}
+
+void token_score_free(HashMap* scores) {
+    token_map_free(scores);
+}
+
+void token_special_free(SpecialToken* special) {
+    if (special) {
+        if (special->bos) {
+            free(special->bos);
+        }
+        if (special->eos) {
+            free(special->eos);
+        }
+        if (special->pad) {
+            free(special->pad);
+        }
+        if (special->unk) {
+            free(special->unk);
+        }
+        free(special);
+    }
+}
+
+void tokenizer_free(Tokenizer* t) {
+    if (t) {
+        token_special_free(t->special);
+        token_score_free(t->scores);
+        token_to_id_free(t->token_to_id);
+        id_to_token_free(t->id_to_token, t->vocab_size);
+        free(t);
+    }
+}
+
+/** @} */
+
+/**
+ * @section Tokenizer pipeline
+ * @{
+ */
+
+SpecialToken* token_special_create(char* bos, char* eos, char* pad, char* unk) {
+    SpecialToken* special = malloc(sizeof(SpecialToken));
+    if (!special) {
+        return NULL;
+    }
+
+    special->bos = bos ? strdup(bos) : strdup("<|bos|>");
+    special->eos = eos ? strdup(eos) : strdup("<|eos|>");
+    special->pad = pad ? strdup(pad) : strdup("<|pad|>");
+    special->unk = unk ? strdup(unk) : strdup("<|unk|>");
+
+    return special;
+}
+
+HashMap* token_ascii_create(void) {
+    HashMap* latin1 = hash_map_create(256, HASH_STR);
+    if (!latin1) {
+        return NULL;
+    }
+
+    // exact bijection: 0..255
+    for (size_t i = 0; i < 256; i++) {
+        if (!isprint(i)) {
+            continue;  // only include printable chars
+        }
+
+        char* k = calloc(2, sizeof(char));
+        *k = (uint8_t) i;
+        k[1] = '\0';
+
+        int* v = malloc(sizeof(int));
+        *v = i;
+
+        hash_map_insert(latin1, k, v);
+    }
+
+    return latin1;
+}
+
+HashSet* token_set_create(BPEModel* model, HashMap* ascii) {
+    // create the core token set
+    HashSet* set = hash_set_create(model->capacity, HASH_STR);
+    if (!set) {
+        return NULL;
+    }
+
+    // Add base tokens for OOV
+    HashEntry* entry;
+    HashIt it = hash_iter(ascii);
+    while ((entry = hash_iter_next(&it))) {
+        // returns true on success
+        hash_set_add(set, strdup(entry->key));
+    }
+
+    // parse out merges from model
+    for (size_t i = 0; i < model->count; i++) {
+        // get the current merge
+        BPEMerge merge = model->merges[i];
+
+        // parse out the tuple from the current merge pair
+        size_t tuple_count;
+        char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
+        if (tuple_count != 2) {
+            token_set_free(set);
+            string_split_free(tuple, tuple_count);
+            return NULL;
+        }
+        const char* a = tuple[0];
+        const char* b = tuple[1];
+
+        // merge pair: t : a + b
+        char* token = string_concat(a, b);
+
+        // add the token to the set
+        hash_set_add(set, token);
+
+        // free the tuple
+        string_split_free(tuple, tuple_count);
+    }
+
+    // return the token set
+    return set;
+}
+
+char** id_to_token_create(HashSet* set, SpecialToken* special, int* out_count) {
+    if (!set || !special) {
+        return NULL;
+    }
+
+    // create core token list
+    size_t core_count = 0;
+    // create a shallow copy
+    char** core = calloc(1, sizeof(char*));
+
+    // add core token set to list
+    HashEntry* entry = NULL;
+    HashIt it = hash_iter(set);
+    while ((entry = hash_iter_next(&it))) {
+        /// @note Do **not** duplicate keys!
+        core = string_append(entry->key, core, &core_count);
+        if (!core) {
+            free(core);
+            return NULL;
+        }
+    }
+
+    // Sort the core token array
+    heap_sort_str(core, core_count);
+
+    // Create the output token list
+    size_t token_count = 0;
+    // primary owner for allocated vocab mappings
+    char** tokens = calloc(1, sizeof(char*));
+
+    // add special tokens to start of array
+    tokens = string_append(strdup(special->bos), tokens, &token_count);
+    tokens = string_append(strdup(special->eos), tokens, &token_count);
+    tokens = string_append(strdup(special->pad), tokens, &token_count);
+    tokens = string_append(strdup(special->unk), tokens, &token_count);
+
+    for (size_t i = 0; i < core_count; i++) {
+        tokens = string_append(strdup(core[i]), tokens, &token_count);
+    }
+
+    // clean up pre-tokens
+    free(core);
+
+    // set the output token count
+    *out_count = token_count;
+
+    // return the token list
+    return tokens;  // v : i -> t
+}
+
+HashMap* token_to_id_create(char** id_to_token, int id_count) {
+    if (!id_to_token || !*id_to_token || id_count < 0) {
+        return NULL;
+    }
+
+    HashMap* token_to_id = hash_map_create(1, HASH_STR);  // str -> id
+    if (!token_to_id) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < (size_t) id_count; i++) {
+        // shared reference is not to be freed!
+        char* token = strdup(id_to_token[i]);
+        int* id = malloc(sizeof(int));
+        *id = i;
+        if (HASH_SUCCESS != hash_map_insert(token_to_id, token, id)) {
+            hash_map_free(token_to_id);
+            return NULL;
+        }
+    }
+
+    return token_to_id;  // v : t -> i
+}
+
+HashMap* token_rank_create(BPEModel* model) {
+    HashMap* ranks = hash_map_create(1, HASH_STR);  // str -> int
+    if (!ranks) {
+        return NULL;
+    }
+
+    // scores require cononical ordering and requires merges as the src
+    for (size_t i = 0; i < model->count; i++) {
+        BPEMerge merge = model->merges[i];
+
+        // parse out the tuple from the current merge pair
+        size_t tuple_count;
+        char** tuple = string_split_delim(merge.pair, " ", &tuple_count);
+        if (tuple_count != 2) {
+            string_split_free(tuple, tuple_count);
+            token_score_free(ranks);
+            return NULL;
+        }
+        const char* a = tuple[0];
+        const char* b = tuple[1];
+
+        // merge pair: t : a + b
+        char* token = string_concat(a, b);
+
+        // copy id
+        int* id = malloc(sizeof(int));
+        *id = i;  // order matters!
+
+        // map token to id
+        hash_map_insert(ranks, token, id);
+
+        // free the tuple
+        string_split_free(tuple, tuple_count);
+    }
+
+    return ranks;  // v : t -> i
+}
+
+HashMap* token_score_create(HashMap* token_to_id, HashMap* ranks) {
+    HashMap* scores = hash_map_create(1, HASH_STR);  // str -> float
+    if (!scores) {
+        return NULL;
+    }
+
+    HashEntry* entry;
+    HashIt it = hash_iter(token_to_id);
+    while ((entry = hash_iter_next(&it))) {
+        // get the id for the current score
+        int* id = hash_map_search(ranks, entry->key);
+        // allocate memory to score
+        float* score = malloc(sizeof(float));
+
+        // calc score
+        if (!id) {
+            *score = -INFINITY;  // no rank
+        } else {
+            *score = -logf(*id + 1);
+        }
+
+        // do not share refs!
+        hash_map_insert(scores, strdup(entry->key), score);
+    }
+
+    return scores;  // v : t -> f
+}
+
+Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
+    if (!model) {
+        return NULL;
+    }
+
+    Tokenizer* t = calloc(1, sizeof(Tokenizer));
+    if (!t) {
+        LOG_ERROR("Failed to create tokenizer.");
+        return NULL;
+    }
+
+    // Owns special tokens
+    t->special = special;  // Optional (can be NULL)
+
+    // Build ASCII table
+    HashMap* ascii = token_ascii_create();
+    if (!ascii) {
+        LOG_ERROR("Failed to create ascii map.");
+        goto fail;
+    }
+
+    // Create vocab token set
+    HashSet* vocab = token_set_create(model, ascii);
+    token_ascii_free(ascii);
+    if (!vocab) {
+        LOG_ERROR("Failed to create vocab set.");
+        goto fail;
+    }
+
+    // id_to_token (array) and vocab_size
+    t->id_to_token = id_to_token_create(vocab, special, &t->vocab_size);
+
+    // Clean up vocab token set
+    token_set_free(vocab);
+    if (!t->id_to_token) {
+        LOG_ERROR("Failed to create id to token array.");
+        goto fail;
+    }
+
+    // token_to_id (map)
+    t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
+    if (!t->token_to_id) {
+        LOG_ERROR("Failed to create token to id map.");
+        goto fail;
+    }
+
+    // ranks (for BPE merges)
+    HashMap* ranks = token_rank_create(model);
+    if (!ranks) {
+        LOG_ERROR("Failed to create rank map.");
+        goto fail;
+    }
+
+    // scores (for greedy BPE merges)
+    t->scores = token_score_create(t->token_to_id, ranks);
+
+    // Clean up rank map
+    token_rank_free(ranks);
+    if (!t->scores) {
+        LOG_ERROR("Failed to create score map.");
+        goto fail;
+    }
+
+    return t;
+
+fail:
+    // Free all partially allocated fields (handles NULLs fine)
+    tokenizer_free(t);
+    return NULL;
+}
+
+/** @} */
+
+/**
+ * Model persistence
+ * @{
+ */
+
+bool tokenizer_save(Tokenizer* t, const char* path) {
+    char* dirname = path_dirname(path);
+    path_mkdir(dirname);
+    free(dirname);
+
+    FILE* file = fopen(path, "wb");
+    if (!file) {
+        return false;
+    }
+
+    int magic = TOKENIZER_MAGIC;
+    fwrite(&magic, sizeof(int), 1, file);
+
+    int version = TOKENIZER_VERSION;
+    fwrite(&version, sizeof(int), 1, file);
+
+    // special tokens
+    for (size_t i = 0; i < 4; i++) {
+        // fingers crossed!
+        char* special = ((char**) &t->special->bos)[i];
+        int len = strlen(special);
+        fwrite(&len, sizeof(int), 1, file);
+        fwrite(special, sizeof(char), len, file);
+    }
+
+    // scores (HashMap)
+    int score_count = hash_count(t->scores);
+    fwrite(&score_count, sizeof(int), 1, file);
+
+    HashEntry* e;
+    HashIt it = hash_iter(t->scores);
+    while ((e = hash_iter_next(&it))) {
+        // get the token
+        char* k = e->key;
+        int k_len = strlen(k);
+        fwrite(&k_len, sizeof(int), 1, file);
+        fwrite(k, sizeof(char), k_len, file);
+
+        // get the token score
+        float v = *(float*) e->value;
+        fwrite(&v, sizeof(float), 1, file);
+    }
+
+    // token-to-id (HashMap)
+    int token_to_id_count = hash_count(t->token_to_id);
+    fwrite(&token_to_id_count, sizeof(int), 1, file);
+
+    e = NULL;
+    it = hash_iter(t->token_to_id);
+    while ((e = hash_iter_next(&it))) {
+        // get the token
+        char* k = e->key;
+        int k_len = strlen(k);
+        fwrite(&k_len, sizeof(int), 1, file);
+        fwrite(k, sizeof(char), k_len, file);
+
+        // get the token id
+        int v = *(int*) e->value;
+        fwrite(&v, sizeof(int), 1, file);
+    }
+
+    // id-to-tokens count
+    fwrite(&t->vocab_size, sizeof(int), 1, file);
+
+    // id-to-token (char**)
+    for (int i = 0; i < t->vocab_size; i++) {
+        char* k = t->id_to_token[i];
+        int k_len = strlen(k);
+        fwrite(&k_len, sizeof(int), 1, file);
+        fwrite(k, sizeof(char), k_len, file);
+    }
+
+    fclose(file);
+    return true;
+}
+
+Tokenizer* tokenizer_load(const char* path) {
+    if (!path_is_file(path)) {
+        return NULL;
+    }
+
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        goto fail_file;
+    }
+
+    int magic;
+    fread(&magic, sizeof(int), 1, file);
+    if (magic != TOKENIZER_MAGIC) {
+        goto fail_file;
+    }
+
+    int version;
+    fread(&version, sizeof(int), 1, file);
+    if (version != TOKENIZER_VERSION) {
+        goto fail_file;
+    }
+
+    Tokenizer* t = malloc(sizeof(Tokenizer));
+    if (!t) {
+        goto fail_tokenizer;
+    }
+
+    // special tokens
+    t->special = malloc(sizeof(SpecialToken));
+    if (!t->special) {
+        goto fail_tokenizer;
+    }
+
+    for (size_t i = 0; i < 4; i++) {
+        int len;
+        fread(&len, sizeof(int), 1, file);
+        char* special = calloc(len + 1, sizeof(char));
+        fread(special, sizeof(char), len, file);
+        special[len] = 0;
+        // fingers crossed!
+        ((char**) &t->special->bos)[i] = special;
+    }
+
+    // scores (HashMap)
+    int score_count;
+    fread(&score_count, sizeof(int), 1, file);
+
+    t->scores = hash_map_create(score_count, HASH_STR);
+    if (!t->scores) {
+        goto fail_tokenizer;
+    }
+
+    for (int i = 0; i < score_count; i++) {
+        // read token
+        int k_len;
+        fread(&k_len, sizeof(int), 1, file);
+        char* token = calloc(k_len + 1, sizeof(char));
+        fread(token, sizeof(char), k_len, file);
+        token[k_len] = 0;
+
+        // read score
+        float v;
+        fread(&v, sizeof(float), 1, file);
+        float* score = malloc(sizeof(float));
+        *score = v;
+
+        // map token to score
+        hash_map_insert(t->scores, token, score);
+    }
+
+    // token-to-id (HashMap)
+    int token_to_id_count;
+    fread(&token_to_id_count, sizeof(int), 1, file);
+
+    t->token_to_id = hash_map_create(token_to_id_count, HASH_STR);
+    if (!t->token_to_id) {
+        goto fail_tokenizer;
+    }
+
+    for (int i = 0; i < token_to_id_count; i++) {
+        // read token
+        int k_len;
+        fread(&k_len, sizeof(int), 1, file);
+        char* token = calloc(k_len + 1, sizeof(char));
+        fread(token, sizeof(char), k_len, file);
+        token[k_len] = 0;
+
+        // read id
+        int v;
+        fread(&v, sizeof(int), 1, file);
+        int* id = malloc(sizeof(int));
+        *id = v;
+
+        // map token to id
+        hash_map_insert(t->scores, token, id);
+    }
+
+    // id-to-tokens (char**)
+    fread(&t->vocab_size, sizeof(int), 1, file);
+
+    t->id_to_token = calloc(t->vocab_size, sizeof(char*));
+    if (!t->id_to_token) {
+        goto fail_tokenizer;
+    }
+
+    for (int i = 0; i < t->vocab_size; i++) {
+        // read token
+        int k_len;
+        fread(&k_len, sizeof(int), 1, file);
+        char* k = calloc(k_len + 1, sizeof(char));
+        fread(k, sizeof(char), k_len, file);
+        k[k_len] = 0;
+
+        // map id to token
+        t->id_to_token[i] = k;
+    }
+
+    fclose(file);
+    return t;
+
+fail_tokenizer:
+    tokenizer_free(t);
+fail_file:
+    fclose(file);
+    return NULL;
+}
+
+/** @} */
+
+/**
+ * @section Tokenizer encoder and decoder
+ * @{
+ */
+
+int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_eos) {
+    if (!t || !text) {
+        return NULL;  // invalid input
+    }
+
+    // Count ids
+    *n = 0;
+    size_t id_count = 0;
+
+    // Count number of bytes in text
+    size_t text_len = strlen(text);
+
+    // Allocate space to base ids
+    int* ids = calloc(text_len, sizeof(int));
+    if (!ids) {
+        return NULL;
+    }
+
+    // encode input text to ids
+    for (size_t i = 0; i < text_len; i++) {
+        char token[2] = {text[i], 0};
+
+        int* id = hash_map_search(t->token_to_id, token);
+        if (!id) {
+            int* unk_id = NULL;
+            if (t->special && t->special->unk) {
+                unk_id = hash_map_search(t->token_to_id, t->special->unk);
+            }
+            ids[id_count++] = (unk_id) ? *unk_id : -1;  // if -1, unk is not mapped!
+        } else {
+            ids[id_count++] = *id;
+        }
+    }
+
+    // greed merges using scores
+    while (true) {
+        float best_score = -INFINITY;
+        int best_id = -1;
+
+        // scan for best merge pair
+        for (size_t i = 0; i < id_count - 1; i++) {
+            // get ids
+            int id_a = ids[i];  // current
+            int id_b = ids[i + 1];  // next
+
+            // token is unknown and there is no sub
+            if (id_a == -1 || id_b == -1) {
+                continue;
+            }
+
+            // probe for a valid merge pair
+            char* a = t->id_to_token[id_a];
+            char* b = t->id_to_token[id_b];
+            char* merge = string_concat(a, b);
+
+            // probe for a valid score
+            float* score = hash_map_search(t->scores, merge);
+            free(merge);  // clean up
+            if (score && *score > best_score) {
+                best_score = *score;
+                best_id = i;
+            }
+        }
+
+        if (best_id == -1) {
+            break;  // no merges left
+        }
+
+        // get token ids
+        int id_a = ids[best_id];  // current
+        int id_b = ids[best_id + 1];  // next
+
+        // token is unknown and there is no sub
+        if (id_a == -1 || id_b == -1) {
+            continue;
+        }
+
+        // merge tokens
+        char* a = t->id_to_token[id_a];  // current
+        char* b = t->id_to_token[id_b];  // next
+        char* merge = string_concat(a, b);  // a + b
+
+        // get best merge id
+        int* merge_id = hash_map_search(t->token_to_id, merge);
+        free(merge);  // clean up
+        if (!merge_id) {
+            break;
+        }
+
+        // update current best merge id
+        ids[best_id] = *merge_id;
+        // remove next best merge id
+        memmove(&ids[best_id + 1], &ids[best_id + 2], (id_count - best_id - 2) * sizeof(int));
+        // update count for removing next merge id
+        id_count--;
+    }
+
+    // insert special bos if enabled and present
+    if (add_bos && t->special && t->special->bos) {
+        int* id = hash_map_search(t->token_to_id, t->special->bos);
+        for (size_t i = id_count; i > 0; --i) {
+            ids[i] = ids[i - 1];  // shift everything upward
+        }
+        ids[0] = id ? *id : -1;  // add bos
+        id_count++;
+    }
+
+    // append special eos if enabled and present
+    if (add_eos && t->special && t->special->eos) {
+        int* id = hash_map_search(t->token_to_id, t->special->eos);
+        ids[id_count] = id ? *id : -1;
+        id_count++;
+    }
+
+    /// @todo Shrink the id buffer to fit id count.
+    /// Number of ids will always be less than the number of input bytes.
+    if (id_count < text_len) {
+        ids = realloc(ids, id_count * sizeof(int));
+    }
+
+    // Update final id count
+    *n = id_count;
+
+    // return predicted tokens
+    return ids;
+}
+
+char* tokenizer_decode(Tokenizer* t, int* ids, size_t id_count) {
+    if (!t || !ids || id_count == 0) {
+        return NULL;
+    }
+
+    size_t text_count = 0;
+    char** text = calloc(1, sizeof(char*));
+    for (size_t i = 0; i < id_count; i++) {
+        char* token = t->id_to_token[ids[i]];
+        text = string_append(strdup(token), text, &text_count);
+    }
+
+    char* result = string_join(text, text_count, "");
+    string_split_free(text, text_count);
+    if (!result) {
+        return NULL;
+    }
+
+    return result;
+}
+
+/** @} */
