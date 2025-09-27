@@ -113,12 +113,14 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Load the tokenizer model
     Tokenizer* t = tokenizer_load(cli.model_path);
     if (!t) {
         cli_free(&cli);
         return EXIT_FAILURE;
     }
 
+    // Print debug info if enabled
     if (cli.verbose) {
         printf("vocab size: %d\n", t->vocab_size);
         printf("model:\n");
@@ -127,9 +129,11 @@ int main(int argc, const char* argv[]) {
         }
     }
 
+    // Print prompt
     printf("Prompt:\n");
     printf("%s\n\n", cli.prompt);
 
+    // Text to ids
     printf("Encoding:\n");
     int id_count;
     int* ids = tokenizer_encode(t, cli.prompt, &id_count, cli.add_bos, cli.add_eos);
@@ -143,6 +147,7 @@ int main(int argc, const char* argv[]) {
     }
     printf("\n\n");
 
+    // Ids to text
     printf("Decoding:\n");
     char* text = tokenizer_decode(t, ids, id_count);
     if (!text) {
