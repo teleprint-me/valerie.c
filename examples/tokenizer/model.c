@@ -432,17 +432,12 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
     fwrite(&version, sizeof(int), 1, file);
 
     // special tokens
-    char* special[] = {
-        t->special->bos,
-        t->special->eos,
-        t->special->pad,
-        t->special->unk,
-    };
-
     for (size_t i = 0; i < 4; i++) {
-        int len = strlen(special[i]);
+        // fingers crossed!
+        char* special = ((char**) &t->special->bos)[i];
+        int len = strlen(special);
         fwrite(&len, sizeof(int), 1, file);
-        fwrite(special[i], sizeof(char), len, file);
+        fwrite(special, sizeof(char), len, file);
     }
 
     // scores (HashMap)
@@ -529,13 +524,13 @@ Tokenizer* tokenizer_load(const char* path) {
         goto fail_tokenizer;
     }
 
-    // fingers crossed!
     for (size_t i = 0; i < 4; i++) {
         int len;
         fread(&len, sizeof(int), 1, file);
         char* special = calloc(len + 1, sizeof(char));
         fread(special, sizeof(char), len, file);
         special[len] = 0;
+        // fingers crossed!
         ((char**) &t->special->bos)[i] = special;
     }
 
