@@ -611,7 +611,7 @@ Tokenizer* tokenizer_load(const char* path) {
         // read token
         int k_len;
         fread(&k_len, sizeof(int), 1, file);
-        char* k = calloc(k_len, sizeof(char));
+        char* k = calloc(k_len + 1, sizeof(char));
         fread(k, sizeof(char), k_len, file);
         k[k_len] = 0;
 
