@@ -21,6 +21,7 @@
 #define LEHMER_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * @def _Thread_local
@@ -106,5 +107,17 @@ double lehmer_double(void);
  * @return A single-precision float in the range [0.0, 1.0)
  */
 float lehmer_float(void);
+
+/**
+ * @brief Generate a Xavier-Bengio scaled uniform distribution [-a, a].
+ *
+ * Uses the formula: a = sqrt(6 / (in + out))
+ * Output is uniform in [-a, a]. Suitable for ML weight initialization.
+ *
+ * @param in  Input dimension (fan-in)
+ * @param out Output dimension (fan-out)
+ * @return 32-bit float uniform in [-a, a]
+ */
+float lehmer_xavier(size_t in, size_t out);
 
 #endif  // LEHMER_H

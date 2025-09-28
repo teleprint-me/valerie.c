@@ -17,6 +17,8 @@
  * @warning Not suitable for cryptographic purposes.
  */
 
+#include <stddef.h>
+#include <math.h>
 #include "core/lehmer.h"
 
 /**
@@ -72,4 +74,10 @@ double lehmer_double(void) {
 
 float lehmer_float(void) {
     return (float) lehmer_double();
+}
+
+float lehmer_xavier(size_t in, size_t out) {
+    float a = sqrtf(6.0f / (in + out));
+    float ud = 2.0f * lehmer_float() - 1.0f;
+    return ud * a;
 }
