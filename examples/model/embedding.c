@@ -32,6 +32,26 @@ float* one_hot_encode(size_t label, size_t n_classes) {
 /** @} */
 
 /**
+ * @section Cross-entropy
+ * @{
+ */
+
+// y_pred: predicted probabilities (softmax output), shape (n,)
+// y_true: target one-hot vector, shape (n,)
+// n: number of classes
+float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
+    float loss = 0.0f;
+    for (size_t i = 0; i < n; ++i) {
+        // Add epsilon for numerical stability
+        float p = fmaxf(y_pred[i], 1e-8f);
+        loss -= y_true[i] * logf(p);
+    }
+    return loss / n;  // Equivalent to log(softmax(x, n))
+}
+
+/** @} */
+
+/**
  * @section Softmax
  * @{
  */
