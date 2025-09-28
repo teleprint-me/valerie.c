@@ -17,6 +17,67 @@
 #include "tokenizer/model.h"
 
 /**
+ * @section Matrix ops
+ * @{
+ */
+
+// Create a row-major matrix
+float* matnew(size_t rows, size_t cols) {
+    size_t dim = rows * cols;
+    float* mat = calloc(dim, sizeof(float));
+    if (!mat) {
+        return NULL;
+    }
+    memset(mat, 0, dim);
+    return mat;
+}
+
+// Row-major matrix index
+size_t matidx(size_t i, size_t j, size_t dim) {
+    return i * dim + j;
+}
+
+// Row-major matrix transposition (rows x cols) into (cols x rows)
+void matT(const float* X, float* X_T, size_t rows, size_t cols) {
+#pragma omp parallel for
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < cols; j++) {
+            X_T[j * rows + i] = X[i * cols + j];
+        }
+    }
+}
+
+// Row-major matrix multiplication (y = Wx + b)
+void matmul(float* y, float* W, float* x, float* b, size_t n_out, size_t n_in) {
+#pragma omp parallel for
+    for (size_t i = 0; i < n_out; i++) {
+        float sum = 0.0f;
+        for (size_t j = 0; j < n_in; j++) {
+            sum += W[i * n_in + j] * x[j];
+        }
+        y[i] = sum + b[i];
+    }
+}
+
+/** @} */
+
+/**
+ * @section One-hot encoder
+ * @{
+ */
+
+float* one_hot_encode(size_t label, size_t n_classes) {
+    float* vector = calloc(n_classes, sizeof(float));
+    memset(vector, 0, n_classes);
+    if (label >= 0 && label < n_classes) {
+        vector[label] = 1.0f;
+    }
+    return vector;
+}
+
+/** @} */
+
+/**
  * @section Embeddings
  * @{
  */
@@ -26,9 +87,7 @@
  * ℝ: Set of Real Numbers
  * X: Input embedding matrix
  * N: Number of embeddings
- * D: Vector of length d
- * Ω_e: Vocab embedding matrix (maps id to one-hot vecs)
- *      Ω is a learned parameter.
+ * D: Vector length
  */
 float* embeddings_create(size_t vocab_size, size_t vector_len) {
     size_t embed_dim = vocab_size * vector_len;
@@ -45,6 +104,22 @@ float* embeddings_create(size_t vocab_size, size_t vector_len) {
 
     return embeddings;
 }
+
+/**
+ * Ω_e ∈ ℝ^(D × |V|)
+ * Ω_e: Vocab embedding matrix (maps id to one-hot vecs)
+ *      Ω is a learned parameter.
+ * D: Vector length
+ * |V|: Mapped word embedding
+ */
+
+/**
+ *
+ * T ∈ ℝ^(|V| × N)
+ * |V|: Vocab size
+ * N: Number of input tokens (aka seq len)
+ *    where nth column corresponds to nth token and is a |V| × 1 one-hot vector
+ */
 
 /** @} */
 
