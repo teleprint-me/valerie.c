@@ -20,6 +20,7 @@
 #ifndef LEHMER_H
 #define LEHMER_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -112,12 +113,35 @@ float lehmer_float(void);
  * @brief Generate a Xavier-Bengio scaled uniform distribution [-a, a].
  *
  * Uses the formula: a = sqrt(6 / (in + out))
- * Output is uniform in [-a, a]. Suitable for ML weight initialization.
+ * Output is uniform in [-a, a].
  *
  * @param in  Input dimension (fan-in)
  * @param out Output dimension (fan-out)
  * @return 32-bit float uniform in [-a, a]
  */
 float lehmer_xavier(size_t in, size_t out);
+
+/**
+ * @brief Generate a Xavier-Bengio scaled normal distribution using Box-Muller transform.
+ *
+ * Standard normal (mean=0, variance=1), scaled by sqrt(2 / (in + out)).
+ *
+ * @param in  Input dimension (fan-in)
+ * @param out Output dimension (fan-out)
+ * @return 32-bit float from N(0, stddev^2)
+ */
+float lehmer_muller(size_t in, size_t out);
+
+/**
+ * @brief In-place Fisher–Yates shuffle of an array.
+ *
+ * Shuffles a buffer of @p n elements, each of size @p size bytes.
+ *
+ * @param base Pointer to buffer to shuffle
+ * @param n    Number of elements in buffer
+ * @param size Size in bytes of each element
+ * @return true on success, false on failure
+ */
+bool lehmer_yates(void* base, size_t n, size_t size);
 
 #endif  // LEHMER_H

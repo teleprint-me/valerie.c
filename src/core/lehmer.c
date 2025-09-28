@@ -17,8 +17,14 @@
  * @warning Not suitable for cryptographic purposes.
  */
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
+
+#include <string.h>
 #include <math.h>
+
 #include "core/lehmer.h"
 
 /**
@@ -76,8 +82,48 @@ float lehmer_float(void) {
     return (float) lehmer_double();
 }
 
+// Xavier/Glorot uniform
 float lehmer_xavier(size_t in, size_t out) {
     float a = sqrtf(6.0f / (in + out));
     float ud = 2.0f * lehmer_float() - 1.0f;
     return ud * a;
+}
+
+// Box-Muller normal
+float xorshift_muller(size_t in, size_t out) {
+    float u1 = lehmer_float();
+    if (u1 < 1e-7f) {
+        u1 = 1e-7f;  // avoid 0
+    }
+    float u2 = lehmer_float();
+    if (u2 < 1e-7f) {
+        u2 = 1e-7f;  // avoid 0
+    }
+    float z0 = sqrtf(-2.0f * logf(u1)) * cosf(2.0f * (float) M_PI * u2);
+    float stddev = sqrtf(2.0f / (in + out));
+    return z0 * stddev;
+}
+
+// Fisher–Yates shuffle
+bool xorshift_yates(void* base, size_t n, size_t size) {
+    if (!base || n < 2) {
+        return false;  // redundant
+    }
+
+    uint8_t* arr = (uint8_t*) base;
+    uint8_t* tmp = (uint8_t*) malloc(size);
+    if (!tmp) {
+        return false;  // malloc failed
+    }
+
+    for (size_t i = n - 1; i > 0; i--) {
+        size_t j = lehmer_int32() % (i + 1);
+        /// @note use memmove for safe overlapping memory
+        memmove(tmp, arr + i * size, size);
+        memmove(arr + i * size, arr + j * size, size);
+        memmove(arr + j * size, tmp, size);
+    }
+
+    free(tmp);
+    return true;
 }
