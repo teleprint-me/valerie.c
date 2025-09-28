@@ -83,8 +83,8 @@ float* one_hot_encode(size_t label, size_t n_classes) {
  * X ∈ ℝ^(D × N)
  * ℝ: Set of Real Numbers
  * X: Input embedding matrix
- * N: Number of embeddings
- * D: Vector length
+ * N: Number of embeddings (vocab size)
+ * D: Vector length (embed dim)
  */
 float* embeddings_create(size_t vocab_size, size_t vector_len) {
     size_t embed_dim = vocab_size * vector_len;
