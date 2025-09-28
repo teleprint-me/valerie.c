@@ -45,7 +45,8 @@ add_library(valerie SHARED
     "src/core/map.c"         # Hash map with linear probing (key-value store)
     "src/core/set.c"         # Hash set (unique keys, set algebra)
     "src/core/page.c"        # Hash page (table style memory allocator)
-    "src/core/sort.c"
+    "src/core/lehmer.c"      # Lehmer linear congruential generator
+    "src/core/sort.c"        # Heap sort routines
     "src/core/compare.c"     # Numeric and floating-point comparisons
     "src/core/type.c"        # Numeric data types (precision metadata)
 
