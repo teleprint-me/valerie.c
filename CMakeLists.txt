@@ -18,8 +18,8 @@ set(SANITIZE "-fsanitize=address,undefined -fno-omit-frame-pointer")
 set(ANALYSIS "-Wanalyzer-double-free -Wanalyzer-file-leak -Wanalyzer-malloc-leak -Wanalyzer-null-dereference -Wanalyzer-out-of-bounds -Wanalyzer-va-list-leak")
 set(COMMON "-D_FILE_OFFSET_BITS=64 ${OpenMP_C_FLAGS} ${WARN}")
 
-set(DEBUG "${COMMON} -g3 ${EXTRA_WARN} ${SANITIZE} ${ANALYSIS}")
-set(RELEASE "${COMMON} -Ofast -march=native")
+set(DEBUG "${COMMON} -fopenmp -g3 ${EXTRA_WARN} ${SANITIZE} ${ANALYSIS}")
+set(RELEASE "${COMMON} -fopenmp -Ofast -march=native")
 
 find_package(OpenMP REQUIRED)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
