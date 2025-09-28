@@ -81,30 +81,30 @@ extern thread_local LehmerState lehmer_state;
  * @param seed A positive integer seed (must be in [1, LEHMER_MODULUS-1]).
  *             If zero or negative, `LEHMER_SEED` will be used.
  */
-void lehmer_initialize(int64_t seed);
+void lehmer_init(int64_t seed);
 
 /**
  * @brief Generate the next random 64-bit integer in the sequence
  * @return Random int64_t in the range [1, LEHMER_MODULUS - 1]
  */
-int64_t lehmer_generate_int64(void);
+int64_t lehmer_int64(void);
 
 /**
  * @brief Generate the next random 32-bit integer in the sequence
  * @return Random int32_t in the range [1, LEHMER_MODULUS - 1] truncated
  */
-int32_t lehmer_generate_int32(void);
+int32_t lehmer_int32(void);
 
 /**
  * @brief Generate a normalized random number in [0.0, 1.0)
  * @return A double-precision float in the range [0.0, 1.0)
  */
-double lehmer_generate_double(void);
+double lehmer_double(void);
 
 /**
  * @brief Generate a normalized random number in [0.0, 1.0)
  * @return A single-precision float in the range [0.0, 1.0)
  */
-float lehmer_generate_float(void);
+float lehmer_float(void);
 
 #endif  // LEHMER_H

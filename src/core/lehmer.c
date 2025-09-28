@@ -32,7 +32,7 @@ thread_local LehmerState lehmer_state = {
  * Private Functions
  */
 
-static inline void lehmer_modulo(void) {
+static inline void lehmer_mod(void) {
     const int64_t q = LEHMER_MODULUS / LEHMER_MULTIPLIER;
     const int64_t r = LEHMER_MODULUS % LEHMER_MULTIPLIER;
 
@@ -43,7 +43,7 @@ static inline void lehmer_modulo(void) {
     lehmer_state.seed = (t > 0) ? t : t + LEHMER_MODULUS;
 }
 
-static inline void lehmer_normalize(void) {
+static inline void lehmer_norm(void) {
     lehmer_state.norm = (double) lehmer_state.seed / (double) LEHMER_MODULUS;
 }
 
@@ -51,25 +51,25 @@ static inline void lehmer_normalize(void) {
  * Public Functions
  */
 
-void lehmer_initialize(int64_t seed) {
+void lehmer_init(int64_t seed) {
     lehmer_state.seed = (seed > 0) ? seed : LEHMER_SEED;
 }
 
-int64_t lehmer_generate_int64(void) {
-    lehmer_modulo();
+int64_t lehmer_int64(void) {
+    lehmer_mod();
     return lehmer_state.seed;
 }
 
-int32_t lehmer_generate_int32(void) {
-    return (int32_t) lehmer_generate_int64();
+int32_t lehmer_int32(void) {
+    return (int32_t) lehmer_int64();
 }
 
-double lehmer_generate_double(void) {
-    lehmer_modulo();
-    lehmer_normalize();
+double lehmer_double(void) {
+    lehmer_mod();
+    lehmer_norm();
     return lehmer_state.norm;
 }
 
-float lehmer_generate_float(void) {
-    return (float) lehmer_generate_double();
+float lehmer_float(void) {
+    return (float) lehmer_double();
 }
