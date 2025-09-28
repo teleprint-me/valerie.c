@@ -62,6 +62,7 @@ set(EXAMPLES
     "examples"
     "examples/core"
     "examples/tokenizer"
+    "examples/model"
 )
 
 foreach (example IN LISTS EXAMPLES)
