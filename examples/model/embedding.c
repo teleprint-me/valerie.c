@@ -127,7 +127,11 @@ void embeddings_lookup(
  * N: Number of input tokens (aka seq len)
  *    where nth column corresponds to nth token and is a |V| × 1 one-hot vector
  */
+/// @todo
 
+/**
+ * Log embeddings table to stdout
+ */
 void embeddings_print(
     const float* e, int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
 ) {
