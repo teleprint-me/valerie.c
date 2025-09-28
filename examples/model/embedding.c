@@ -128,6 +128,18 @@ void embeddings_lookup(
  *    where nth column corresponds to nth token and is a |V| × 1 one-hot vector
  */
 
+void embeddings_print(
+    const float* e, int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
+) {
+    for (size_t i = 0; i < seq_len; ++i) {
+        printf("id %3d (%-8s):", ids[i], id_to_token ? id_to_token[ids[i]] : "");
+        for (size_t d = 0; d < embed_dim; ++d) {
+            printf(" % .4f", (double) e[ids[i] * embed_dim + d]);
+        }
+        printf("\n");
+    }
+}
+
 /** @} */
 
 /**
@@ -249,6 +261,8 @@ int main(int argc, const char* argv[]) {
     if (!embeddings) {
         goto fail_encoder;
     }
+
+    embeddings_print(embeddings, ids, seq_len, embed_dim, t->id_to_token);
 
     // Ids to text
     char* text = tokenizer_decode(t, ids, seq_len);
