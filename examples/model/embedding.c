@@ -17,6 +17,47 @@
 #include "tokenizer/model.h"
 
 /**
+ * @section One-hot encoder
+ * @{
+ */
+
+float* one_hot_encode(size_t label, size_t n_classes) {
+    float* vector = calloc(n_classes, sizeof(float));
+    if (label < n_classes) {
+        vector[label] = 1.0f;
+    }
+    return vector;
+}
+
+/** @} */
+
+/**
+ * @section Softmax
+ * @{
+ */
+
+void softmax(float* x, int n) {
+    float max_score = x[0];
+    for (int i = 1; i < n; i++) {
+        if (x[i] > max_score) {
+            max_score = x[i];
+        }
+    }
+
+    float sum = 0.0f;
+    for (int i = 0; i < n; i++) {
+        x[i] = expf(x[i] - max_score);
+        sum += x[i];
+    }
+
+    for (int i = 0; i < n; i++) {
+        x[i] /= sum;
+    }
+}
+
+/** @} */
+
+/**
  * @section Matrix ops
  * @{
  */
@@ -55,21 +96,6 @@ void matmul(float* y, float* W, float* x, float* b, size_t n_out, size_t n_in) {
         }
         y[i] = sum + b[i];
     }
-}
-
-/** @} */
-
-/**
- * @section One-hot encoder
- * @{
- */
-
-float* one_hot_encode(size_t label, size_t n_classes) {
-    float* vector = calloc(n_classes, sizeof(float));
-    if (label < n_classes) {
-        vector[label] = 1.0f;
-    }
-    return vector;
 }
 
 /** @} */
