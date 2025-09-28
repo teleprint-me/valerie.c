@@ -606,13 +606,13 @@ fail_file:
  * @{
  */
 
-int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_eos) {
+int* tokenizer_encode(Tokenizer* t, char* text, int* seq_len, bool add_bos, bool add_eos) {
     if (!t || !text) {
         return NULL;  // invalid input
     }
 
     // Count ids
-    *n = 0;
+    *seq_len = 0;
     size_t id_count = 0;
 
     // Count number of bytes in text
@@ -727,23 +727,23 @@ int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_e
     }
 
     // Update final id count
-    *n = id_count;
+    *seq_len = id_count;
 
     // return predicted tokens
     return ids;
 }
 
-char* tokenizer_decode(Tokenizer* t, int* ids, size_t id_count) {
-    if (!t || !ids || id_count == 0) {
+char* tokenizer_decode(Tokenizer* t, int* ids, size_t seq_len) {
+    if (!t || !ids || seq_len == 0) {
         return NULL;
     }
 
     size_t text_count = 0;
     char** text = calloc(1, sizeof(char*));
-    for (size_t i = 0; i < id_count; i++) {
+    for (size_t i = 0; i < seq_len; i++) {
         int id = ids[i];
         if (id < 0 || id >= t->vocab_size) {
-            LOG_ERROR("Invalid id at index %zu: %d (id_count=%zu)", i, id, id_count);
+            LOG_ERROR("Invalid id at index %zu: %d (seq_len=%zu)", i, id, seq_len);
             string_split_free(text, text_count);
             return NULL;  // out of bounds!
         }

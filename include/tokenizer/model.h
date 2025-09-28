@@ -127,22 +127,22 @@ Tokenizer* tokenizer_load(const char* path);
  *
  * @param t       Tokenizer to use.
  * @param text    Input string (UTF-8, null-terminated).
- * @param n       Output: number of tokens in result.
+ * @param seq_len Output number of token ids in result.
  * @param add_bos If true, add BOS token at start if defined.
  * @param add_eos If true, add EOS token at end if defined.
  * @return        Newly allocated array of token ids (caller frees), or NULL.
  */
-int* tokenizer_encode(Tokenizer* t, char* text, int* n, bool add_bos, bool add_eos);
+int* tokenizer_encode(Tokenizer* t, char* text, int* seq_len, bool add_bos, bool add_eos);
 
 /**
  * @brief Decode a sequence of token ids into a UTF-8 string.
  *
  * @param t         Tokenizer to use.
  * @param ids       Array of token ids.
- * @param id_count  Number of ids in array.
+ * @param seq_len   Input number of token ids in array.
  * @return          Newly allocated decoded string (caller frees), or NULL.
  */
-char* tokenizer_decode(Tokenizer* t, int* ids, size_t id_count);
+char* tokenizer_decode(Tokenizer* t, int* ids, size_t seq_len);
 
 /** @} */
 
