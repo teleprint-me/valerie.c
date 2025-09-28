@@ -23,12 +23,10 @@
 
 // Create a row-major matrix
 float* matnew(size_t rows, size_t cols) {
-    size_t dim = rows * cols;
-    float* mat = calloc(dim, sizeof(float));
+    float* mat = calloc(rows * cols, sizeof(float));
     if (!mat) {
         return NULL;
     }
-    memset(mat, 0, dim);
     return mat;
 }
 
@@ -68,8 +66,7 @@ void matmul(float* y, float* W, float* x, float* b, size_t n_out, size_t n_in) {
 
 float* one_hot_encode(size_t label, size_t n_classes) {
     float* vector = calloc(n_classes, sizeof(float));
-    memset(vector, 0, n_classes);
-    if (label >= 0 && label < n_classes) {
+    if (label < n_classes) {
         vector[label] = 1.0f;
     }
     return vector;
@@ -110,8 +107,18 @@ float* embeddings_create(size_t vocab_size, size_t vector_len) {
  * Ω_e: Vocab embedding matrix (maps id to one-hot vecs)
  *      Ω is a learned parameter.
  * D: Vector length
- * |V|: Mapped word embedding
+ * V: Mapped word embedding
+ * |V|: Magnitude of the word embedding
  */
+void embeddings_lookup(
+    float* out, const float* e, const int* ids, size_t seq_len, size_t embed_dim
+) {
+    for (size_t i = 0; i < seq_len; i++) {
+        for (size_t d = 0; d < embed_dim; d++) {
+            out[i * embed_dim + d] = e[ids[i] * embed_dim + d];
+        }
+    }
+}
 
 /**
  *
@@ -226,8 +233,8 @@ int main(int argc, const char* argv[]) {
     }
 
     // Text to ids
-    int id_count;
-    int* ids = tokenizer_encode(t, cli.prompt, &id_count, cli.add_bos, cli.add_eos);
+    int seq_len;
+    int* ids = tokenizer_encode(t, cli.prompt, &seq_len, cli.add_bos, cli.add_eos);
     if (!ids) {
         LOG_ERROR("Failed to encode text: %s", cli.prompt);
         goto fail_tokenizer;
@@ -244,7 +251,7 @@ int main(int argc, const char* argv[]) {
     }
 
     // Ids to text
-    char* text = tokenizer_decode(t, ids, id_count);
+    char* text = tokenizer_decode(t, ids, seq_len);
     if (!text) {
         fprintf(stderr, "Failed to decode ids!\n");
     }
