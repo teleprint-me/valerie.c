@@ -2,12 +2,17 @@
  * @file examples/model/embedding.c
  */
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
+#include <math.h>
+
 #include "core/logger.h"
 #include "core/path.h"
+#include "core/lehmer.h"
 
 #include "tokenizer/model.h"
 
@@ -17,6 +22,7 @@ struct CLIParams {
 
     char* model_path;
     char* prompt;
+    int64_t seed;
     bool add_bos;
     bool add_eos;
     bool verbose;
@@ -26,6 +32,7 @@ void cli_usage(const char* prog) {
     printf("Usage: %s --model S [--verbose] [--help]\n", prog);
     printf("  --model    -m  Path to tokenizer model file (required)\n");
     printf("  --prompt   -p  Input text to encode and decode (required)\n");
+    printf("  --seed     -s  Linear congruential generator seed\n");
     printf("  --add-bos  -b  Enable bos marker\n");
     printf("  --add-eos  -e  Enable eos marker\n");
     printf("  --verbose  -v  Enable debug output\n");
@@ -49,6 +56,7 @@ void cli_parse(struct CLIParams* cli) {
     // Set defaults
     cli->model_path = NULL;
     cli->prompt = NULL;
+    cli->seed = 1337;
     cli->add_bos = false;
     cli->add_eos = false;
     cli->verbose = false;
@@ -58,6 +66,8 @@ void cli_parse(struct CLIParams* cli) {
             cli->model_path = strdup(cli->argv[++i]);
         } else if (cli_is_arg(cli->argv[i], "--prompt", "-p", cli->argc, i)) {
             cli->prompt = strdup(cli->argv[++i]);
+        } else if (cli_is_arg(cli->argv[i], "--seed", "-s", cli->argc, i)) {
+            cli->seed = atol(cli->argv[++i]);
         } else if (cli_is_flag(cli->argv[i], "--add-bos", "-b")) {
             cli->add_bos = true;
         } else if (cli_is_flag(cli->argv[i], "--add-bos", "-b")) {
@@ -109,10 +119,21 @@ int main(int argc, const char* argv[]) {
         goto fail_tokenizer;
     }
 
+    // initialize the linear congruential generator
+    lehmer_init(cli.seed);
+
+    // create a toy embedding table
     size_t embed_dim = 16;
-    float* embeddings = calloc(t->vocab_size * embed_dim, sizeof(float));
+    size_t table_dim = t->vocab_size * embed_dim;
+    float* embeddings = calloc(table_dim, sizeof(float));
     if (!embeddings) {
         goto fail_encoder;
+    }
+
+    // initialize the embedding table
+    float scale = 1.0f / sqrtf(embed_dim);
+    for (size_t i = 0; i < table_dim; i++) {
+        embeddings[i] = lehmer_float() * 2 * scale - scale;
     }
 
     // Ids to text
