@@ -6,11 +6,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "core/logger.h"
 #include "core/path.h"
 
 #include "tokenizer/model.h"
-
-
 
 struct CLIParams {
     const char** argv;
@@ -91,24 +90,29 @@ int main(int argc, const char* argv[]) {
 
     // Validate input file
     if (!path_is_file(cli.model_path)) {
-        fprintf(stderr, "Error: Model file does not exist: %s\n", cli.model_path);
-        cli_free(&cli);
-        return EXIT_FAILURE;
+        LOG_ERROR("Model file does not exist: %s", cli.model_path);
+        goto fail_cli;
     }
 
     // Load the tokenizer model
     Tokenizer* t = tokenizer_load(cli.model_path);
     if (!t) {
-        cli_free(&cli);
-        return EXIT_FAILURE;
+        LOG_ERROR("Failed to load tokenizer model.");
+        goto fail_cli;
     }
 
     // Text to ids
     int id_count;
     int* ids = tokenizer_encode(t, cli.prompt, &id_count, cli.add_bos, cli.add_eos);
     if (!ids) {
-        fprintf(stderr, "Failed to encode text!\n");
-        return EXIT_FAILURE;
+        LOG_ERROR("Failed to encode text: %s", cli.prompt);
+        goto fail_tokenizer;
+    }
+
+    size_t embed_dim = 16;
+    float* embeddings = calloc(t->vocab_size * embed_dim, sizeof(float));
+    if (!embeddings) {
+        goto fail_encoder;
     }
 
     // Ids to text
@@ -120,8 +124,17 @@ int main(int argc, const char* argv[]) {
     free(ids);
 
     // Clean up
+    free(embeddings);
     tokenizer_free(t);
     cli_free(&cli);
 
     return EXIT_SUCCESS;
+
+fail_encoder:
+    free(ids);
+fail_tokenizer:
+    tokenizer_free(t);
+fail_cli:
+    cli_free(&cli);
+    return EXIT_FAILURE;
 }
