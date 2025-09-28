@@ -16,6 +16,43 @@
 
 #include "tokenizer/model.h"
 
+/**
+ * @section Embeddings
+ * @{
+ */
+
+/**
+ * X ∈ ℝ^(D × N)
+ * ℝ: Set of Real Numbers
+ * X: Input embedding matrix
+ * N: Number of embeddings
+ * D: Vector of length d
+ * Ω_e: Vocab embedding matrix (maps id to one-hot vecs)
+ *      Ω is a learned parameter.
+ */
+float* embeddings_create(size_t vocab_size, size_t vector_len) {
+    size_t embed_dim = vocab_size * vector_len;
+    float* embeddings = calloc(embed_dim, sizeof(float));
+    if (!embeddings) {
+        return NULL;
+    }
+
+    // initialize the embedding table
+    for (size_t i = 0; i < embed_dim; i++) {
+        // xavier(fan_in, fan_out)
+        embeddings[i] = lehmer_xavier(vocab_size, vector_len);
+    }
+
+    return embeddings;
+}
+
+/** @} */
+
+/**
+ * @section CLI
+ * @{
+ */
+
 struct CLIParams {
     const char** argv;
     int argc;
@@ -94,6 +131,8 @@ void cli_parse(struct CLIParams* cli) {
     }
 }
 
+/** @} */
+
 int main(int argc, const char* argv[]) {
     struct CLIParams cli = {.argc = argc, .argv = argv};
     cli_parse(&cli);
@@ -124,16 +163,9 @@ int main(int argc, const char* argv[]) {
 
     // create a toy embedding table
     size_t embed_dim = 16;
-    size_t table_dim = t->vocab_size * embed_dim;
-    float* embeddings = calloc(table_dim, sizeof(float));
+    float* embeddings = embeddings_create(t->vocab_size, embed_dim);
     if (!embeddings) {
         goto fail_encoder;
-    }
-
-    // initialize the embedding table
-    for (size_t i = 0; i < table_dim; i++) {
-        // xavier(in, out)
-        embeddings[i] = lehmer_xavier(t->vocab_size, embed_dim);
     }
 
     // Ids to text
