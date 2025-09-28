@@ -131,9 +131,9 @@ int main(int argc, const char* argv[]) {
     }
 
     // initialize the embedding table
-    float scale = 1.0f / sqrtf(embed_dim);
     for (size_t i = 0; i < table_dim; i++) {
-        embeddings[i] = lehmer_float() * 2 * scale - scale;
+        // xavier(in, out)
+        embeddings[i] = lehmer_xavier(t->vocab_size, embed_dim);
     }
 
     // Ids to text
