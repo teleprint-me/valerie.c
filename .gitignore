@@ -4,7 +4,10 @@ papers/
 data/
 corpus/
 docs/
-./models/
+
+# Files
+*.model
+*.bin
 
 #
 # C ignore rules
