@@ -86,8 +86,8 @@ void cli_parse(struct CLIParams* cli) {
         }
     }
 
-    if (!cli->model_path) {
-        fprintf(stderr, "Error: --input and --output are required.\n");
+    if (!cli->model_path || !cli->prompt) {
+        fprintf(stderr, "Error: --model and --prompt are required.\n");
         cli_usage(cli->argv[0]);
         cli_free(cli);
         exit(EXIT_FAILURE);
