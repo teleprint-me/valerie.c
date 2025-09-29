@@ -28,6 +28,15 @@
  * activation function turns into a scaled linear function. When β → ∞, the Swish activation
  * function approaches the ReLU activation function.
  *
+ * # Mathematical Reference:
+ * - SwiGLU(x) = Swish(β)(W * x + b) ⊙ (V * x + c)
+ * - Swish(β)(x) = x / (1 + e^(-βx))
+ * - Derivative: d/dx Swish(β)(x) = σ(βx) + xβσ(βx)(1 - σ(βx))
+ *   where σ(z) = 1 / (1 + exp(-z))
+ * - SwiGLU partial derivatives:
+ *     - d/d(a): Swish'(a, β) * g
+ *     - d/d(g): Swish(a, β)
+ *
  * References:
  * - https://en.wikipedia.org/wiki/Activation_function
  * - https://en.wikipedia.org/wiki/Sigmoid_function
