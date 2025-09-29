@@ -111,8 +111,28 @@ float silu_prime(float x) {
     return a * (1 + (x * (1 - a)));
 }
 
-/// @brief SwiGLU(x) = silu(W₁x) ⊙ W₃x
-/// https://jcarlosroldan.com/post/348
+/**
+ * SwiGLU(x) = Swish(β)(W * x + b) ⊙ (V * x + c)
+ * A variant of the GLU activation function using the Swish activation function.
+ *
+ * @param x (batch × dim) - the input tensor
+ * @param W (activation) - weight tensor for the "activation" branch
+ * @param V (gate) - weight tensor for the "gate" branch
+ * @param b (activation) - bias tensor for the "activation" branch
+ * @param c (gate) - bias tensor for the "gate" branch
+ * @param beta (scalar) - a scaling factor for the Swish activation function
+ * @return SwiGLU(x)
+ *
+ * The SwiGLU activation function is a combination of two linear branches, one for the activation
+ * and one for the gate, multiplied element-wise (⊙). The activation branch uses the Swish
+ * activation function, which is defined as Swish(β)(x) = x / (1 + e^(-βx)). The gate branch uses
+ * the standard sigmoid activation function (σ(x)). When β = 1, the Swish activation function is
+ * equivalent to the Sigmoid Linear Unit (SiLU) activation function. When β = 0, the Swish
+ * activation function turns into a scaled linear function. When β → ∞, the Swish activation
+ * function approaches the ReLU activation function. References:
+ * - https://jcarlosroldan.com/post/348
+ * - https://arxiv.org/abs/2002.05202
+ */
 float swiglu(float x1, float x3) {
     return silu(x1) * x3;
 }
@@ -125,6 +145,21 @@ float swiglu_prime_x1(float x1, float x3) {
 // Derivative with respect to x3
 float swiglu_prime_x3(float x1) {
     return silu_prime(x1);
+}
+
+/** @} */
+
+/**
+ * @section Vector ops
+ * @{
+ */
+
+float vec_dot(float* a, float* b, size_t n) {
+    float sum = 0.0f;
+    for (size_t i = 0; i < n; i++) {
+        sum += a[i] * b[i];
+    }
+    return sum;
 }
 
 /** @} */
