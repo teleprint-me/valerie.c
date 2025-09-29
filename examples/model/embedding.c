@@ -199,11 +199,17 @@ void mat_sgd(
  */
 
 /**
- * X ∈ ℝ^(D × N)
- * ℝ: Set of Real Numbers
- * X: Input embedding matrix
- * N: Number of embeddings (vocab size)
- * D: Vector length (embed dim)
+ * @brief Create an embedding table
+ *
+ * Ω_e ∈ ℝ^(|V| × D)
+ * where:
+ *    Ω : Learned parameter
+ *    e : Embedding matrix
+ *   |V|: Vocab size (rows)
+ *    D : Embedding dimension (cols)
+ *
+ * @return A xavier initialized embedding matrix of shape (V, D)
+ * @note Row-major layout: embeddings[v * D + d]
  */
 float* embeddings_create(size_t vocab_size, size_t embed_dim) {
     // matrix with shape (vocab_size, embed_dim)
