@@ -325,7 +325,7 @@ void cli_parse(struct CLIParams* cli) {
             cli->seed = atol(cli->argv[++i]);
         } else if (cli_is_flag(cli->argv[i], "--add-bos", "-b")) {
             cli->add_bos = true;
-        } else if (cli_is_flag(cli->argv[i], "--add-bos", "-b")) {
+        } else if (cli_is_flag(cli->argv[i], "--add-eos", "-e")) {
             cli->add_eos = true;
         } else if (cli_is_flag(cli->argv[i], "--verbose", "-v")) {
             cli->verbose = true;
