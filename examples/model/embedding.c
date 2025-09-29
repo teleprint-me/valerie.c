@@ -265,13 +265,15 @@ void embeddings_lookup(
 void embeddings_print(
     const float* E, int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
 ) {
-    for (size_t i = 0; i < seq_len; ++i) {
+    printf("Embeddings:\n");
+    for (size_t i = 0; i < seq_len; i++) {
         printf("id %3d (%-8s):", ids[i], id_to_token ? id_to_token[ids[i]] : "");
-        for (size_t d = 0; d < embed_dim; ++d) {
+        for (size_t d = 0; d < embed_dim; d++) {
             printf(" % .4f", (double) E[ids[i] * embed_dim + d]);
         }
         printf("\n");
     }
+    printf("\n");
 }
 
 /** @} */
@@ -378,7 +380,7 @@ int main(int argc, const char* argv[]) {
         goto fail_cli;
     }
 
-    // Text to ids
+    // Encode text to ids
     int seq_len;
     int* ids = tokenizer_encode(t, cli.prompt, &seq_len, cli.add_bos, cli.add_eos);
     if (!ids) {
@@ -386,17 +388,36 @@ int main(int argc, const char* argv[]) {
         goto fail_tokenizer;
     }
 
-    // initialize the linear congruential generator
+    // Initialize the linear congruential generator
     lehmer_init(cli.seed);
 
-    // create a toy embedding table
+    // Create embedding table E ∈ ℝ^(|V| × D)
     size_t embed_dim = 16;
-    float* embeddings = embeddings_create(t->vocab_size, embed_dim);
-    if (!embeddings) {
+    float* E = embeddings_create(t->vocab_size, embed_dim);
+    if (!E) {
         goto fail_encoder;
     }
 
-    embeddings_print(embeddings, ids, seq_len, embed_dim, t->id_to_token);
+    // Print initialized embeddings table
+    embeddings_print(E, ids, seq_len, embed_dim, t->id_to_token);
+
+    float* E_out = mat_new(seq_len, embed_dim);
+    if (!E_out) {
+        goto fail_lookup;
+    }
+
+    // Lookup embeddings: E_out[i] = E[ids[i]]
+    embeddings_lookup(E_out, E, ids, seq_len, embed_dim);
+
+    // Print looked-up embeddings
+    printf("Lookup:\n");
+    for (size_t i = 0; i < (size_t) seq_len; i++) {
+        printf("id %3d (%-8s):", ids[i], t->id_to_token[ids[i]]);
+        for (size_t d = 0; d < embed_dim; d++) {
+            printf(" % .4f", (double) E_out[i * embed_dim + d]);
+        }
+        printf("\n");
+    }
 
     // Ids to text
     char* text = tokenizer_decode(t, ids, seq_len);
@@ -404,15 +425,18 @@ int main(int argc, const char* argv[]) {
         fprintf(stderr, "Failed to decode ids!\n");
     }
     free(text);
-    free(ids);
 
     // Clean up
-    free(embeddings);
+    free(E_out);
+    free(E);
+    free(ids);
     tokenizer_free(t);
     cli_free(&cli);
 
     return EXIT_SUCCESS;
 
+fail_lookup:
+    free(E);
 fail_encoder:
     free(ids);
 fail_tokenizer:
