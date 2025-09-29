@@ -79,6 +79,9 @@ void softmax(float* x, int n) {
 
 /**
  * @section Activations
+ * Each activation is cached.
+ * Derivatives of each activation expect the cached value. 
+ * @{
  */
 
 /// @brief σ(x) = 1 / 1 + exp(-x)
@@ -88,8 +91,9 @@ float sigmoid(float x) {
 }
 
 // Derivative of sigmoid for backpropagation
-float sigmoid_prime(float x) {
-    return x * (1.0f - x);
+// accepts the post-activation as the arg.
+float sigmoid_prime(float a) {
+    return a * (1.0f - a);
 }
 
 /// @brief x∗σ(x), where σ(x) is the logistic sigmoid.
@@ -97,15 +101,22 @@ float silu(float x) {
     return x * sigmoid(x);
 }
 
+// Derivative of SiLU for backpropagation
+float silu_prime(float a) {
+    float d = sigmoid_prime(a);
+    return d * (1.0f + a * (1.0f - d));
+}
+
 /// @brief SwiGLU(x) = silu(W₁x) ⊙ W₃x
 /// @note Modifying this math will corrupt model behavior.
 ///       Make sure SiLU and element-wise multiplication are preserved.
-void swiglu(float* x1, float* x3, int size) {
-#pragma omp parallel for
-    for (int i = 0; i < size; i++) {
-        x1[i] = silu(x1[i]) * x3[i];
-    }
+float swiglu(float x1, float x3) {
+    return silu(x1) * x3;
 }
+
+/// @todo derivative of swiglu
+
+/** @} */
 
 /**
  * @section Matrix ops
@@ -114,15 +125,15 @@ void swiglu(float* x1, float* x3, int size) {
  */
 
 // Create a row-major matrix
-float* mat_new(size_t rows, size_t cols) {
-    float* mat = calloc(rows * cols, sizeof(float));
+float* mat_new(size_t out, size_t in) {
+    float* mat = calloc(out * in, sizeof(float));
     if (!mat) {
         return NULL;
     }
     return mat;
 }
 
-void mat_xavier(float* x, size_t n, size_t in, size_t out) {
+void mat_xavier(float* x, size_t n, size_t out, size_t in) {
 #pragma omp parallel for
     for (size_t i = 0; i < n; i++) {
         // xavier(fan_in, fan_out)
@@ -136,18 +147,18 @@ size_t mat_idx(size_t i, size_t j, size_t dim) {
 }
 
 // Row-major matrix transposition (rows x cols) into (cols x rows)
-void mat_T(const float* X, float* X_T, size_t rows, size_t cols) {
+void mat_T(const float* X, float* X_T, size_t out, size_t in) {
 #pragma omp parallel for
-    for (size_t i = 0; i < rows; i++) {
-        for (size_t j = 0; j < cols; j++) {
+    for (size_t i = 0; i < out; i++) {
+        for (size_t j = 0; j < in; j++) {
             // W_T[j * rows + i] = W[i * cols + j];
-            X_T[j * rows + i] = X[i * cols + j];
+            X_T[j * out + i] = X[i * in + j];
         }
     }
 }
 
 // Row-major matrix multiplication (y = Wx + b)
-void mat_mul(float* y, float* W, float* x, float* b, size_t in, size_t out) {
+void mat_mul(float* y, float* W, float* x, float* b, size_t out, size_t in) {
 #pragma omp parallel for
     for (size_t i = 0; i < out; i++) {
         float sum = 0.0f;
