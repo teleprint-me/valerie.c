@@ -83,18 +83,20 @@ void softmax(float* x, int n) {
  * Derivatives of each activation expect the cached value.
  * x is the pre-activation.
  * a is the post-activation.
+ * @note Modifying this math will corrupt model behavior.
+ *       Make sure SiLU and element-wise multiplication are preserved.
  * @{
  */
 
 /// @brief σ(x) = 1 / 1 + exp(-x)
-/// @note This can not be modified. The model will become incoherent.
 float sigmoid(float x) {
     return 1.0f / (1.0f + expf(-x));
 }
 
 // Derivative of sigmoid for backpropagation
 // accepts the post-activation as the arg.
-float sigmoid_prime(float a) {
+float sigmoid_prime(float x) {
+    float a = sigmoid(x);
     return a * (1.0f - a);
 }
 
@@ -104,26 +106,25 @@ float silu(float x) {
 }
 
 // Derivative of SiLU for backpropagation
-float silu_prime(float a) {
-    float d = sigmoid_prime(a);
-    return d * (1.0f + a * (1.0f - d));
+float silu_prime(float x) {
+    float a = sigmoid(x);
+    return a * (1 + (x * (1 - a)));
 }
 
 /// @brief SwiGLU(x) = silu(W₁x) ⊙ W₃x
-/// @note Modifying this math will corrupt model behavior.
-///       Make sure SiLU and element-wise multiplication are preserved.
+/// https://jcarlosroldan.com/post/348
 float swiglu(float x1, float x3) {
     return silu(x1) * x3;
 }
 
 // Derivative with respect to x1
-float swiglu_prime_x1(float a1, float a3) {
-    return silu_prime(a1) * a3;
+float swiglu_prime_x1(float x1, float x3) {
+    return silu_prime(x1) * x3;
 }
 
 // Derivative with respect to x3
-float swiglu_prime_x3(float a1) {
-    return silu_prime(a1);
+float swiglu_prime_x3(float x1) {
+    return silu_prime(x1);
 }
 
 /** @} */
@@ -152,8 +153,8 @@ void mat_xavier(float* x, size_t n, size_t out, size_t in) {
 }
 
 // Row-major matrix index
-size_t mat_idx(size_t i, size_t j, size_t dim) {
-    return i * dim + j;
+size_t mat_idx(size_t out, size_t in, size_t dim) {
+    return out * dim + in;
 }
 
 // Row-major matrix transposition (rows x cols) into (cols x rows)
