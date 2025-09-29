@@ -262,7 +262,7 @@ void embeddings_lookup(
 /**
  * Log embeddings table to stdout
  */
-void embeddings_print(
+void embeddings_log_table(
     const float* E, int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
 ) {
     printf("Embeddings:\n");
@@ -270,6 +270,20 @@ void embeddings_print(
         printf("id %3d (%-8s):", ids[i], id_to_token ? id_to_token[ids[i]] : "");
         for (size_t d = 0; d < embed_dim; d++) {
             printf(" % .4f", (double) E[ids[i] * embed_dim + d]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+void embeddings_log_lookup(
+    const float* E_out, const int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
+) {
+    printf("Lookup:\n");
+    for (size_t i = 0; i < seq_len; ++i) {
+        printf("id %3d (%-8s):", ids[i], id_to_token ? id_to_token[ids[i]] : "");
+        for (size_t d = 0; d < embed_dim; ++d) {
+            printf(" % .4f", (double) E_out[i * embed_dim + d]);
         }
         printf("\n");
     }
@@ -399,7 +413,7 @@ int main(int argc, const char* argv[]) {
     }
 
     // Print initialized embeddings table
-    embeddings_print(E, ids, seq_len, embed_dim, t->id_to_token);
+    embeddings_log_table(E, ids, seq_len, embed_dim, t->id_to_token);
 
     float* E_out = mat_new(seq_len, embed_dim);
     if (!E_out) {
@@ -410,14 +424,7 @@ int main(int argc, const char* argv[]) {
     embeddings_lookup(E_out, E, ids, seq_len, embed_dim);
 
     // Print looked-up embeddings
-    printf("Lookup:\n");
-    for (size_t i = 0; i < (size_t) seq_len; i++) {
-        printf("id %3d (%-8s):", ids[i], t->id_to_token[ids[i]]);
-        for (size_t d = 0; d < embed_dim; d++) {
-            printf(" % .4f", (double) E_out[i * embed_dim + d]);
-        }
-        printf("\n");
-    }
+    embeddings_log_lookup(E_out, ids, seq_len, embed_dim, t->id_to_token);
 
     // Ids to text
     char* text = tokenizer_decode(t, ids, seq_len);
