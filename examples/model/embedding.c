@@ -114,32 +114,79 @@ void mat_T(const float* X, float* X_T, size_t out, size_t in) {
 }
 
 // Row-major matrix multiplication (y = Wx + b)
-void mat_mul(float* y, float* W, float* x, float* b, size_t out, size_t in) {
+// bias is omitted because it's always 0
+void mat_mul(float* y, float* W, float* x, size_t out, size_t in) {
 #pragma omp parallel for
     for (size_t i = 0; i < out; i++) {
         float sum = 0.0f;
         for (size_t j = 0; j < in; j++) {
             sum += W[i * in + j] * x[j];
         }
-        y[i] = sum + b[i];
+        y[i] = sum;
     }
 }
 
-// Row-major application of the chain rule
+// dW = δ_next ⊗ xᵀ (outer product)
+void mat_dW(float* dW, float* d_next, float* x, size_t out, size_t in) {
+#pragma omp parallel for
+    for (size_t i = 0; i < out; i++) {
+        for (size_t j = 0; j < in; j++) {
+            dW[i * in + j] = d_next[i] * x[j];
+        }
+    }
+}
+
+// Backprop: dy = (W_next^T * d_next) ⊙ f'(x) (chain rule)
 void mat_chain(float* dy, float* W_next, float* d_next, float* x, size_t out, size_t out_next) {
 #pragma omp parallel for
     for (size_t i = 0; i < out; i++) {
         float sum = 0.0f;
 
-        // Use next layer’s weights and deltas to compute the current layer’s deltas.
+        // Iterate over next-layer neurons
         for (size_t j = 0; j < out_next; j++) {
-            // W_T[j * rows + i] = W[i * cols + j];
-            // Weight from this layer (i) to next layer (j)
-            // W_T = W[j * current_row + i]
             sum += W_next[j * out + i] * d_next[j];
         }
 
         dy[i] = sum * silu_prime(x[i]);
+    }
+}
+
+// Apply SGD update to weights
+void mat_sgd(
+    float* W,
+    float* vW,
+    const float* dW,
+    size_t out,
+    size_t in,
+    float lr,
+    float mu,
+    float tau,
+    int nesterov,
+    float lambda
+) {
+#pragma omp parallel for
+    for (size_t i = 0; i < out; i++) {
+        for (size_t j = 0; j < in; j++) {
+            size_t idx = i * in + j;
+            float g = dW[idx];
+
+            // L2 regularization
+            if (lambda > 0.0f) {
+                g += lambda * W[idx];
+            }
+
+            // Momentum
+            vW[idx] = mu * vW[idx] + (1.0f - tau) * g;
+
+            if (nesterov) {
+                g += mu * vW[idx];  // Lookahead
+            } else {
+                g = vW[idx];
+            }
+
+            // Weight update
+            W[idx] -= lr * g;
+        }
     }
 }
 
