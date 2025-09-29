@@ -231,13 +231,13 @@ float* embeddings_create(size_t vocab_size, size_t embed_dim) {
  * E_out ∈ ℝ^(N × D)
  *
  * Inputs:
- *   E       - Embedding matrix of shape (|V|, D), row-major
- *   ids     - Token ids (x), length N
- *   seq_len - N (sequence length)
+ *   E         - Embedding matrix of shape (|V|, D), row-major
+ *   ids       - Token ids (x), length N
+ *   seq_len   - N (sequence length)
  *   embed_dim - D (embedding dimension)
  *
  * Output:
- *   E_out   - Matrix of shape (N, D), where E_out[i] = E[ids[i]]
+ *   E_out     - Matrix of shape (N, D), where E_out[i] = E[ids[i]]
  */
 void embeddings_lookup(
     float* E_out, const float* E, const int* ids, size_t seq_len, size_t embed_dim
@@ -263,12 +263,12 @@ void embeddings_lookup(
  * Log embeddings table to stdout
  */
 void embeddings_print(
-    const float* e, int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
+    const float* E, int* ids, size_t seq_len, size_t embed_dim, char** id_to_token
 ) {
     for (size_t i = 0; i < seq_len; ++i) {
         printf("id %3d (%-8s):", ids[i], id_to_token ? id_to_token[ids[i]] : "");
         for (size_t d = 0; d < embed_dim; ++d) {
-            printf(" % .4f", (double) e[ids[i] * embed_dim + d]);
+            printf(" % .4f", (double) E[ids[i] * embed_dim + d]);
         }
         printf("\n");
     }
