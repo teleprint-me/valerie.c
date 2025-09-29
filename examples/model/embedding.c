@@ -78,12 +78,43 @@ void softmax(float* x, int n) {
 /** @} */
 
 /**
+ * @section Activations
+ */
+
+/// @brief σ(x) = 1 / 1 + exp(-x)
+/// @note This can not be modified. The model will become incoherent.
+float sigmoid(float x) {
+    return 1.0f / (1.0f + expf(-x));
+}
+
+// Derivative of sigmoid for backpropagation
+float sigmoid_prime(float x) {
+    return x * (1.0f - x);
+}
+
+/// @brief x∗σ(x), where σ(x) is the logistic sigmoid.
+float silu(float x) {
+    return x * sigmoid(x);
+}
+
+/// @brief SwiGLU(x) = silu(W₁x) ⊙ W₃x
+/// @note Modifying this math will corrupt model behavior.
+///       Make sure SiLU and element-wise multiplication are preserved.
+void swiglu(float* x1, float* x3, int size) {
+#pragma omp parallel for
+    for (int i = 0; i < size; i++) {
+        x1[i] = silu(x1[i]) * x3[i];
+    }
+}
+
+/**
  * @section Matrix ops
+ * @note inputs are columns. outputs are rows.
  * @{
  */
 
 // Create a row-major matrix
-float* matnew(size_t rows, size_t cols) {
+float* mat_new(size_t rows, size_t cols) {
     float* mat = calloc(rows * cols, sizeof(float));
     if (!mat) {
         return NULL;
@@ -91,30 +122,56 @@ float* matnew(size_t rows, size_t cols) {
     return mat;
 }
 
+void mat_xavier(float* x, size_t n, size_t in, size_t out) {
+#pragma omp parallel for
+    for (size_t i = 0; i < n; i++) {
+        // xavier(fan_in, fan_out)
+        x[i] = lehmer_xavier(in, out);  // thread is local
+    }
+}
+
 // Row-major matrix index
-size_t matidx(size_t i, size_t j, size_t dim) {
+size_t mat_idx(size_t i, size_t j, size_t dim) {
     return i * dim + j;
 }
 
 // Row-major matrix transposition (rows x cols) into (cols x rows)
-void matT(const float* X, float* X_T, size_t rows, size_t cols) {
+void mat_T(const float* X, float* X_T, size_t rows, size_t cols) {
 #pragma omp parallel for
     for (size_t i = 0; i < rows; i++) {
         for (size_t j = 0; j < cols; j++) {
+            // W_T[j * rows + i] = W[i * cols + j];
             X_T[j * rows + i] = X[i * cols + j];
         }
     }
 }
 
 // Row-major matrix multiplication (y = Wx + b)
-void matmul(float* y, float* W, float* x, float* b, size_t n_out, size_t n_in) {
+void mat_mul(float* y, float* W, float* x, float* b, size_t in, size_t out) {
 #pragma omp parallel for
-    for (size_t i = 0; i < n_out; i++) {
+    for (size_t i = 0; i < out; i++) {
         float sum = 0.0f;
-        for (size_t j = 0; j < n_in; j++) {
-            sum += W[i * n_in + j] * x[j];
+        for (size_t j = 0; j < in; j++) {
+            sum += W[i * in + j] * x[j];
         }
         y[i] = sum + b[i];
+    }
+}
+
+// Row-major application of the chain rule
+void mat_chain(float* dy, float* W_next, float* d_next, float* a, size_t out, size_t out_next) {
+#pragma omp parallel for
+    for (size_t i = 0; i < out; i++) {
+        float sum = 0.0f;
+
+        // Use next layer’s weights and deltas to compute the current layer’s deltas.
+        for (size_t j = 0; j < out_next; j++) {
+            // Weight from this layer (i) to next layer (j)
+            // W_T = W[j * current_row + i]
+            sum += W_next[j * out + i] * d_next[j];
+        }
+
+        dy[i] = sum * sigmoid_prime(a[i]);
     }
 }
 
