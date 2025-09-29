@@ -205,18 +205,15 @@ void mat_sgd(
  * N: Number of embeddings (vocab size)
  * D: Vector length (embed dim)
  */
-float* embeddings_create(size_t vocab_size, size_t vector_len) {
-    size_t embed_dim = vocab_size * vector_len;
-    float* embeddings = calloc(embed_dim, sizeof(float));
+float* embeddings_create(size_t vocab_size, size_t embed_dim) {
+    // matrix with shape (vocab_size, embed_dim)
+    float* embeddings = mat_new(vocab_size, embed_dim);
     if (!embeddings) {
         return NULL;
     }
 
-    // initialize the embedding table
-    for (size_t i = 0; i < embed_dim; i++) {
-        // xavier(fan_in, fan_out)
-        embeddings[i] = lehmer_xavier(vocab_size, vector_len);
-    }
+    // glorot-bengio matrix initialization
+    mat_xavier(embeddings, vocab_size * embed_dim, vocab_size, embed_dim);
 
     return embeddings;
 }
