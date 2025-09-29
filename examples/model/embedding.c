@@ -101,8 +101,9 @@ float sigmoid_prime(float x) {
 }
 
 /// @brief x∗σ(x), where σ(x) is the logistic sigmoid.
+/// Swish(β)(x) = x / (1 + e^(-βx))
 float silu(float x) {
-    return x * sigmoid(x);
+    return x * sigmoid(x);  // β is a constant of 1
 }
 
 // Derivative of SiLU for backpropagation
