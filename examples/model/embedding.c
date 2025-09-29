@@ -158,10 +158,10 @@ void mat_sgd(
     size_t out,
     size_t in,
     float lr,
+    float lambda,
     float mu,
     float tau,
-    int nesterov,
-    float lambda
+    bool nesterov
 ) {
 #pragma omp parallel for
     for (size_t i = 0; i < out; i++) {
