@@ -156,7 +156,6 @@ void mat_sgd(
     float* W,
     float* vW,
     const float* dW,
-    float* z,
     size_t out,
     size_t in,
     float lr,
@@ -169,7 +168,7 @@ void mat_sgd(
     for (size_t i = 0; i < out; i++) {
         for (size_t j = 0; j < in; j++) {
             size_t idx = i * in + j;
-            float g = dW[idx] * silu(z[i]);
+            float g = dW[idx];
 
             // L2 regularization
             if (lambda > 0.0f) {
