@@ -80,7 +80,9 @@ void softmax(float* x, int n) {
 
 /**
  * @section Matrix ops
- * @note inputs are columns. outputs are rows.
+ * @note Matrices are always row-major.
+ * @note Outputs are rows. Inputs are columns.
+ * @note Uppercase letters are matrices. Lowercase letters are vectors.
  * @{
  */
 
@@ -195,49 +197,55 @@ void mat_sgd(
 
 /**
  * @section Embeddings
+ * @note Uppercase letters are matrices. Lowercase letters are vectors.
  * @{
  */
 
 /**
- * @brief Create an embedding table
+ * @brief Create an embedding matrix
  *
- * Ω_e ∈ ℝ^(|V| × D)
- * where:
- *    Ω : Learned parameter
- *    e : Embedding matrix
- *   |V|: Vocab size (rows)
- *    D : Embedding dimension (cols)
+ * E ∈ ℝ^(|V| × D)
+ *   |V| : Vocabulary size (rows)
+ *    D  : Embedding dimension (cols)
  *
- * @return A xavier initialized embedding matrix of shape (V, D)
- * @note Row-major layout: embeddings[v * D + d]
+ * @return Xavier-initialized matrix E of shape (|V|, D)
+ * @note Row-major layout: E[v * D + d]
  */
 float* embeddings_create(size_t vocab_size, size_t embed_dim) {
-    // matrix with shape (vocab_size, embed_dim)
-    float* embeddings = mat_new(vocab_size, embed_dim);
-    if (!embeddings) {
+    float* E = mat_new(vocab_size, embed_dim);
+    if (!E) {
         return NULL;
     }
 
-    // glorot-bengio matrix initialization
-    mat_xavier(embeddings, vocab_size * embed_dim, vocab_size, embed_dim);
-
-    return embeddings;
+    mat_xavier(E, vocab_size * embed_dim, vocab_size, embed_dim);
+    return E;
 }
 
 /**
- * Ω_e ∈ ℝ^(D × |V|)
- * Ω_e: Vocab embedding matrix (maps id to one-hot vecs)
- *      Ω is a learned parameter.
- * D: Vector length
- * V: Mapped word embedding
- * |V|: Magnitude of the word embedding
+ * @brief Lookup embeddings for token ids
+ *
+ * Given token ids x, return their embedding vectors from E.
+ *
+ * E ∈ ℝ^(|V| × D)
+ * x ∈ ℕ^(N)
+ * E_out ∈ ℝ^(N × D)
+ *
+ * Inputs:
+ *   E       - Embedding matrix of shape (|V|, D), row-major
+ *   ids     - Token ids (x), length N
+ *   seq_len - N (sequence length)
+ *   embed_dim - D (embedding dimension)
+ *
+ * Output:
+ *   E_out   - Matrix of shape (N, D), where E_out[i] = E[ids[i]]
  */
 void embeddings_lookup(
-    float* out, const float* e, const int* ids, size_t seq_len, size_t embed_dim
+    float* E_out, const float* E, const int* ids, size_t seq_len, size_t embed_dim
 ) {
+#pragma omp parallel for
     for (size_t i = 0; i < seq_len; i++) {
         for (size_t d = 0; d < embed_dim; d++) {
-            out[i * embed_dim + d] = e[ids[i] * embed_dim + d];
+            E_out[i * embed_dim + d] = E[ids[i] * embed_dim + d];
         }
     }
 }
