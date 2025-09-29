@@ -154,6 +154,7 @@ float swiglu_prime_x3(float x1) {
  * @{
  */
 
+/// @note Dot product ops may vary based on context
 float vec_dot(float* a, float* b, size_t n) {
     float sum = 0.0f;
     for (size_t i = 0; i < n; i++) {
