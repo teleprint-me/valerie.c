@@ -80,7 +80,9 @@ void softmax(float* x, int n) {
 /**
  * @section Activations
  * Each activation is cached.
- * Derivatives of each activation expect the cached value. 
+ * Derivatives of each activation expect the cached value.
+ * x is the pre-activation.
+ * a is the post-activation.
  * @{
  */
 
@@ -114,7 +116,15 @@ float swiglu(float x1, float x3) {
     return silu(x1) * x3;
 }
 
-/// @todo derivative of swiglu
+// Derivative with respect to x1
+float swiglu_prime_x1(float a1, float a3) {
+    return silu_prime(a1) * a3;
+}
+
+// Derivative with respect to x3
+float swiglu_prime_x3(float a1) {
+    return silu_prime(a1);
+}
 
 /** @} */
 
