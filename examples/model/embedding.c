@@ -16,6 +16,8 @@
 
 #include "tokenizer/model.h"
 
+#include "model/activation.h"
+
 /**
  * @section One-hot encoder
  * @{
@@ -78,95 +80,6 @@ void softmax(float* x, int n) {
 /** @} */
 
 /**
- * @section Activations
- * Each activation is cached.
- * Derivatives of each activation expect the cached value.
- * x is the pre-activation.
- * a is the post-activation.
- * @note Modifying this math will corrupt model behavior.
- *       Make sure SiLU and element-wise multiplication are preserved.
- * @{
- */
-
-/// @brief σ(x) = 1 / 1 + exp(-x)
-float sigmoid(float x) {
-    return 1.0f / (1.0f + expf(-x));
-}
-
-// Derivative of sigmoid for backpropagation
-// accepts the post-activation as the arg.
-float sigmoid_prime(float x) {
-    float a = sigmoid(x);
-    return a * (1.0f - a);
-}
-
-/// @brief x∗σ(x), where σ(x) is the logistic sigmoid.
-/// Swish(β)(x) = x / (1 + e^(-βx))
-float silu(float x) {
-    return x * sigmoid(x);  // β is a constant of 1
-}
-
-// Derivative of SiLU for backpropagation
-float silu_prime(float x) {
-    float a = sigmoid(x);
-    return a * (1 + (x * (1 - a)));
-}
-
-/**
- * SwiGLU(x) = Swish(β)(W * x + b) ⊙ (V * x + c)
- * A variant of the GLU activation function using the Swish activation function.
- *
- * @param x (batch × dim) - the input tensor
- * @param W (activation) - weight tensor for the "activation" branch
- * @param V (gate) - weight tensor for the "gate" branch
- * @param b (activation) - bias tensor for the "activation" branch
- * @param c (gate) - bias tensor for the "gate" branch
- * @param beta (scalar) - a scaling factor for the Swish activation function
- * @return SwiGLU(x)
- *
- * The SwiGLU activation function is a combination of two linear branches, one for the activation
- * and one for the gate, multiplied element-wise (⊙). The activation branch uses the Swish
- * activation function, which is defined as Swish(β)(x) = x / (1 + e^(-βx)). The gate branch uses
- * the standard sigmoid activation function (σ(x)). When β = 1, the Swish activation function is
- * equivalent to the Sigmoid Linear Unit (SiLU) activation function. When β = 0, the Swish
- * activation function turns into a scaled linear function. When β → ∞, the Swish activation
- * function approaches the ReLU activation function. References:
- * - https://jcarlosroldan.com/post/348
- * - https://arxiv.org/abs/2002.05202
- */
-float swiglu(float x1, float x3) {
-    return silu(x1) * x3;
-}
-
-// Derivative with respect to x1
-float swiglu_prime_x1(float x1, float x3) {
-    return silu_prime(x1) * x3;
-}
-
-// Derivative with respect to x3
-float swiglu_prime_x3(float x1) {
-    return silu_prime(x1);
-}
-
-/** @} */
-
-/**
- * @section Vector ops
- * @{
- */
-
-/// @note Dot product ops may vary based on context
-float vec_dot(float* a, float* b, size_t n) {
-    float sum = 0.0f;
-    for (size_t i = 0; i < n; i++) {
-        sum += a[i] * b[i];
-    }
-    return sum;
-}
-
-/** @} */
-
-/**
  * @section Matrix ops
  * @note inputs are columns. outputs are rows.
  * @{
@@ -187,11 +100,6 @@ void mat_xavier(float* x, size_t n, size_t out, size_t in) {
         // xavier(fan_in, fan_out)
         x[i] = lehmer_xavier(in, out);  // thread is local
     }
-}
-
-// Row-major matrix index
-size_t mat_idx(size_t out, size_t in, size_t dim) {
-    return out * dim + in;
 }
 
 // Row-major matrix transposition (rows x cols) into (cols x rows)
@@ -218,19 +126,20 @@ void mat_mul(float* y, float* W, float* x, float* b, size_t out, size_t in) {
 }
 
 // Row-major application of the chain rule
-void mat_chain(float* dy, float* W_next, float* d_next, float* a, size_t out, size_t out_next) {
+void mat_chain(float* dy, float* W_next, float* d_next, float* x, size_t out, size_t out_next) {
 #pragma omp parallel for
     for (size_t i = 0; i < out; i++) {
         float sum = 0.0f;
 
         // Use next layer’s weights and deltas to compute the current layer’s deltas.
         for (size_t j = 0; j < out_next; j++) {
+            // W_T[j * rows + i] = W[i * cols + j];
             // Weight from this layer (i) to next layer (j)
             // W_T = W[j * current_row + i]
             sum += W_next[j * out + i] * d_next[j];
         }
 
-        dy[i] = sum * sigmoid_prime(a[i]);
+        dy[i] = sum * silu_prime(x[i]);
     }
 }
 
