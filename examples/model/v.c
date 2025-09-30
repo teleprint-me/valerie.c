@@ -105,7 +105,7 @@ typedef struct State {
 
 typedef struct Valerie {
     float* embeddings;  // (vocab_size, d_model)
-    float* rms_final;  // (d_model,)
+    float* rms;  // (d_model,)
 
     Block* blocks;
     State* state;
