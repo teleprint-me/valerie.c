@@ -68,23 +68,45 @@ typedef struct Dim {
 } Dim;
 
 typedef struct Attention {
-    float* Wq;  // (d_model, n_heads * head_dim)
-    float* Wk;  // (d_model, n_kv_heads * head_dim)
-    float* Wv;  // (d_model, n_kv_heads * head_dim)
-    float* Wo;  // (n_heads * head_dim, d_model)
+    Q8* Wq;  // (d_model, n_heads * head_dim)
+    Q8* Wk;  // (d_model, n_kv_heads * head_dim)
+    Q8* Wv;  // (d_model, n_kv_heads * head_dim)
+    Q8* Wo;  // (n_heads * head_dim, d_model)
+
+    // Derivatives
+    uint16_t* dWk;
+    uint16_t* dWq;
+    uint16_t* dWv;
+    uint16_t* dWo;
+
+    // Velocities
+    uint16_t* vWk;
+    uint16_t* vWq;
+    uint16_t* vWv;
+    uint16_t* vWo;
+
     float* rms;  // (d_model,) RMSNorm params
 } Attention;
 
 typedef struct FeedForward {
-    float* W1;  // (hidden, d_model)
-    float* W2;  // (d_model, hidden)
-    float* W3;  // (hidden, d_model)
+    Q8* W1;  // (hidden, d_model)
+    Q8* W2;  // (d_model, hidden)
+    Q8* W3;  // (hidden, d_model)
+
+    uint16_t* dW1;
+    uint16_t* dW2;
+    uint16_t* dW3;
+
+    uint16_t* vW1;
+    uint16_t* vW2;
+    uint16_t* vW3;
+
     float* rms;  // (d_model,) RMSNorm params
 } FeedForward;
 
 typedef struct Block {
-    Attention* attn;  // multi-headed self attention
-    FeedForward* ffn;  // feed-forward network
+    Attention attn;  // multi-headed self attention
+    FeedForward ffn;  // feed-forward network
     float* rms_attn;  // (d_model,) RMSNorm params
     float* rms_ffn;  // (d_model,) RMSNorm params
 } Block;
@@ -101,6 +123,9 @@ typedef struct State {
 
     float* k_cache;  // (seq_len, d_model)
     float* v_cache;  // (seq_len, d_model)
+
+    Q8* qattn;
+    Q8* qffn; 
 } State;
 
 typedef struct Valerie {
