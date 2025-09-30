@@ -14,16 +14,12 @@
 #ifndef DATA_TYPE_H
 #define DATA_TYPE_H
 
+#include <stdalign.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdalign.h>
-#include <assert.h>
-#include <math.h>
-#include <wchar.h>
-#include <string.h>
 
-#include "core/memory.h"
-#include "core/compare.h"
+#include <assert.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -11,6 +11,8 @@
  * - Minimal dependencies with a consistent, extensible design.
  */
 
+#include <math.h>
+
 #include "core/type.h"
 
 // Data type management
