@@ -62,16 +62,27 @@
 
 #include "tokenizer/model.h"
 
+/**
+ * @section Model dimensions
+ */
+
 typedef struct Dim {
     int d_model;  // width of the model (hidden size)
     int hidden;  // FFN hidden dimension (usually 4 * d_model)
     int layers;  // number of transformer blocks (depth)
     int heads;  // number of attention heads
+    int head_dim;  // per-head dimension (d_model / heads)
+    int proj_dim; // heads * head_dim
+    int kv_dim; // kv_heads * head_dim
+    int kv_mul; // multi-query attention (heads / kv_heads)
     int kv_heads;  // number of key/value heads (multiquery attention)
     int vocab_size;  // vocabulary size
     int seq_len;  // maximum context length
-    int head_dim;  // per-head dimension (d_model / heads)
 } Dim;
+
+/**
+ * @section Model forward
+ */
 
 typedef struct Attention {
     Q8* Wq;  // (d_model, n_heads * head_dim)
@@ -79,6 +90,29 @@ typedef struct Attention {
     Q8* Wv;  // (d_model, n_kv_heads * head_dim)
     Q8* Wo;  // (n_heads * head_dim, d_model)
 
+    float* rms;  // (d_model,) RMSNorm params
+} Attention;
+
+typedef struct FeedForward {
+    Q8* W1;  // (hidden, d_model)
+    Q8* W2;  // (d_model, hidden)
+    Q8* W3;  // (hidden, d_model)
+
+    float* rms;  // (d_model,) RMSNorm params
+} FeedForward;
+
+typedef struct Block {
+    Attention attn;  // multi-headed self attention
+    FeedForward ffn;  // feed-forward network
+    float* rms_attn;  // (d_model,) RMSNorm params
+    float* rms_ffn;  // (d_model,) RMSNorm params
+} Block;
+
+/**
+ * @section Model backward
+ */
+
+typedef struct AttentionOpt {
     // Derivatives
     uint16_t* dWk;
     uint16_t* dWq;
@@ -90,32 +124,26 @@ typedef struct Attention {
     uint16_t* vWq;
     uint16_t* vWv;
     uint16_t* vWo;
+} AttentionOpt;
 
-    float* rms;  // (d_model,) RMSNorm params
-} Attention;
-
-typedef struct FeedForward {
-    Q8* W1;  // (hidden, d_model)
-    Q8* W2;  // (d_model, hidden)
-    Q8* W3;  // (hidden, d_model)
-
+typedef struct FeedForwardOpt {
+    // Derivatives
     uint16_t* dW1;
     uint16_t* dW2;
     uint16_t* dW3;
 
+    // Velocities
     uint16_t* vW1;
     uint16_t* vW2;
     uint16_t* vW3;
+} FeedForwardOpt;
 
-    float* rms;  // (d_model,) RMSNorm params
-} FeedForward;
-
-typedef struct Block {
-    Attention attn;  // multi-headed self attention
-    FeedForward ffn;  // feed-forward network
-    float* rms_attn;  // (d_model,) RMSNorm params
-    float* rms_ffn;  // (d_model,) RMSNorm params
-} Block;
+typedef struct BlockOpt {
+    AttentionOpt attn;
+    FeedForwardOpt ffn;
+    float* drms_attn;  // (d_model,) RMSNorm params
+    float* drms_ffn;  // (d_model,) RMSNorm params
+} BlockOpt;
 
 typedef struct State {
     float* x;  // (d_model,)
@@ -245,6 +273,7 @@ float* embed_new(unsigned vocab_size, unsigned embed_dim) {
  */
 
 /// @todo Add precomputed rotary cache.
+/// Applied to feed-forward method.
 void rotary(float* x, int pos, unsigned head_dim) {
     unsigned half_dim = head_dim / 2;
 
@@ -260,6 +289,7 @@ void rotary(float* x, int pos, unsigned head_dim) {
     }
 }
 
+// Applied to feed-forward method.
 void rmsnorm(float* y, float* w, float* x, unsigned n) {
     // Avoid division by 0
     assert(n > 0 && "Division by zero!");
