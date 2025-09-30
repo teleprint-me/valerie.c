@@ -2,6 +2,7 @@
 
 set(EXAMPLES
     "embedding"
+    "v"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/model)
