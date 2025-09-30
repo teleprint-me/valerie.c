@@ -1,8 +1,55 @@
 /**
  * @file examples/model/v.c
  * @brief Valerie is a transformer model that mirrors the Qwen3 architecture.
- * @ref https://github.com/adriancable/qwen3.c
+ * @copyright Copyright © 2025 Austin Berrio
  * @note Valerie is not a replica of Qwen3 and is incompatible as a result.
+ * @ref https://github.com/adriancable/qwen3.c
+ *
+ * ┌──────────────────────────────┐
+ * │          Valerie             │  (struct Valerie)
+ * │ ┌──────────────────────────┐ │
+ * │ │        Dim (Config)      │ │  (d_model, n_heads, hidden, vocab_size, seq_len, etc.)
+ * │ └──────────────────────────┘ │
+ * │ ┌──────────────────────────┐ │
+ * │ │   Embedding Matrix E     │ │  (vocab_size × d_model) ← learned params
+ * │ └──────────────────────────┘ │
+ * │ ┌──────────────────────────┐ │
+ * │ │       Blocks [N]         │ │  (struct Block × d.layers)
+ * │ │  ┌────────────────────┐  │ │
+ * │ │  │    Block (layer)   │  │ │
+ * │ │  │  ┌───────────────┐ │  │ │
+ * │ │  │  │ RMSNorm_att   │ │  │ │  (d_model,)
+ * │ │  │  └───────────────┘ │  │ │
+ * │ │  │  ┌───────────────┐ │  │ │
+ * │ │  │  │ Multi-Head    │ │  │ │
+ * │ │  │  │ Attention     │ │  │ │  (matrices: d_model ↔ heads × d_head)
+ * │ │  │  │ Wq, Wk, Wv, Wo│ │  │ │
+ * │ │  │  └───────────────┘ │  │ │
+ * │ │  │  ┌───────────────┐ │  │ │
+ * │ │  │  │ Residual Add  │ │  │ │
+ * │ │  │  └───────────────┘ │  │ │
+ * │ │  │  ┌───────────────┐ │  │ │
+ * │ │  │  │ RMSNorm_ffn   │ │  │ │  (d_model,)
+ * │ │  │  └───────────────┘ │  │ │
+ * │ │  │  ┌───────────────┐ │  │ │
+ * │ │  │  │ MLP (FFN)     │ │  │ │
+ * │ │  │  │ W1, W2, W3    │ │  │ │  (d_model → hidden → d_model)
+ * │ │  │  └───────────────┘ │  │ │
+ * │ │  │  ┌───────────────┐ │  │ │
+ * │ │  │  │ Residual Add  │ │  │ │
+ * │ │  │  └───────────────┘ │  │ │
+ * │ │  └────────────────────┘  │ │
+ * │ └──────────────────────────┘ │
+ * │ ┌──────────────────────────┐ │
+ * │ │   Final RMSNorm          │ │  (d_model,) applied after last block
+ * │ └──────────────────────────┘ │
+ * │ ┌──────────────────────────┐ │
+ * │ │   Output Projection      │ │  (d_model × vocab_size), weight-tied with E
+ * │ └──────────────────────────┘ │
+ * │ ┌──────────────────────────┐ │
+ * │ │   State (activations)    │ │  (struct State: x, q, k, v, att, logits, kv-cache)
+ * │ └──────────────────────────┘ │
+ * └──────────────────────────────┘
  */
 
 #include "core/path.h"
@@ -20,21 +67,24 @@ typedef struct Dim {
     int head_dim;  // per-head dimension (d_model / heads)
 } Dim;
 
-typedef struct Block {
-    float* embeddings;  // (vocab_size, d_model)
+typedef struct FeedForward {
+    float* W1;  // (hidden_dim, d_model)
+    float* W2;  // (d_model, hidden_dim)
+    float* W3;  // (hidden_dim, d_model)
+    float* rms;  // (d_model,)
+} FeedForward;
 
+typedef struct Attention {
     float* Wq;  // (d_model, heads * head_dim)
     float* Wk;  // (d_model, kv_heads * head_dim)
     float* Wv;  // (d_model, kv_heads * head_dim)
     float* Wo;  // (heads * head_dim, d_model)
+    float* rms;  // (d_model,)
+} Attention;
 
-    float* W1;  // (hidden_dim, d_model)
-    float* W2;  // (d_model, hidden_dim)
-    float* W3;  // (hidden_dim, d_model)
-
-    float* rms_att;  // (d_model,)
-    float* rms_ffn;  // (d_model,)
-    float* rms_final;  // (d_model,)
+typedef struct Block {
+    Attention* attn;
+    FeedForward* ffn;
 } Block;
 
 typedef struct State {
@@ -52,6 +102,9 @@ typedef struct State {
 } State;
 
 typedef struct Valerie {
+    float* embeddings;  // (vocab_size, d_model)
+    float* rms_final;  // (d_model,)
+
     Block* b;
     State* s;
     Tokenizer* t;
