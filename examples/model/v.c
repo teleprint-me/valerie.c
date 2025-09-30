@@ -104,6 +104,8 @@ typedef struct State {
 } State;
 
 typedef struct Valerie {
+    /// @note Output weights are tied to embeddings
+    /// @ref https://arxiv.org/abs/1608.05859
     float* embeddings;  // (vocab_size, d_model)
     float* rms;  // (d_model,)
 
