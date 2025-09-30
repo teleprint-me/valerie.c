@@ -1,6 +1,7 @@
 # examples/tokenizer
 
 set(EXAMPLES
+    "lehmer"
     "map"
     "set"
 )

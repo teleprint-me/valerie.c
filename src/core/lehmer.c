@@ -41,13 +41,13 @@ thread_local LehmerState lehmer_state = {
  */
 
 static inline void lehmer_mod(void) {
-    const int64_t q = LEHMER_MODULUS / LEHMER_MULTIPLIER;
-    const int64_t r = LEHMER_MODULUS % LEHMER_MULTIPLIER;
+    const long q = LEHMER_MODULUS / LEHMER_MULTIPLIER;
+    const long r = LEHMER_MODULUS % LEHMER_MULTIPLIER;
 
-    int64_t hi = lehmer_state.seed / q;
-    int64_t lo = lehmer_state.seed % q;
+    long hi = lehmer_state.seed / q;
+    long lo = lehmer_state.seed % q;
 
-    int64_t t = LEHMER_MULTIPLIER * lo - r * hi;
+    long t = LEHMER_MULTIPLIER * lo - r * hi;
     lehmer_state.seed = (t > 0) ? t : t + LEHMER_MODULUS;
 }
 
@@ -59,17 +59,17 @@ static inline void lehmer_norm(void) {
  * Public Functions
  */
 
-void lehmer_init(int64_t seed) {
+void lehmer_init(long seed) {
     lehmer_state.seed = (seed > 0) ? seed : LEHMER_SEED;
 }
 
-int64_t lehmer_int64(void) {
+long lehmer_int64(void) {
     lehmer_mod();
     return lehmer_state.seed;
 }
 
-int32_t lehmer_int32(void) {
-    return (int32_t) lehmer_int64();
+int lehmer_int32(void) {
+    return (int) lehmer_int64();
 }
 
 double lehmer_double(void) {
@@ -83,14 +83,14 @@ float lehmer_float(void) {
 }
 
 // Xavier/Glorot uniform
-float lehmer_xavier(size_t in, size_t out) {
+float lehmer_xavier(unsigned out, unsigned in) {
     float a = sqrtf(6.0f / (in + out));
     float ud = 2.0f * lehmer_float() - 1.0f;
     return ud * a;
 }
 
 // Box-Muller normal
-float xorshift_muller(size_t in, size_t out) {
+float xorshift_muller(unsigned out, unsigned in) {
     float u1 = lehmer_float();
     if (u1 < 1e-7f) {
         u1 = 1e-7f;  // avoid 0
@@ -105,7 +105,7 @@ float xorshift_muller(size_t in, size_t out) {
 }
 
 // Fisher–Yates shuffle
-bool xorshift_yates(void* base, size_t n, size_t size) {
+bool xorshift_yates(void* base, unsigned n, unsigned size) {
     if (!base || n < 2) {
         return false;  // redundant
     }

@@ -21,8 +21,6 @@
 #define LEHMER_H
 
 #include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
 
 /**
  * @def _Thread_local
@@ -65,7 +63,7 @@
  * Each thread has its own instance via `thread_local`.
  */
 typedef struct LehmerState {
-    int64_t seed; /**< Current raw integer seed/state */
+    long seed; /**< Current raw integer seed/state */
     double norm; /**< Normalized output in [0.0, 1.0) */
 } LehmerState;
 
@@ -83,19 +81,19 @@ extern thread_local LehmerState lehmer_state;
  * @param seed A positive integer seed (must be in [1, LEHMER_MODULUS-1]).
  *             If zero or negative, `LEHMER_SEED` will be used.
  */
-void lehmer_init(int64_t seed);
+void lehmer_init(long seed);
 
 /**
  * @brief Generate the next random 64-bit integer in the sequence
- * @return Random int64_t in the range [1, LEHMER_MODULUS - 1]
+ * @return Random long in the range [1, LEHMER_MODULUS - 1]
  */
-int64_t lehmer_int64(void);
+long lehmer_int64(void);
 
 /**
  * @brief Generate the next random 32-bit integer in the sequence
- * @return Random int32_t in the range [1, LEHMER_MODULUS - 1] truncated
+ * @return Random int in the range [1, LEHMER_MODULUS - 1] truncated
  */
-int32_t lehmer_int32(void);
+int lehmer_int32(void);
 
 /**
  * @brief Generate a normalized random number in [0.0, 1.0)
@@ -119,7 +117,7 @@ float lehmer_float(void);
  * @param out Output dimension (fan-out)
  * @return 32-bit float uniform in [-a, a]
  */
-float lehmer_xavier(size_t in, size_t out);
+float lehmer_xavier(unsigned out, unsigned in);
 
 /**
  * @brief Generate a Xavier-Bengio scaled normal distribution using Box-Muller transform.
@@ -130,7 +128,7 @@ float lehmer_xavier(size_t in, size_t out);
  * @param out Output dimension (fan-out)
  * @return 32-bit float from N(0, stddev^2)
  */
-float lehmer_muller(size_t in, size_t out);
+float lehmer_muller(unsigned out, unsigned in);
 
 /**
  * @brief In-place Fisher–Yates shuffle of an array.
@@ -142,6 +140,6 @@ float lehmer_muller(size_t in, size_t out);
  * @param size Size in bytes of each element
  * @return true on success, false on failure
  */
-bool lehmer_yates(void* base, size_t n, size_t size);
+bool lehmer_yates(void* base, unsigned n, unsigned size);
 
 #endif  // LEHMER_H
