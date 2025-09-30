@@ -67,24 +67,26 @@ typedef struct Dim {
     int head_dim;  // per-head dimension (d_model / heads)
 } Dim;
 
-typedef struct FeedForward {
-    float* W1;  // (hidden_dim, d_model)
-    float* W2;  // (d_model, hidden_dim)
-    float* W3;  // (hidden_dim, d_model)
-    float* rms;  // (d_model,)
-} FeedForward;
-
 typedef struct Attention {
-    float* Wq;  // (d_model, heads * head_dim)
-    float* Wk;  // (d_model, kv_heads * head_dim)
-    float* Wv;  // (d_model, kv_heads * head_dim)
-    float* Wo;  // (heads * head_dim, d_model)
-    float* rms;  // (d_model,)
+    float* Wq;  // (d_model, n_heads * head_dim)
+    float* Wk;  // (d_model, n_kv_heads * head_dim)
+    float* Wv;  // (d_model, n_kv_heads * head_dim)
+    float* Wo;  // (n_heads * head_dim, d_model)
+    float* rms;  // (d_model,) RMSNorm params
 } Attention;
 
+typedef struct FeedForward {
+    float* W1;  // (hidden, d_model)
+    float* W2;  // (d_model, hidden)
+    float* W3;  // (hidden, d_model)
+    float* rms;  // (d_model,) RMSNorm params
+} FeedForward;
+
 typedef struct Block {
-    Attention* attn;
-    FeedForward* ffn;
+    Attention* attn;  // multi-headed self attention
+    FeedForward* ffn;  // feed-forward network
+    float* rms_attn;  // (d_model,) RMSNorm params
+    float* rms_ffn;  // (d_model,) RMSNorm params
 } Block;
 
 typedef struct State {
@@ -105,10 +107,10 @@ typedef struct Valerie {
     float* embeddings;  // (vocab_size, d_model)
     float* rms_final;  // (d_model,)
 
-    Block* b;
-    State* s;
+    Block* blocks;
+    State* state;
     Tokenizer* t;
-    Dim d;
+    Dim dim;
 } Valerie;
 
 int main(void) {
