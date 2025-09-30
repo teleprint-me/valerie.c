@@ -23,15 +23,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
-
-// Safe type casting macros
-#define TYPE_CAST(ptr, type) ((type*) (ptr))
-#define TYPE_CAST_SAFE(ptr, type, size) ((sizeof(*(type*) (ptr)) == (size)) ? (type*) (ptr) : NULL)
-
-// Block size definitions for quantization
-#define BLOCK_SIZE 32 /**< Standard block size for quantization */
-#define Q8_ELEMENTS BLOCK_SIZE /**< Elements in an 8-bit quantized block */
+#endif  // __cplusplus
 
 // Union for floating-point bit manipulation
 typedef union FloatBits {
@@ -45,9 +37,10 @@ typedef struct QuantBits {
     uint16_t scalar; /**< Scaling factor */
 } QuantBits;
 
-// Type aliases for quantization
-typedef QuantBits Q8; /**< 8-bit quantization */
-typedef QuantBits Q8Row[Q8_ELEMENTS]; /**< Array of 8-bit quantized values */
+// Type aliases for encodings
+typedef QuantBits quant8_t; /**< 8-bit quantization */
+typedef uint16_t float16_t;
+typedef uint16_t bfloat16_t;
 
 // Supported data types
 typedef enum DataTypeId {
@@ -86,10 +79,11 @@ typedef struct DataType {
 static const DataType TYPES[TYPE_COUNT] = {
     [TYPE_FLOAT32] = {"float32", alignof(float), sizeof(float), TYPE_IS_SIGNED, TYPE_FLOAT32},
     [TYPE_FLOAT16]
-    = {"float16", alignof(uint16_t), sizeof(uint16_t), TYPE_IS_UNSIGNED, TYPE_FLOAT16},
+    = {"float16", alignof(float16_t), sizeof(float16_t), TYPE_IS_UNSIGNED, TYPE_FLOAT16},
     [TYPE_BFLOAT16]
-    = {"bfloat16", alignof(uint16_t), sizeof(uint16_t), TYPE_IS_UNSIGNED, TYPE_BFLOAT16},
-    [TYPE_QUANT8] = {"qint8", alignof(Q8), sizeof(Q8), TYPE_NOT_APPLICABLE, TYPE_QUANT8},
+    = {"bfloat16", alignof(bfloat16_t), sizeof(bfloat16_t), TYPE_IS_UNSIGNED, TYPE_BFLOAT16},
+    [TYPE_QUANT8]
+    = {"qint8", alignof(quant8_t), sizeof(quant8_t), TYPE_NOT_APPLICABLE, TYPE_QUANT8},
     [TYPE_INT32] = {"int32", alignof(int32_t), sizeof(int32_t), TYPE_IS_SIGNED, TYPE_INT32},
     [TYPE_INT16] = {"int16", alignof(int16_t), sizeof(int16_t), TYPE_IS_SIGNED, TYPE_INT16},
     [TYPE_INT8] = {"int8", alignof(int8_t), sizeof(int8_t), TYPE_IS_SIGNED, TYPE_INT8},
@@ -108,45 +102,37 @@ const char* data_type_name(DataTypeId id); /**< Get name of type by ID */
 // Scalar conversions
 
 // Floating-point encoding/decoding
-uint32_t encode_scalar_fp32(float value); /**< Encode 32-bit float to bits */
-float decode_scalar_fp32(uint32_t bits); /**< Decode bits to 32-bit float */
+uint32_t encode_fp32(float value); /**< Encode 32-bit float to bits */
+float decode_fp32(uint32_t bits); /**< Decode bits to 32-bit float */
 
 // Half-precision floating-point
-uint16_t quantize_scalar_fp16(float value); /**< Quantize 32-bit float to 16-bit */
-float dequantize_scalar_fp16(uint16_t bits); /**< Dequantize 16-bit to 32-bit float */
+float16_t encode_fp16(float value); /**< Quantize 32-bit float to 16-bit */
+float decode_fp16(float16_t bits); /**< Dequantize 16-bit to 32-bit float */
 
 // Google brain floating-point format
-uint16_t quantize_scalar_bf16(float value); /**< Quantize 32-bit float to 16-bit */
-float dequantize_scalar_bf16(uint16_t bits); /**< Dequantize 16-bit to 32-bit float */
+bfloat16_t encode_bf16(float value); /**< Quantize 32-bit float to 16-bit */
+float decode_bf16(bfloat16_t bits); /**< Dequantize 16-bit to 32-bit float */
 
 // 8-bit integer quantization
-Q8 quantize_scalar_q8(float value); /**< Quantize 32-bit float to 8-bit */
-float dequantize_scalar_q8(Q8 q8); /**< Dequantize 8-bit to 32-bit float */
+quant8_t encode_q8(float value); /**< Quantize 32-bit float to 8-bit */
+float decode_q8(quant8_t q8); /**< Dequantize 8-bit to 32-bit float */
 
 // Supports 32, 16, and 8-bit formats. Q4 is excluded.
-bool quantize_scalar(const float input, void* output, DataTypeId id);
-bool dequantize_scalar(const void* input, float* output, DataTypeId id);
+bool quant_scalar(void* dst, float src, DataTypeId dst_id);
+bool dequant_scalar(float* dst, const void* src, DataTypeId src_id);
 
 // Vector conversions (1D arrays)
 
-// Half-precision floating-point
-void quantize_row_fp16(const float* input, uint16_t* output, size_t length);
-void dequantize_row_fp16(const uint16_t* input, float* output, size_t length);
-
-// Google brain floating-point quantization
-void quantize_row_bf16(const float* input, uint16_t* output, size_t length);
-void dequantize_row_bf16(const uint16_t* input, float* output, size_t length);
-
-// 8-bit integer quantization
-void quantize_row_q8(const float* input, Q8Row output, size_t length);
-void dequantize_row_q8(const Q8Row input, float* output, size_t length);
-
 // Supports 32, 16, and 8-bit formats.
-bool quantize_row(const float* input, void* output, size_t length, DataTypeId id);
-bool dequantize_row(const void* input, float* output, size_t length, DataTypeId id);
+bool quant_vec(void* out, const float* in, size_t len, DataTypeId dst_id);
+bool dequant_vec(float* out, const void* in, size_t len, DataTypeId src_id);
+
+// Matrix conversions (2D flat arrays)
+bool quant_mat(void* dst, const float* src, size_t rows, size_t cols, DataTypeId dst_id);
+bool dequant_mat(float* dst, const void* src, size_t rows, size_t cols, DataTypeId src_id);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#endif // DATA_TYPE_H
+#endif  // DATA_TYPE_H
