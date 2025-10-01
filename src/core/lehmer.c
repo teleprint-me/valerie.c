@@ -68,8 +68,18 @@ long lehmer_int64(void) {
     return lehmer_state.seed;
 }
 
+long lehmer_int64_cb(void* data) {
+    (void) data;
+    return lehmer_int64();
+}
+
 int lehmer_int32(void) {
     return (int) lehmer_int64();
+}
+
+int lehmer_int32_cb(void* data) {
+    (void) data;
+    return lehmer_int32();
 }
 
 double lehmer_double(void) {
@@ -78,8 +88,18 @@ double lehmer_double(void) {
     return lehmer_state.norm;
 }
 
+double lehmer_double_cb(void* data) {
+    (void) data;
+    return lehmer_double();
+}
+
 float lehmer_float(void) {
     return (float) lehmer_double();
+}
+
+float lehmer_float_cb(void* data) {
+    (void) data;
+    return lehmer_float();
 }
 
 // Xavier/Glorot uniform
@@ -89,8 +109,13 @@ float lehmer_xavier(unsigned out, unsigned in) {
     return ud * a;
 }
 
+float lehmer_xavier_cb(void* data) {
+    LehmerArgs* args = (LehmerArgs*) data;
+    return lehmer_xavier(args->fan_out, args->fan_in);
+}
+
 // Box-Muller normal
-float xorshift_muller(unsigned out, unsigned in) {
+float lehmer_muller(unsigned out, unsigned in) {
     float u1 = lehmer_float();
     if (u1 < 1e-7f) {
         u1 = 1e-7f;  // avoid 0
@@ -104,8 +129,13 @@ float xorshift_muller(unsigned out, unsigned in) {
     return z0 * stddev;
 }
 
+float lehmer_muller_cb(void* data) {
+    LehmerArgs* args = (LehmerArgs*) data;
+    return lehmer_muller(args->fan_out, args->fan_in);
+}
+
 // Fisher–Yates shuffle
-bool xorshift_yates(void* base, unsigned n, unsigned size) {
+bool lehmer_yates(void* base, unsigned n, unsigned size) {
     if (!base || n < 2) {
         return false;  // redundant
     }

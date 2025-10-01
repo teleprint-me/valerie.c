@@ -68,7 +68,22 @@ typedef struct LehmerState {
 } LehmerState;
 
 /**
- * @var lehmer_state
+ * @struct LehmerArgs
+ * @brief Represents a set of optional callback arguments.
+ */
+typedef struct LehmerArgs {
+    unsigned fan_out;
+    unsigned fan_in;
+} LehmerArgs;
+
+/**
+ * @param LehmerFn
+ * @brief Represents a callback function with optional arguments.
+ */
+typedef float (*LehmerFn)(void* data);
+
+/**
+ * @param lehmer_state
  * @brief Thread-local instance of the Lehmer RNG state
  *
  * Accessible if you want to inspect or modify state manually.
@@ -88,24 +103,28 @@ void lehmer_init(long seed);
  * @return Random long in the range [1, LEHMER_MODULUS - 1]
  */
 long lehmer_int64(void);
+long lehmer_int64_cb(void* data);
 
 /**
  * @brief Generate the next random 32-bit integer in the sequence
  * @return Random int in the range [1, LEHMER_MODULUS - 1] truncated
  */
 int lehmer_int32(void);
+int lehmer_int32_cb(void* data);
 
 /**
  * @brief Generate a normalized random number in [0.0, 1.0)
  * @return A double-precision float in the range [0.0, 1.0)
  */
 double lehmer_double(void);
+double lehmer_double_cb(void* data);
 
 /**
  * @brief Generate a normalized random number in [0.0, 1.0)
  * @return A single-precision float in the range [0.0, 1.0)
  */
 float lehmer_float(void);
+float lehmer_float_cb(void* data);
 
 /**
  * @brief Generate a Xavier-Bengio scaled uniform distribution [-a, a].
@@ -118,6 +137,7 @@ float lehmer_float(void);
  * @return 32-bit float uniform in [-a, a]
  */
 float lehmer_xavier(unsigned out, unsigned in);
+float lehmer_xavier_cb(void* data);
 
 /**
  * @brief Generate a Xavier-Bengio scaled normal distribution using Box-Muller transform.
@@ -129,6 +149,7 @@ float lehmer_xavier(unsigned out, unsigned in);
  * @return 32-bit float from N(0, stddev^2)
  */
 float lehmer_muller(unsigned out, unsigned in);
+float lehmer_muller_cb(void* data);
 
 /**
  * @brief In-place Fisher–Yates shuffle of an array.
