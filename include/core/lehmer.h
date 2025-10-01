@@ -113,8 +113,8 @@ float lehmer_float(void);
  * Uses the formula: a = sqrt(6 / (in + out))
  * Output is uniform in [-a, a].
  *
- * @param in  Input dimension (fan-in)
  * @param out Output dimension (fan-out)
+ * @param in  Input dimension (fan-in)
  * @return 32-bit float uniform in [-a, a]
  */
 float lehmer_xavier(unsigned out, unsigned in);
@@ -124,8 +124,8 @@ float lehmer_xavier(unsigned out, unsigned in);
  *
  * Standard normal (mean=0, variance=1), scaled by sqrt(2 / (in + out)).
  *
- * @param in  Input dimension (fan-in)
  * @param out Output dimension (fan-out)
+ * @param in  Input dimension (fan-in)
  * @return 32-bit float from N(0, stddev^2)
  */
 float lehmer_muller(unsigned out, unsigned in);
