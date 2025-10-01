@@ -1,6 +1,10 @@
 /**
- * @file model/matrix.c
- * @brief A polymorphic matrix operation interface.
+ * @file      model/matrix.c
+ * @brief     Type-generic matrix operations (forward, backward, SGD) for ML.
+ * @copyright Copyright © 2023 Austin Berrio
+ *
+ * - Supports float, bfloat16, Q8, and custom types for all key ops.
+ * - Minimal dependencies. Consistent, idiomatic, and easy to extend.
  */
 
 #include <stdlib.h>
@@ -179,16 +183,7 @@ void mat_chain(
     }
 }
 
-/**
- * @brief Apply SGD update to weights (type-agnostic, supports momentum)
- *        W -= lr * g, with optional L2, momentum, and Nesterov
- *
- * W:      weight matrix (void*, e.g., Q8)
- * dW:     gradient matrix (void*, e.g., BF16)
- * vW:     velocity buffer (void*, same type as dW, may be NULL if no momentum)
- * id_W:   DataTypeId for weights (forward pass)
- * id_dvW: DataTypeId for dW/vW (backward pass)
- */
+// Apply SGD update to weights (type-agnostic, supports momentum)
 void mat_sgd(
     void* W,  // [rows x cols], type id_W
     const void* dW,  // [rows x cols], type id_dvW
