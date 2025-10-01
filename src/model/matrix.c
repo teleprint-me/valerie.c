@@ -44,7 +44,7 @@ void mat_init(
     // Calculate buffer length
     size_t n = rows * cols;
 
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (size_t i = 0; i < n; i++) {
         // xavier(fan_in, fan_out)
         float value = lehmer_fn(lehmer_args);  // must be thread_local
