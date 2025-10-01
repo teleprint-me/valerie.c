@@ -1,14 +1,12 @@
 /**
- * Copyright © 2023 Austin Berrio
- *
  * @file core/type.h
- *
- * @brief API for numeric data types and conversions.
+ * @brief Numeric data types and conversions API.
+ * @copyright Copyright © 2023 Austin Berrio
  *
  * Features:
  * - Single and half-precision floating-point support.
- * - 8-bit and 4-bit quantized integer support.
- * - Minimal dependencies with a consistent, extensible design.
+ * - 8-bit and 4-bit quantized integer support (Q4 planned).
+ * - Consistent, extensible type metadata and conversion utilities.
  */
 
 #ifndef DATA_TYPE_H
@@ -17,65 +15,66 @@
 #include <stdalign.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include <assert.h>
 #include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
-// Union for floating-point bit manipulation
+/** @brief Union for floating-point bit manipulation */
 typedef union FloatBits {
-    float value; /**< Floating-point value */
-    uint32_t bits; /**< Bit-level representation */
+    float value;
+    uint32_t bits;
 } FloatBits;
 
-// Quantization structure
+/** @brief Quantized 8-bit value and scaling factor */
 typedef struct QuantBits {
-    uint8_t bits; /**< Quantized value with baked residual */
-    uint16_t scalar; /**< Scaling factor */
+    uint8_t bits;
+    uint16_t scalar;
 } QuantBits;
 
 // Type aliases for encodings
 typedef QuantBits quant8_t; /**< 8-bit quantization */
-typedef uint16_t float16_t;
-typedef uint16_t bfloat16_t;
+typedef uint16_t float16_t; /**< IEEE-754 half precision */
+typedef uint16_t bfloat16_t; /**< Google brain float16 */
 
 // Supported data types
 typedef enum DataTypeId {
-    TYPE_FLOAT32, /**< 32-bit floating-point (IEEE-754) */
-    TYPE_FLOAT16, /**< 16-bit floating-point (IEEE-754) */
-    TYPE_BFLOAT16, /**< 16-bit floating-point (bfloat16) */
-    TYPE_QUANT8, /**< 8-bit quantized integer */
-    TYPE_INT32, /**< 32-bit signed integer */
-    TYPE_INT16, /**< 16-bit signed integer */
-    TYPE_INT8, /**< 8-bit signed integer */
-    TYPE_UINT32, /**< 32-bit unsigned integer */
-    TYPE_UINT16, /**< 16-bit unsigned integer */
-    TYPE_UINT8, /**< 8-bit unsigned integer */
-    TYPE_BOOL, /**< Boolean */
-    TYPE_CHAR, /**< 1-byte character */
-    TYPE_COUNT /**< Total number of types */
+    TYPE_FLOAT32,
+    TYPE_FLOAT16,
+    TYPE_BFLOAT16,
+    TYPE_QUANT8,
+    TYPE_INT32,
+    TYPE_INT16,
+    TYPE_INT8,
+    TYPE_UINT32,
+    TYPE_UINT16,
+    TYPE_UINT8,
+    TYPE_BOOL,
+    TYPE_CHAR,
+    TYPE_COUNT
 } DataTypeId;
 
 // Data type sign
 typedef enum DataTypeSign {
-    TYPE_NOT_APPLICABLE, /**< Not applicable (e.g., for packed types) */
-    TYPE_IS_SIGNED, /**< Signed types */
-    TYPE_IS_UNSIGNED /**< Unsigned types */
+    TYPE_NOT_APPLICABLE,
+    TYPE_IS_SIGNED,
+    TYPE_IS_UNSIGNED,
 } DataTypeSign;
 
 // Metadata for data types
 typedef struct DataType {
-    const char* name; /**< Human-readable name */
-    uint32_t alignment; /**< Memory alignment in bytes */
-    uint32_t size; /**< Size in bytes */
-    DataTypeSign sign; /**< Signed/unsigned status */
-    DataTypeId id; /**< Unique identifier */
+    const char* name;
+    uint32_t alignment;
+    uint32_t size;
+    DataTypeSign sign;
+    DataTypeId id;
 } DataType;
 
-// Static array of supported types
+// Static table of type metadata
 static const DataType TYPES[TYPE_COUNT] = {
     [TYPE_FLOAT32] = {"float32", alignof(float), sizeof(float), TYPE_IS_SIGNED, TYPE_FLOAT32},
     [TYPE_FLOAT16]
@@ -94,45 +93,158 @@ static const DataType TYPES[TYPE_COUNT] = {
     [TYPE_CHAR] = {"char", alignof(char), sizeof(char), TYPE_IS_UNSIGNED, TYPE_CHAR},
 };
 
-// Data type management
-const DataType* data_type_get(DataTypeId id); /**< Retrieve metadata by type ID */
-uint32_t data_type_size(DataTypeId id); /**< Get size of type by ID */
-const char* data_type_name(DataTypeId id); /**< Get name of type by ID */
+/**
+ * @name Data Type Metadata Utilities
+ * @{
+ */
 
-// Scalar conversions
+/**
+ * @brief Retrieve metadata by type ID
+ */
+const DataType* data_type_get(DataTypeId id);
 
-// Floating-point encoding/decoding
-uint32_t encode_fp32(float value); /**< Encode 32-bit float to bits */
-float decode_fp32(uint32_t bits); /**< Decode bits to 32-bit float */
+/**
+ * @brief Get size in bytes of a data type by ID
+ */
+uint32_t data_type_size(DataTypeId id);
 
-// Half-precision floating-point
-float16_t encode_fp16(float value); /**< Quantize 32-bit float to 16-bit */
-float decode_fp16(float16_t bits); /**< Dequantize 16-bit to 32-bit float */
+/**
+ * @brief Get human-readable name for a data type by ID
+ */
+const char* data_type_name(DataTypeId id);
 
-// Google brain floating-point format
-bfloat16_t encode_bf16(float value); /**< Quantize 32-bit float to 16-bit */
-float decode_bf16(bfloat16_t bits); /**< Dequantize 16-bit to 32-bit float */
+/** @} */
 
-// 8-bit integer quantization
-quant8_t encode_q8(float value); /**< Quantize 32-bit float to 8-bit */
-float decode_q8(quant8_t q8); /**< Dequantize 8-bit to 32-bit float */
+/**
+ * @name Scalar Encoding/Decoding
+ * @{
+ */
 
-// Supports 32, 16, and 8-bit formats. Q4 is excluded.
+/**
+ * @brief Encode 32-bit float as raw bits
+ */
+uint32_t encode_fp32(float value);
+
+/**
+ * @brief Decode 32-bit float from raw bits
+ */
+float decode_fp32(uint32_t bits);
+
+/**
+ * @brief Quantize 32-bit float to IEEE half-precision (16-bit)
+ */
+float16_t encode_fp16(float value);
+
+/**
+ * @brief Dequantize IEEE half-precision (16-bit) to 32-bit float
+ */
+float decode_fp16(float16_t bits);
+
+/**
+ * @brief Quantize 32-bit float to bfloat16 (16-bit, Google)
+ */
+bfloat16_t encode_bf16(float value);
+
+/**
+ * @brief Dequantize bfloat16 (16-bit, Google) to 32-bit float
+ */
+float decode_bf16(bfloat16_t bits);
+
+/**
+ * @brief Quantize 32-bit float to 8-bit quantized (custom)
+ */
+quant8_t encode_q8(float value);
+
+/**
+ * @brief Dequantize 8-bit quantized value to 32-bit float
+ */
+float decode_q8(quant8_t q8);
+
+/** @} */
+
+/**
+ * @name Scalar Quantization/Dequantization (by type)
+ * @{
+ */
+
+/**
+ * @brief Quantize a scalar float to another type.
+ * @param[out] dst Pointer to destination buffer (scalar of type dst_id)
+ * @param[in]  src Source scalar float value
+ * @param[in]  dst_id Target data type ID
+ * @return true if successful, false otherwise
+ */
 bool quant_scalar(void* dst, float src, DataTypeId dst_id);
+
+/**
+ * @brief Dequantize a scalar of given type to float.
+ * @param[out] dst Pointer to destination float
+ * @param[in]  src Pointer to source scalar (of type src_id)
+ * @param[in]  src_id Source data type ID
+ * @return true if successful, false otherwise
+ */
 bool dequant_scalar(float* dst, const void* src, DataTypeId src_id);
 
-// Vector conversions (1D arrays)
+/** @} */
 
-// Supports 32, 16, and 8-bit formats.
-bool quant_vec(void* out, const float* in, size_t len, DataTypeId dst_id);
-bool dequant_vec(float* out, const void* in, size_t len, DataTypeId src_id);
+/**
+ * @name Vector Quantization/Dequantization
+ * @{
+ */
 
-// Matrix conversions (2D flat arrays)
+/**
+ * @brief Quantize a vector of floats to a vector of another type.
+ * @param[out] dst Destination buffer (length elements of type dst_id)
+ * @param[in]  src Source buffer (float*, length elements)
+ * @param[in]  len Number of elements
+ * @param[in]  dst_id Target data type ID
+ * @return true if successful, false otherwise
+ */
+bool quant_vec(void* dst, const float* src, size_t len, DataTypeId dst_id);
+
+/**
+ * @brief Dequantize a vector of src_id to floats.
+ * @param[out] dst Destination buffer (float*, length elements)
+ * @param[in]  src Source buffer (length elements of type src_id)
+ * @param[in]  len Number of elements
+ * @param[in]  src_id Source data type ID
+ * @return true if successful, false otherwise
+ */
+bool dequant_vec(float* dst, const void* src, size_t len, DataTypeId src_id);
+
+/** @} */
+
+/**
+ * @name Matrix Quantization/Dequantization
+ * @{
+ */
+
+/**
+ * @brief Quantize a flat matrix (row-major) of floats to another type.
+ * @param[out] dst Destination buffer ((rows * cols) of type dst_id)
+ * @param[in]  src Source buffer (float*, rows * cols)
+ * @param[in]  rows Number of rows
+ * @param[in]  cols Number of columns
+ * @param[in]  dst_id Target data type ID
+ * @return true if successful, false otherwise
+ */
 bool quant_mat(void* dst, const float* src, size_t rows, size_t cols, DataTypeId dst_id);
+
+/**
+ * @brief Dequantize a flat matrix (row-major) of src_id to floats.
+ * @param[out] dst Destination buffer (float*, rows * cols)
+ * @param[in]  src Source buffer ((rows * cols) of type src_id)
+ * @param[in]  rows Number of rows
+ * @param[in]  cols Number of columns
+ * @param[in]  src_id Source data type ID
+ * @return true if successful, false otherwise
+ */
 bool dequant_mat(float* dst, const void* src, size_t rows, size_t cols, DataTypeId src_id);
+
+/** @} */
 
 #ifdef __cplusplus
 }
-#endif  // __cplusplus
+#endif
 
 #endif  // DATA_TYPE_H

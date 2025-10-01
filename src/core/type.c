@@ -240,9 +240,9 @@ bool dequant_scalar(float* dst, const void* src, DataTypeId src_id) {
  * Supports 32, 16, and 8-bit formats.
  */
 
-bool quant_vec(void* out, const float* in, size_t len, DataTypeId dst_id) {
-    assert(in != NULL);
-    assert(out != NULL);
+bool quant_vec(void* dst, const float* src, size_t len, DataTypeId dst_id) {
+    assert(dst != NULL);
+    assert(src != NULL);
     assert(len > 0);
     assert(dst_id < TYPE_COUNT);
 
@@ -250,8 +250,8 @@ bool quant_vec(void* out, const float* in, size_t len, DataTypeId dst_id) {
     assert(stride > 0);
 
     for (size_t i = 0; i < len; ++i) {
-        void* dst = (uint8_t*) out + i * stride;
-        if (!quant_scalar(dst, in[i], dst_id)) {
+        void* dst_elem = (uint8_t*) dst + i * stride;
+        if (!quant_scalar(dst_elem, src[i], dst_id)) {
             return false;
         }
     }
@@ -259,9 +259,9 @@ bool quant_vec(void* out, const float* in, size_t len, DataTypeId dst_id) {
     return true;
 }
 
-bool dequant_vec(float* out, const void* in, size_t len, DataTypeId src_id) {
-    assert(in != NULL);
-    assert(out != NULL);
+bool dequant_vec(float* dst, const void* src, size_t len, DataTypeId src_id) {
+    assert(dst != NULL);
+    assert(src != NULL);
     assert(len > 0);
     assert(src_id < TYPE_COUNT);
 
@@ -269,8 +269,8 @@ bool dequant_vec(float* out, const void* in, size_t len, DataTypeId src_id) {
     assert(stride > 0);
 
     for (size_t i = 0; i < len; ++i) {
-        const void* src = (const uint8_t*) in + i * stride;
-        if (!dequant_scalar(&out[i], src, src_id)) {
+        const void* src_elem = (const uint8_t*) src + i * stride;
+        if (!dequant_scalar(&dst[i], src_elem, src_id)) {
             return false;
         }
     }
