@@ -15,7 +15,7 @@
 #include "model/activation.h"
 
 /**
- * @section Linear ops
+ * @section Matrix Allocation and Initialization
  * @{
  */
 
@@ -77,6 +77,13 @@ void mat_muller(void* A, size_t rows, size_t cols, DataTypeId id) {
     mat_init(A, rows, cols, id, lehmer_muller_cb, &(LehmerArgs) {rows, cols});
 }
 
+/** @} */
+
+/**
+ * @section Matrix Math
+ * @{
+ */
+
 // Row-major matrix multiplication (y = Wx + b)
 // bias is omitted because it's always 0
 void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, DataTypeId id) {
@@ -109,6 +116,12 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, D
         y[i] = sum;
     }
 }
+
+/** @} */
+
+/**
+ * @section Backward/Gradient Ops
+ */
 
 // dW = δ_next ⊗ x^T (outer product)
 // dW, d_next must be of type id; x is always float*
@@ -182,6 +195,12 @@ void mat_chain(
         quant_scalar(dy_ptr, temp, id);
     }
 }
+
+/** @} */
+
+/**
+ * @section Optimizer Ops
+ */
 
 // Apply SGD update to weights (type-agnostic, supports momentum)
 void mat_sgd(

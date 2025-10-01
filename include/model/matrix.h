@@ -21,6 +21,7 @@ extern "C" {
 
 /**
  * @section Matrix Allocation and Initialization
+ * @{
  */
 
 /**
@@ -52,6 +53,8 @@ void mat_xavier(void* A, size_t rows, size_t cols, DataTypeId id);
 /** @brief Xavier normal (Box-Muller) initializer */
 void mat_muller(void* A, size_t rows, size_t cols, DataTypeId id);
 
+/** @} */
+
 /**
  * @section Matrix Math
  */
@@ -66,6 +69,8 @@ void mat_muller(void* A, size_t rows, size_t cols, DataTypeId id);
  * @param[in]  id   Data type for W and x
  */
 void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, DataTypeId id);
+
+/** @} */
 
 /**
  * @section Backward/Gradient Ops
@@ -101,6 +106,8 @@ void mat_chain(
     size_t rows_next,
     DataTypeId id
 );
+
+/** @} */
 
 /**
  * @section Optimizer Ops
@@ -144,6 +151,8 @@ void mat_sgd(
     float tau,
     bool nesterov
 );
+
+/** @} */
 
 #ifdef __cplusplus
 }
