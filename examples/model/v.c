@@ -93,16 +93,12 @@ typedef struct Attention {
     quant8_t* Wk;  // (d_model, n_kv_heads * head_dim)
     quant8_t* Wv;  // (d_model, n_kv_heads * head_dim)
     quant8_t* Wo;  // (n_heads * head_dim, d_model)
-
-    float* rms;  // (d_model,) RMSNorm params
 } Attention;
 
 typedef struct FeedForward {
     quant8_t* W1;  // (hidden, d_model)
     quant8_t* W2;  // (d_model, hidden)
     quant8_t* W3;  // (hidden, d_model)
-
-    float* rms;  // (d_model,) RMSNorm params
 } FeedForward;
 
 typedef struct Layer {
@@ -115,7 +111,7 @@ typedef struct Layer {
 typedef struct State {
     /// @note Output weights are tied to embeddings
     /// @ref https://arxiv.org/abs/1608.05859
-    float* embeddings;  // (vocab_size, d_model)
+    float* E;  // (vocab_size, d_model)
 
     float* x;  // (d_model,)
 
