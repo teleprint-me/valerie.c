@@ -58,6 +58,7 @@ add_library(valerie SHARED
     # Model modules
     "src/model/activation.c" # Activation functions and their derivatives
     "src/model/matrix.c"     # Type-generic matrix operations (forward, backward, SGD)
+    "src/model/blocks.c"
 )
 
 target_include_directories(valerie PUBLIC include)
