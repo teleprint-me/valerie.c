@@ -13,10 +13,10 @@
 #include "core/logger.h"
 #include "core/path.h"
 #include "core/lehmer.h"
+#include "core/type.h"
 
 #include "tokenizer/model.h"
-
-#include "model/activation.h"
+#include "model/matrix.h"
 
 /**
  * @section One-hot encoder
@@ -79,123 +79,6 @@ void softmax(float* x, int n) {
 /** @} */
 
 /**
- * @section Matrix ops
- * @note Matrices are always row-major.
- * @note Outputs are rows. Inputs are columns.
- * @note Uppercase letters are matrices. Lowercase letters are vectors.
- * @{
- */
-
-// Create a row-major matrix
-float* mat_new(size_t out, size_t in) {
-    float* mat = calloc(out * in, sizeof(float));
-    if (!mat) {
-        return NULL;
-    }
-    return mat;
-}
-
-void mat_xavier(float* x, size_t n, size_t out, size_t in) {
-#pragma omp parallel for
-    for (size_t i = 0; i < n; i++) {
-        // xavier(fan_in, fan_out)
-        x[i] = lehmer_xavier(in, out);  // thread is local
-    }
-}
-
-// Row-major matrix transposition (rows x cols) into (cols x rows)
-void mat_T(const float* X, float* X_T, size_t out, size_t in) {
-#pragma omp parallel for
-    for (size_t i = 0; i < out; i++) {
-        for (size_t j = 0; j < in; j++) {
-            // W_T[j * rows + i] = W[i * cols + j];
-            X_T[j * out + i] = X[i * in + j];
-        }
-    }
-}
-
-// Row-major matrix multiplication (y = Wx + b)
-// bias is omitted because it's always 0
-void mat_mul(float* y, float* W, float* x, size_t out, size_t in) {
-#pragma omp parallel for
-    for (size_t i = 0; i < out; i++) {
-        float sum = 0.0f;
-        for (size_t j = 0; j < in; j++) {
-            sum += W[i * in + j] * x[j];
-        }
-        y[i] = sum;
-    }
-}
-
-// dW = δ_next ⊗ xᵀ (outer product)
-void mat_dW(float* dW, float* d_next, float* x, size_t out, size_t in) {
-#pragma omp parallel for
-    for (size_t i = 0; i < out; i++) {
-        for (size_t j = 0; j < in; j++) {
-            dW[i * in + j] = d_next[i] * x[j];
-        }
-    }
-}
-
-// Backprop: dy = (W_next^T * d_next) ⊙ f'(x) (chain rule)
-void mat_chain(float* dy, float* W_next, float* d_next, float* z, size_t out, size_t out_next) {
-#pragma omp parallel for
-    for (size_t i = 0; i < out; i++) {
-        float sum = 0.0f;
-
-        // Iterate over next-layer neurons
-        for (size_t j = 0; j < out_next; j++) {
-            sum += W_next[j * out + i] * d_next[j];
-        }
-
-        dy[i] = sum * silu_prime(z[i]);
-    }
-}
-
-// Apply SGD update to weights
-void mat_sgd(
-    float* W,
-    float* vW,
-    const float* dW,
-    size_t out,
-    size_t in,
-    float lr,
-    float lambda,
-    float mu,
-    float tau,
-    bool nesterov
-) {
-#pragma omp parallel for
-    for (size_t i = 0; i < out; i++) {
-        for (size_t j = 0; j < in; j++) {
-            size_t idx = i * in + j;
-            float g = dW[idx];
-
-            // L2 regularization
-            if (lambda > 0.0f) {
-                g += lambda * W[idx];
-            }
-
-            // Momentum
-            if (mu > 0.0f) {
-                vW[idx] = mu * vW[idx] + (1.0f - tau) * g;
-
-                if (nesterov) {
-                    g += mu * vW[idx];  // Lookahead
-                } else {
-                    g = vW[idx];
-                }
-            }
-
-            // Weight update
-            W[idx] -= lr * g;
-        }
-    }
-}
-
-/** @} */
-
-/**
  * @section Embeddings
  * @note Uppercase letters are matrices. Lowercase letters are vectors.
  * @{
@@ -212,12 +95,12 @@ void mat_sgd(
  * @note Row-major layout: E[v * D + d]
  */
 float* embeddings_create(size_t vocab_size, size_t embed_dim) {
-    float* E = mat_new(vocab_size, embed_dim);
+    float* E = mat_new(vocab_size, embed_dim, TYPE_FLOAT32);
     if (!E) {
         return NULL;
     }
 
-    mat_xavier(E, vocab_size * embed_dim, vocab_size, embed_dim);
+    mat_xavier(E, vocab_size, embed_dim, TYPE_FLOAT32);
     return E;
 }
 
@@ -415,7 +298,7 @@ int main(int argc, const char* argv[]) {
     // Print initialized embeddings table
     embeddings_log_table(E, ids, seq_len, embed_dim, t->id_to_token);
 
-    float* E_out = mat_new(seq_len, embed_dim);
+    float* E_out = mat_new(seq_len, embed_dim, TYPE_FLOAT32);
     if (!E_out) {
         goto fail_lookup;
     }
