@@ -16,67 +16,9 @@
 #include "core/type.h"
 
 #include "tokenizer/model.h"
+
 #include "model/matrix.h"
-
-/**
- * @section One-hot encoder
- * @{
- */
-
-float* one_hot_encode(size_t label, size_t n_classes) {
-    float* vector = calloc(n_classes, sizeof(float));
-    if (label < n_classes) {
-        vector[label] = 1.0f;
-    }
-    return vector;
-}
-
-/** @} */
-
-/**
- * @section Cross-entropy
- * @{
- */
-
-// y_pred: predicted probabilities (softmax output), shape (n,)
-// y_true: target one-hot vector, shape (n,)
-// n: number of classes
-float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        if (y_true[i] == 1.0f) {
-            return -logf(fmaxf(y_pred[i], 1e-8f));
-        }
-    }
-    return 0.0f;  // fallback if not one-hot
-}
-
-/** @} */
-
-/**
- * @section Softmax
- * @{
- */
-
-void softmax(float* x, int n) {
-    float max_score = x[0];
-    for (int i = 1; i < n; i++) {
-        if (x[i] > max_score) {
-            max_score = x[i];
-        }
-    }
-
-    float sum = 0.0f;
-    for (int i = 0; i < n; i++) {
-        x[i] = expf(x[i] - max_score);
-        sum += x[i];
-    }
-
-    for (int i = 0; i < n; i++) {
-        x[i] /= sum;
-    }
-}
-
-/** @} */
+#include "model/blocks.h"
 
 /**
  * @section Embeddings
