@@ -2,9 +2,9 @@
  * @file examples/core/lehmer.c
  */
 
-#include "core/lehmer.h"
-
 #include <stdio.h>
+#include <omp.h>
+#include "core/lehmer.h"
 
 #define LIMIT 10
 
