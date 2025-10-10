@@ -203,6 +203,19 @@ Dim v_dim_new(void) {
     };
 }
 
+quant8_t* mat_new_q8(size_t rows, size_t cols, size_t block_size) {
+    quant8_t* q8 = malloc(sizeof(quant8_t));
+    if (!q8) return NULL;
+
+    size_t len = rows * cols;
+    size_t blocks = (len + block_size - 1) / block_size;
+
+    q8->q = calloc(len, sizeof(int8_t));
+    q8->s = calloc(blocks, sizeof(uint8_t));
+
+    return q8;
+}
+
 // Attention v_attn_new(Dim* d) {
 //     return (Attention) {
 //         quant8_t* Wq;  // (d_model, heads * head_dim)
