@@ -135,6 +135,34 @@ static const Type TYPE_DATA[TYPE_COUNT] = {
 };
 
 /**
+ * Type aliases
+ * @brief Common shorthand aliases for low-precision and quantized types.
+ *
+ * These aliases improve readability in model and tensor code by providing
+ * descriptive names for reduced-precision formats. Each alias maps directly
+ * to its underlying storage type and does not introduce any runtime overhead.
+ *
+ * Example usage:
+ * @code
+ * float16_t * W;   // 16-bit IEEE-754 (e5m10)
+ * bfloat16_t* g;   // 16-bit BF16 (e8m7)
+ * float8_t  * a;   // 8-bit IEEE (e4m3)
+ * quant8_t    qW;  // Block-quantized 8-bit microscaled format
+ * @endcode
+ *
+ * These aliases are purely semantic conveniences for working with tensors
+ * and quantized blocks, particularly in model-layer code and I/O pipelines.
+ * @{
+ */
+
+typedef uint16_t float16_t;  ///< IEEE-754 half precision (e5m10)
+typedef uint16_t bfloat16_t;  ///< Brain floating-point format (e8m7)
+typedef uint8_t float8_t;  ///< 8-bit float (e4m3)
+typedef Q8 quant8_t;  ///< 8-bit quantized block format (e4m3 microscaling)
+
+/** @} */
+
+/**
  * Metadata Accessors
  * @{
  */
