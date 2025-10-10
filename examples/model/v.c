@@ -230,14 +230,21 @@ void mat_init_q8(quant8_t* q8, size_t rows, size_t cols, size_t block_size) {
     free(src);
 }
 
-// Attention v_attn_new(Dim* d) {
-//     return (Attention) {
-//         quant8_t* Wq;  // (d_model, heads * head_dim)
-//         quant8_t* Wk;  // (d_model, kv_heads * head_dim)
-//         quant8_t* Wv;  // (d_model, kv_heads * head_dim)
-//         quant8_t* Wo;  // (heads * head_dim, d_model)
-//     };
-// }
+Attention v_attn_new(Dim* d) {
+    Attention attn = {0};
+
+    attn.Wq = mat_new_q8(d->d_model, d->heads * d->head_dim, Q8_BLOCK_SIZE);
+    attn.Wk = mat_new_q8(d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
+    attn.Wv = mat_new_q8(d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
+    attn.Wo = mat_new_q8(d->heads * d->head_dim, d->d_model, Q8_BLOCK_SIZE);
+
+    mat_init_q8(attn.Wq, d->d_model, d->heads * d->head_dim, Q8_BLOCK_SIZE);
+    mat_init_q8(attn.Wk, d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
+    mat_init_q8(attn.Wv, d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
+    mat_init_q8(attn.Wo, d->heads * d->head_dim, d->d_model, Q8_BLOCK_SIZE);
+
+    return attn;
+}
 
 float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
     float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
