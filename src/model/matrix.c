@@ -64,53 +64,63 @@ void mat_free(void* M, TypeId id) {
     }
 }
 
-void mat_init(void* A, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args) {
-    assert(A);
-    assert(rows > 0 && cols > 0);
+/// @note This requires per-thread seeding using thread ids.
+/// omp_get_thread_num()
+/// Other possible solutions are thread-locking or chunking per thread.
+/// For now, it's best to just operate linearly to keep complexity low.
+void mat_init(void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args) {
+    assert(M && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
     assert(lehmer_fn);
 
-    // Calculate element size
-    size_t stride = type_size(id);
-    assert(stride > 0);
-
     // Calculate buffer length
-    size_t n = rows * cols;
+    size_t len = rows * cols;
 
-    /// @note This requires per-thread seeding using thread ids.
-    /// omp_get_thread_num()
-    /// Other possible solutions are thread-locking or chunking per thread.
-    /// For now, it's best to just operate linearly to keep complexity low.
-    for (size_t i = 0; i < n; i++) {
-        // xavier(fan_in, fan_out)
-        float value = lehmer_fn(lehmer_args);  // must be thread_local
-        void* dst = (uint8_t*) A + i * stride;
-        quant(dst, value, id);
+    switch (id) {
+        // Init block-wise
+        case TYPE_Q8: {
+            quant8_t* q8 = (quant8_t*) M;
+            float* src = malloc(len * sizeof(float));
+            for (size_t i = 0; i < len; i++) {
+                src[i] = lehmer_fn(lehmer_args);
+            }
+            q8_encode(q8, src, len, Q8_BLOCK_SIZE);
+            free(src);
+            break;
+        }
+        // Init element-wise
+        default: {
+            size_t stride = type_size(id);
+            assert(stride > 0);
+            for (size_t i = 0; i < len; i++) {
+                float value = lehmer_fn(lehmer_args);
+                void* dst = (uint8_t*) M + i * stride;
+                quant(dst, value, id);
+            }
+            break;
+        }
     }
 }
 
-void mat_lehmer(void* A, size_t rows, size_t cols, TypeId id) {
-    assert(A);
-    assert(rows > 0 && cols > 0);
+void mat_lehmer(void* M, size_t rows, size_t cols, TypeId id) {
+    assert(M && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    mat_init(A, rows, cols, id, lehmer_float_cb, NULL);
+    mat_init(M, rows, cols, id, lehmer_float_cb, NULL);
 }
 
-void mat_xavier(void* A, size_t rows, size_t cols, TypeId id) {
-    assert(A);
-    assert(rows > 0 && cols > 0);
+void mat_xavier(void* M, size_t rows, size_t cols, TypeId id) {
+    assert(M && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    mat_init(A, rows, cols, id, lehmer_xavier_cb, &(LehmerArgs) {rows, cols});
+    mat_init(M, rows, cols, id, lehmer_xavier_cb, &(LehmerArgs) {rows, cols});
 }
 
-void mat_muller(void* A, size_t rows, size_t cols, TypeId id) {
-    assert(A);
-    assert(rows > 0 && cols > 0);
+void mat_muller(void* M, size_t rows, size_t cols, TypeId id) {
+    assert(M && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    mat_init(A, rows, cols, id, lehmer_muller_cb, &(LehmerArgs) {rows, cols});
+    mat_init(M, rows, cols, id, lehmer_muller_cb, &(LehmerArgs) {rows, cols});
 }
 
 /** @} */
