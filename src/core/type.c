@@ -355,6 +355,8 @@ void q8_decode(float* dst, const Q8* src, size_t n, size_t block_size) {
  */
 
 bool quant(void* dst, float src, TypeId dst_id) {
+    assert(dst_id < TYPE_COUNT);
+
     switch (dst_id) {
         case TYPE_F32:
             *(float*) dst = src;
@@ -378,6 +380,8 @@ bool quant(void* dst, float src, TypeId dst_id) {
 }
 
 bool dequant(float* dst, const void* src, TypeId src_id) {
+    assert(src_id < TYPE_COUNT);
+
     switch (src_id) {
         case TYPE_F32:
             *dst = *(const float*) src;
@@ -406,6 +410,7 @@ bool dequant(float* dst, const void* src, TypeId src_id) {
 
 bool quant_vec(void* dst, const float* src, size_t len, TypeId dst_id) {
     assert(dst && src && len > 0);
+    assert(dst_id < TYPE_COUNT);
 
     switch (dst_id) {
         case TYPE_Q8: {
@@ -429,6 +434,7 @@ bool quant_vec(void* dst, const float* src, size_t len, TypeId dst_id) {
 
 bool dequant_vec(float* dst, const void* src, size_t len, TypeId src_id) {
     assert(dst && src && len > 0);
+    assert(src_id < TYPE_COUNT);
 
     switch (src_id) {
         case TYPE_Q8: {
