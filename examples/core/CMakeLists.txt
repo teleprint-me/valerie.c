@@ -4,6 +4,7 @@ set(EXAMPLES
     "lehmer"
     "map"
     "set"
+    "q8"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/core)
