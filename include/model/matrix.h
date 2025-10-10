@@ -32,6 +32,7 @@ extern "C" {
  * @return Pointer to buffer (must be freed by caller)
  */
 void* mat_new(size_t rows, size_t cols, TypeId id);
+void mat_free(void* M, TypeId id);
 
 /**
  * @brief Initialize matrix A (rows x cols) with values from a custom random distribution.

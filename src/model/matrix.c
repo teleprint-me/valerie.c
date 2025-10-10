@@ -26,9 +26,42 @@ void* mat_new(size_t rows, size_t cols, TypeId id) {
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    size_t stride = type_size(id);
-    size_t n = rows * cols;
-    return calloc(n, stride);
+    size_t len = rows * cols;
+    switch (id) {
+        case TYPE_Q8: {
+            quant8_t* q8 = malloc(sizeof(quant8_t));
+            if (!q8) {
+                return NULL;
+            }
+
+            size_t blocks = (len + Q8_BLOCK_SIZE - 1) / Q8_BLOCK_SIZE;
+
+            q8->q = calloc(len, sizeof(int8_t));
+            q8->s = calloc(blocks, sizeof(uint8_t));
+
+            return q8;
+        }
+        default: {
+            return calloc(len, type_size(id));
+        }
+    }
+}
+
+void mat_free(void* M, TypeId id) {
+    if (M) {
+        switch (id) {
+            case TYPE_Q8: {
+                quant8_t* q8 = M;
+                free(q8->q);
+                free(q8->s);
+                free(q8);
+                break;
+            }
+            default:
+                free(M);
+                break;
+        }
+    }
 }
 
 void mat_init(void* A, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args) {
