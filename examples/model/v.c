@@ -181,7 +181,7 @@ typedef struct LayerOpt {
  */
 
 float* embed_new(unsigned vocab_size, unsigned embed_dim) {
-    float* E = mat_new(vocab_size, embed_dim, TYPE_FLOAT32);
+    float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
     if (!E) {
         return NULL;
     }

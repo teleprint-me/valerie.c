@@ -9,6 +9,8 @@
 
 #include <stdlib.h>
 
+#include <assert.h>
+
 #include "core/lehmer.h"
 #include "core/type.h"
 
@@ -20,25 +22,23 @@
  */
 
 // Create a row-major matrix
-void* mat_new(size_t rows, size_t cols, DataTypeId id) {
+void* mat_new(size_t rows, size_t cols, TypeId id) {
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    size_t stride = data_type_size(id);
+    size_t stride = type_size(id);
     size_t n = rows * cols;
     return calloc(n, stride);
 }
 
-void mat_init(
-    void* A, size_t rows, size_t cols, DataTypeId id, LehmerFn lehmer_fn, void* lehmer_args
-) {
+void mat_init(void* A, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args) {
     assert(A);
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
     assert(lehmer_fn);
 
     // Calculate element size
-    size_t stride = data_type_size(id);
+    size_t stride = type_size(id);
     assert(stride > 0);
 
     // Calculate buffer length
@@ -46,17 +46,17 @@ void mat_init(
 
     /// @note This requires per-thread seeding using thread ids.
     /// omp_get_thread_num()
-    /// Other possible solutions are thread-locking or chunking per thread. 
+    /// Other possible solutions are thread-locking or chunking per thread.
     /// For now, it's best to just operate linearly to keep complexity low.
     for (size_t i = 0; i < n; i++) {
         // xavier(fan_in, fan_out)
         float value = lehmer_fn(lehmer_args);  // must be thread_local
         void* dst = (uint8_t*) A + i * stride;
-        quant_scalar(dst, value, id);
+        quant(dst, value, id);
     }
 }
 
-void mat_lehmer(void* A, size_t rows, size_t cols, DataTypeId id) {
+void mat_lehmer(void* A, size_t rows, size_t cols, TypeId id) {
     assert(A);
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
@@ -64,7 +64,7 @@ void mat_lehmer(void* A, size_t rows, size_t cols, DataTypeId id) {
     mat_init(A, rows, cols, id, lehmer_float_cb, NULL);
 }
 
-void mat_xavier(void* A, size_t rows, size_t cols, DataTypeId id) {
+void mat_xavier(void* A, size_t rows, size_t cols, TypeId id) {
     assert(A);
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
@@ -72,7 +72,7 @@ void mat_xavier(void* A, size_t rows, size_t cols, DataTypeId id) {
     mat_init(A, rows, cols, id, lehmer_xavier_cb, &(LehmerArgs) {rows, cols});
 }
 
-void mat_muller(void* A, size_t rows, size_t cols, DataTypeId id) {
+void mat_muller(void* A, size_t rows, size_t cols, TypeId id) {
     assert(A);
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
@@ -89,12 +89,12 @@ void mat_muller(void* A, size_t rows, size_t cols, DataTypeId id) {
 
 // Row-major matrix multiplication (y = Wx + b)
 // bias is omitted because it's always 0
-void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, DataTypeId id) {
+void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, TypeId id) {
     assert(y && W && x);
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    size_t stride = data_type_size(id);
+    size_t stride = type_size(id);
     assert(stride > 0);
 
 #pragma omp parallel for
@@ -104,12 +104,12 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, D
             // W[i][j]
             float W_dst;
             const void* W_src = (const uint8_t*) W + (i * cols + j) * stride;
-            dequant_scalar(&W_dst, W_src, id);
+            dequant(&W_dst, W_src, id);
 
             // x[j]
             float x_dst;
             const void* x_src = (const uint8_t*) x + j * stride;
-            dequant_scalar(&x_dst, x_src, id);
+            dequant(&x_dst, x_src, id);
 
             // dot product: W[i][j] * x[j]
             sum += W_dst * x_dst;
@@ -128,12 +128,12 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, D
 
 // dW = δ_next ⊗ x^T (outer product)
 // dW, d_next must be of type id; x is always float*
-void mat_dW(void* dW, const void* d_next, const float* x, size_t rows, size_t cols, DataTypeId id) {
+void mat_dW(void* dW, const void* d_next, const float* x, size_t rows, size_t cols, TypeId id) {
     assert(dW && d_next && x);
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    size_t stride = data_type_size(id);
+    size_t stride = type_size(id);
     assert(stride > 0);
 
 #pragma omp parallel for
@@ -141,7 +141,7 @@ void mat_dW(void* dW, const void* d_next, const float* x, size_t rows, size_t co
         // Dequantize delta for this output (row)
         float d_next_i;
         const void* d_next_src = (const uint8_t*) d_next + i * stride;
-        dequant_scalar(&d_next_i, d_next_src, id);
+        dequant(&d_next_i, d_next_src, id);
 
         for (size_t j = 0; j < cols; j++) {
             // Pre-compute outer product entry
@@ -149,7 +149,7 @@ void mat_dW(void* dW, const void* d_next, const float* x, size_t rows, size_t co
             // Get the current derivative
             void* dW_ptr = (uint8_t*) dW + (i * cols + j) * stride;
             // Just update and set. Do not accumulate.
-            quant_scalar(dW_ptr, temp, id);
+            quant(dW_ptr, temp, id);
         }
     }
 }
@@ -163,13 +163,13 @@ void mat_chain(
     const float* z,  // Pre-activation values (length = rows)
     size_t rows,  // Number of output neurons (current layer)
     size_t rows_next,  // Number of output neurons (next layer)
-    DataTypeId id  // Data type for quantized buffers
+    TypeId id  // Data type for quantized buffers
 ) {
     assert(dy && W_next && d_next && z);
     assert(rows > 0 && rows_next > 0);
     assert(id < TYPE_COUNT);
 
-    size_t stride = data_type_size(id);
+    size_t stride = type_size(id);
     assert(stride > 0);
 
 #pragma omp parallel for
@@ -179,12 +179,12 @@ void mat_chain(
             // Dequantize d_next[j]
             float d_next_j;
             const void* d_next_src = (const uint8_t*) d_next + j * stride;
-            dequant_scalar(&d_next_j, d_next_src, id);
+            dequant(&d_next_j, d_next_src, id);
 
             // Dequantize W_next[j, i] = W_next^T[i, j] (row-major)
             float W_next_T_ji;
             const void* W_next_src = (const uint8_t*) W_next + (j * rows + i) * stride;
-            dequant_scalar(&W_next_T_ji, W_next_src, id);
+            dequant(&W_next_T_ji, W_next_src, id);
 
             // Accumulate
             sum += W_next_T_ji * d_next_j;
@@ -195,7 +195,7 @@ void mat_chain(
         // Get the current ouput
         void* dy_ptr = (uint8_t*) dy + i * stride;
         // Update output
-        quant_scalar(dy_ptr, temp, id);
+        quant(dy_ptr, temp, id);
     }
 }
 
@@ -212,8 +212,8 @@ void mat_sgd(
     void* vW,  // [rows x cols], type id_dvW or float, may be NULL
     size_t rows,
     size_t cols,
-    DataTypeId id_W,
-    DataTypeId id_dvW,
+    TypeId id_W,
+    TypeId id_dvW,
     float lr,
     float lambda,
     float mu,
@@ -224,8 +224,8 @@ void mat_sgd(
     assert(rows > 0 && cols > 0);
     assert(id_W < TYPE_COUNT && id_dvW < TYPE_COUNT);
 
-    size_t stride_W = data_type_size(id_W);
-    size_t stride_dvW = data_type_size(id_dvW);
+    size_t stride_W = type_size(id_W);
+    size_t stride_dvW = type_size(id_dvW);
     assert(stride_W > 0 && stride_dvW > 0);
 
 #pragma omp parallel for
@@ -239,8 +239,8 @@ void mat_sgd(
 
             // Dequantize to float for computation
             float w, g;
-            dequant_scalar(&w, W_ptr, id_W);
-            dequant_scalar(&g, dW_ptr, id_dvW);
+            dequant(&w, W_ptr, id_W);
+            dequant(&g, dW_ptr, id_dvW);
 
             // L2 regularization (in float)
             if (lambda > 0.0f) {
@@ -251,7 +251,7 @@ void mat_sgd(
             if (vW && mu > 0.0f) {
                 float v;
                 void* vW_ptr = (uint8_t*) vW + idx * stride_dvW;
-                dequant_scalar(&v, vW_ptr, id_dvW);
+                dequant(&v, vW_ptr, id_dvW);
 
                 v = mu * v + (1.0f - tau) * g;
 
@@ -262,12 +262,12 @@ void mat_sgd(
                 }
 
                 // Store updated velocity
-                quant_scalar(vW_ptr, v, id_dvW);
+                quant(vW_ptr, v, id_dvW);
             }
 
             // Weight update
             w -= lr * g;
-            quant_scalar(W_ptr, w, id_W);
+            quant(W_ptr, w, id_W);
         }
     }
 }

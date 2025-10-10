@@ -37,12 +37,12 @@
  * @note Row-major layout: E[v * D + d]
  */
 float* embeddings_create(size_t vocab_size, size_t embed_dim) {
-    float* E = mat_new(vocab_size, embed_dim, TYPE_FLOAT32);
+    float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
     if (!E) {
         return NULL;
     }
 
-    mat_xavier(E, vocab_size, embed_dim, TYPE_FLOAT32);
+    mat_xavier(E, vocab_size, embed_dim, TYPE_F32);
     return E;
 }
 
@@ -240,7 +240,7 @@ int main(int argc, const char* argv[]) {
     // Print initialized embeddings table
     embeddings_log_table(E, ids, seq_len, embed_dim, t->id_to_token);
 
-    float* E_out = mat_new(seq_len, embed_dim, TYPE_FLOAT32);
+    float* E_out = mat_new(seq_len, embed_dim, TYPE_F32);
     if (!E_out) {
         goto fail_lookup;
     }

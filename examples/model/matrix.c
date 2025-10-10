@@ -10,9 +10,9 @@
 int main(void) {
     lehmer_init(1337);
 
-    DataTypeId dtype = TYPE_FLOAT32;
-    unsigned dsize = data_type_size(dtype);
-    const char* dname = data_type_name(dtype);
+    TypeId dtype = TYPE_F32;
+    unsigned dsize = type_size(dtype);
+    const char* dname = type_name(dtype);
     printf("sizeof(%s) = %u\n", dname, dsize);
 
     unsigned rows = 3;
