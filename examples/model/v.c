@@ -180,7 +180,39 @@ typedef struct LayerOpt {
  * @{
  */
 
-float* embed_new(unsigned vocab_size, unsigned embed_dim) {
+// Default micro configuration (~8–10M params)
+// Reference: https://arxiv.org/pdf/2305.13245
+Dim v_dim_new(void) {
+    const int d_model = 320;  // Model width
+    const int heads = 32;  // Query heads
+    const int kv_heads = 4;  // Shared key/value heads (GQA/MQA)
+    const int head_dim = d_model / heads;  // 10 dims per head
+
+    return (Dim) {
+        .d_model = d_model,
+        .hidden = 4 * d_model,  // FFN inner dimension
+        .layers = 6,  // Transformer depth
+        .heads = heads,
+        .head_dim = head_dim,
+        .proj_dim = heads * head_dim,  // == d_model
+        .kv_heads = kv_heads,
+        .kv_mul = heads / kv_heads,  // 8 → 8 Q per K/V
+        .kv_dim = kv_heads * head_dim,  // total shared KV width
+        .vocab_size = 149,  // tiny test vocab
+        .seq_len = 128,  // context length
+    };
+}
+
+// Attention v_attn_new(Dim* d) {
+//     return (Attention) {
+//         quant8_t* Wq;  // (d_model, heads * head_dim)
+//         quant8_t* Wk;  // (d_model, kv_heads * head_dim)
+//         quant8_t* Wv;  // (d_model, kv_heads * head_dim)
+//         quant8_t* Wo;  // (heads * head_dim, d_model)
+//     };
+// }
+
+float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
     float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
     if (!E) {
         return NULL;
