@@ -137,66 +137,32 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, T
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    switch (id) {
-        // I do not like this bifurcation. Also, the intermediary buffer allocations
-        // will become expensive once the parameter counts scale which will impact
-        // both space and time complexity. Block-wise processing is the culprit of this
-        // implementations additional complexity.
-        case TYPE_Q8: {
-            const quant8_t* Wq = (const quant8_t*) W;
-            const quant8_t* xq = (const quant8_t*) x;
+    // Regardless of which choice is made, an external buffer is a prerequisite.
+    // This causes allocation overhead because a scratch pad is required.
+    float* xf = malloc(cols * sizeof(float));
+    dequant_vec(xf, x, cols, id);
+    // This consumes more space than necessary and is shared across threads.
+    float* Wf = malloc(cols * sizeof(float));
 
-            float* Wf = malloc(rows * cols * sizeof(float));
-            float* xf = malloc(cols * sizeof(float));
-
-            // Decode once per operand
-            q8_decode(Wf, Wq, rows * cols, Q8_BLOCK_SIZE);
-            q8_decode(xf, xq, cols, Q8_BLOCK_SIZE);
-
-            // @note According to Microscaling (pg 3), we can do s * c,
-            // but this is more complex in application. It's simpler to
-            // just use a buffer directly.
-#pragma omp parallel for
-            for (size_t i = 0; i < rows; i++) {
-                float sum = 0.0f;
-                for (size_t j = 0; j < cols; j++) {
-                    sum += Wf[i * cols + j] * xf[j];
-                }
-                y[i] = sum;
-            }
-
-            free(Wf);
-            free(xf);
-            break;
+    // Using private is a naive attempt to localize the shared buffer to each
+    // thread during concurrent operations of the dot product.
+    // The issue here is that private variables have undefined values when the loop begins.
+    // The values are unavailable to the master thread which has the master copy.
+    // There's no real need for a reduction here because each thread computes its own
+    // dot product sum. The buffer can not be shared across threads because it will cause
+    // a race condition which in turn causes numerical instability.
+#pragma omp parallel for private(Wf)
+    for (size_t i = 0; i < rows; i++) {
+        dequant_vec(Wf, (const uint8_t*) W + i * cols * type_size(id), cols, id);
+        float sum = 0.0f;
+        for (size_t j = 0; j < cols; j++) {
+            sum += Wf[j] * xf[j];
         }
-        default: {
-            size_t stride = type_size(id);
-            assert(stride > 0);
-
-#pragma omp parallel for
-            for (size_t i = 0; i < rows; i++) {
-                float sum = 0.0f;
-                for (size_t j = 0; j < cols; j++) {
-                    // W[i][j]
-                    float W_dst;
-                    const void* W_src = (const uint8_t*) W + (i * cols + j) * stride;
-                    dequant(&W_dst, W_src, id);
-
-                    // x[j]
-                    float x_dst;
-                    const void* x_src = (const uint8_t*) x + j * stride;
-                    dequant(&x_dst, x_src, id);
-
-                    // dot product: W[i][j] * x[j]
-                    sum += W_dst * x_dst;
-                }
-
-                // y = W * x
-                y[i] = sum;
-            }
-            break;
-        }
+        y[i] = sum;
     }
+
+    free(xf);
+    free(Wf);
 }
 
 /** @} */
