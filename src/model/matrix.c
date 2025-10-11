@@ -137,32 +137,33 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, T
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    // Regardless of which choice is made, an external buffer is a prerequisite.
-    // This causes allocation overhead because a scratch pad is required.
+    const size_t stride = type_size(id);
+    assert(stride > 0);
+
+    // Dequantize input vector once (shared across rows)
     float* xf = malloc(cols * sizeof(float));
     dequant_vec(xf, x, cols, id);
-    // This consumes more space than necessary and is shared across threads.
-    float* Wf = malloc(cols * sizeof(float));
 
-    // Using private is a naive attempt to localize the shared buffer to each
-    // thread during concurrent operations of the dot product.
-    // The issue here is that private variables have undefined values when the loop begins.
-    // The values are unavailable to the master thread which has the master copy.
-    // There's no real need for a reduction here because each thread computes its own
-    // dot product sum. The buffer can not be shared across threads because it will cause
-    // a race condition which in turn causes numerical instability.
-#pragma omp parallel for private(Wf)
+#pragma omp parallel for
     for (size_t i = 0; i < rows; i++) {
-        dequant_vec(Wf, (const uint8_t*) W + i * cols * type_size(id), cols, id);
+        // Each thread gets its own workspace for a decoded row
+        float* Wf = malloc(cols * sizeof(float));
+
+        // Decode this row of W into float buffer
+        const uint8_t* row_ptr = (const uint8_t*) W + i * cols * stride;
+        dequant_vec(Wf, row_ptr, cols, id);
+
+        // Compute dot(W[i, :], x)
         float sum = 0.0f;
         for (size_t j = 0; j < cols; j++) {
             sum += Wf[j] * xf[j];
         }
+
         y[i] = sum;
+        free(Wf);
     }
 
     free(xf);
-    free(Wf);
 }
 
 /** @} */
