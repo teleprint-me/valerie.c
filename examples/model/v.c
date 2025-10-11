@@ -55,7 +55,7 @@
  */
 
 #include <stdlib.h>
-
+#include <stdio.h>
 #include <assert.h>
 
 #include "core/type.h"
@@ -385,8 +385,13 @@ int main(void) {
     Dim dim = v_dim_new();
     Valerie v = v_model_new("models/tokenizer.model", &dim, TYPE_Q8);
 
+    printf("Model initialized.\n");
+    printf("Layers: %d, d_model: %d, vocab: %d\n",
+           v.dim.layers, v.dim.d_model, v.dim.vocab_size);
+
     // Do stuff here
 
     v_model_free(&v);
+    printf("Model freed cleanly.\n");
     return 0;
 }
