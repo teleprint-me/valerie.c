@@ -139,8 +139,8 @@ typedef struct Valerie {
 
     /// @note Output weights are tied to embeddings
     float* E;  // (vocab_size, d_model)
-    float* norm;
-    float* output;
+    float* output; // (vocab_size, d_model)
+    float* norm; // (d_model,)
 } Valerie;
 
 /**
