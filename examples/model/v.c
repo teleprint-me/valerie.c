@@ -203,47 +203,29 @@ Dim v_dim_new(void) {
     };
 }
 
-quant8_t* mat_new_q8(size_t rows, size_t cols, size_t block_size) {
-    quant8_t* q8 = malloc(sizeof(quant8_t));
-    if (!q8) {
-        return NULL;
-    }
-
-    size_t len = rows * cols;
-    size_t blocks = (len + block_size - 1) / block_size;
-
-    q8->q = calloc(len, sizeof(int8_t));
-    q8->s = calloc(blocks, sizeof(uint8_t));
-
-    return q8;
-}
-
-void mat_init_q8(quant8_t* q8, size_t rows, size_t cols, size_t block_size) {
-    float* src = malloc(rows * cols * sizeof(float));
-
-    size_t len = rows * cols;
-    for (size_t i = 0; i < len; i++) {
-        src[i] = lehmer_xavier(rows, cols);  // (fan_out, fan_in)
-    }
-
-    q8_encode(q8, src, len, block_size);
-    free(src);
-}
-
-Attention v_attn_new(Dim* d) {
+Attention v_attn_new(Dim* d, TypeId id) {
     Attention attn = {0};
 
-    attn.Wq = mat_new_q8(d->d_model, d->heads * d->head_dim, Q8_BLOCK_SIZE);
-    attn.Wk = mat_new_q8(d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
-    attn.Wv = mat_new_q8(d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
-    attn.Wo = mat_new_q8(d->heads * d->head_dim, d->d_model, Q8_BLOCK_SIZE);
+    attn.Wq = mat_new(d->d_model, d->heads * d->head_dim, id);
+    attn.Wk = mat_new(d->d_model, d->kv_heads * d->head_dim, id);
+    attn.Wv = mat_new(d->d_model, d->kv_heads * d->head_dim, id);
+    attn.Wo = mat_new(d->heads * d->head_dim, d->d_model, id);
 
-    mat_init_q8(attn.Wq, d->d_model, d->heads * d->head_dim, Q8_BLOCK_SIZE);
-    mat_init_q8(attn.Wk, d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
-    mat_init_q8(attn.Wv, d->d_model, d->kv_heads * d->head_dim, Q8_BLOCK_SIZE);
-    mat_init_q8(attn.Wo, d->heads * d->head_dim, d->d_model, Q8_BLOCK_SIZE);
+    mat_xavier(attn.Wq, d->d_model, d->heads * d->head_dim, id);
+    mat_xavier(attn.Wk, d->d_model, d->kv_heads * d->head_dim, id);
+    mat_xavier(attn.Wv, d->d_model, d->kv_heads * d->head_dim, id);
+    mat_xavier(attn.Wo, d->heads * d->head_dim, d->d_model, id);
 
     return attn;
+}
+
+void v_attn_free(Attention* attn, TypeId id) {
+    if (attn) {
+        mat_free(attn->Wq, id);
+        mat_free(attn->Wk, id);
+        mat_free(attn->Wv, id);
+        mat_free(attn->Wo, id);
+    }
 }
 
 float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
@@ -260,5 +242,13 @@ float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
 
 int main(void) {
     lehmer_init(1337);
+    TypeId id_forward = TYPE_F32;
+
+    Dim dim = v_dim_new();
+    Attention attn = v_attn_new(&dim, id_forward);
+
+    // Do stuff here
+
+    v_attn_free(&attn, id_forward);
     return 0;
 }
