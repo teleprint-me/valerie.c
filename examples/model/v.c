@@ -252,6 +252,26 @@ void v_ffn_free(FeedForward* ffn) {
     }
 }
 
+Layer* v_layers_new(Dim* d, TypeId id) {
+    Layer* layers = calloc(d->layers, sizeof(Layer));
+    if (!layers) return NULL;
+    for (int i = 0; i < d->layers; i++) {
+        layers[i].attn = v_attn_new(d, id);
+        layers[i].ffn = v_ffn_new(d, id);
+        // not sure how to handle rms yet
+    }
+    return layers;
+}
+
+void v_layers_free(Layer* layers, int n_layers) {
+    if (layers) {
+        for (int i = 0; i < n_layers; i++) {
+            v_attn_free(&layers[i].attn);
+            v_ffn_free(&layers[i].ffn);
+        }
+    }
+}
+
 float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
     float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
     if (!E) {
@@ -268,12 +288,10 @@ int main(void) {
     lehmer_init(1337);
 
     Dim dim = v_dim_new();
-    Attention attn = v_attn_new(&dim, TYPE_Q8);
-    FeedForward ffn = v_ffn_new(&dim, TYPE_Q8);
+    Layer* layers = v_layers_new(&dim, TYPE_Q8);
 
     // Do stuff here
 
-    v_ffn_free(&ffn);
-    v_attn_free(&attn);
+    v_layers_free(layers, dim.layers);
     return 0;
 }
