@@ -230,6 +230,28 @@ void v_attn_free(Attention* attn) {
     }
 }
 
+FeedForward v_ffn_new(Dim* d, TypeId id) {
+    FeedForward ffn = {.id = id};
+
+    ffn.W1 = mat_new(d->hidden, d->d_model, id);
+    ffn.W2 = mat_new(d->d_model, d->hidden, id);
+    ffn.W3 = mat_new(d->hidden, d->d_model, id);
+
+    mat_xavier(ffn.W1, d->hidden, d->d_model, id);
+    mat_xavier(ffn.W2, d->d_model, d->hidden, id);
+    mat_xavier(ffn.W3, d->hidden, d->d_model, id);
+
+    return ffn;
+}
+
+void v_ffn_free(FeedForward* ffn) {
+    if (ffn) {
+        mat_free(ffn->W1, ffn->id);
+        mat_free(ffn->W2, ffn->id);
+        mat_free(ffn->W3, ffn->id);
+    }
+}
+
 float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
     float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
     if (!E) {
@@ -247,9 +269,11 @@ int main(void) {
 
     Dim dim = v_dim_new();
     Attention attn = v_attn_new(&dim, TYPE_Q8);
+    FeedForward ffn = v_ffn_new(&dim, TYPE_Q8);
 
     // Do stuff here
 
+    v_ffn_free(&ffn);
     v_attn_free(&attn);
     return 0;
 }
