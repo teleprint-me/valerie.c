@@ -57,14 +57,12 @@
 #include <stdlib.h>
 
 #include <assert.h>
-#include <math.h>
 
 #include "core/type.h"
 #include "core/lehmer.h"
 
 #include "tokenizer/model.h"
 
-#include "model/activation.h"
 #include "model/matrix.h"
 #include "model/blocks.h"
 
@@ -105,40 +103,44 @@ typedef struct FeedForward {
     TypeId id;
 } FeedForward;
 
+typedef struct Cache {
+    float* k;  // (seq_len, d_model)
+    float* v;  // (seq_len, d_model)
+} Cache;
+
 typedef struct Layer {
     Attention attn;  // multi-headed self attention
     FeedForward ffn;  // feed-forward network
+    Cache cache;  // layer-wise kv cache
     float* rms_attn;  // (d_model,) RMSNorm params
     float* rms_ffn;  // (d_model,) RMSNorm params
 } Layer;
 
 typedef struct State {
-    /// @note Output weights are tied to embeddings
-    float* E;  // (vocab_size, d_model)
-
     float* x;  // (d_model,)
-
-    float* rms;  // (d_model,)
+    float* x_norm;  // (d_model,)
 
     float* q;  // (d_model,)
     float* k;  // (d_model,)
     float* v;  // (d_model,)
+    float* A;  // (heads, seq_len)
 
-    float* att;  // (heads, seq_len)
+    float* mlp_in;  // w1(x) (hidden,)
+    float* mlp_gate;  // w3(x) (hidden,)
+
     float* logits;  // (vocab_size,)
-
-    float* k_cache;  // (seq_len, d_model)
-    float* v_cache;  // (seq_len, d_model)
-
-    quant8_t* qattn;
-    quant8_t* qffn;
 } State;
 
 typedef struct Valerie {
+    Dim dim;
+    State state;
     Tokenizer* t;
     Layer* layers;
-    State state;
-    Dim dim;
+
+    /// @note Output weights are tied to embeddings
+    float* E;  // (vocab_size, d_model)
+    float* norm;
+    float* output;
 } Valerie;
 
 /**
@@ -252,6 +254,20 @@ void v_ffn_free(FeedForward* ffn) {
     }
 }
 
+Cache v_cache_new(Dim* d) {
+    return (Cache) {
+        .k = mat_new(d->seq_len, d->d_model, TYPE_F32),
+        .v = mat_new(d->seq_len, d->d_model, TYPE_F32),
+    };
+}
+
+void v_cache_free(Cache* cache) {
+    if (cache) {
+        free(cache->k);
+        free(cache->v);
+    }
+}
+
 Layer* v_layers_new(Dim* d, TypeId id) {
     assert(d && d->layers > 0 && id < TYPE_COUNT);
 
@@ -263,6 +279,7 @@ Layer* v_layers_new(Dim* d, TypeId id) {
     for (int i = 0; i < d->layers; i++) {
         layers[i].attn = v_attn_new(d, id);
         layers[i].ffn = v_ffn_new(d, id);
+        layers[i].cache = v_cache_new(d);
 
         // RMSNorm parameters (γ)
         layers[i].rms_attn = calloc(d->d_model, sizeof(float));
@@ -283,10 +300,39 @@ void v_layers_free(Layer* layers, int n_layers) {
         for (int i = 0; i < n_layers; i++) {
             v_attn_free(&layers[i].attn);
             v_ffn_free(&layers[i].ffn);
+            v_cache_free(&layers[i].cache);
             free(layers[i].rms_attn);
             free(layers[i].rms_ffn);
         }
         free(layers);
+    }
+}
+
+State v_state_new(Dim* d) {
+    State s = {0};
+    s.x = calloc(d->d_model, sizeof(float));
+    s.x_norm = calloc(d->d_model, sizeof(float));
+    s.q = calloc(d->d_model, sizeof(float));
+    s.k = calloc(d->d_model, sizeof(float));
+    s.v = calloc(d->d_model, sizeof(float));
+    s.A = mat_new(d->heads, d->seq_len, TYPE_F32);
+    s.mlp_in = calloc(d->hidden, sizeof(float));
+    s.mlp_gate = calloc(d->hidden, sizeof(float));
+    s.logits = calloc(d->vocab_size, sizeof(float));
+    return s;
+}
+
+void v_state_free(State* s) {
+    if (s) {
+        free(s->x);
+        free(s->x_norm);
+        free(s->q);
+        free(s->k);
+        free(s->v);
+        free(s->A);
+        free(s->mlp_in);
+        free(s->mlp_gate);
+        free(s->logits);
     }
 }
 
