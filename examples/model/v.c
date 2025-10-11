@@ -342,8 +342,39 @@ float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
         return NULL;
     }
 
-    mat_xavier(E, vocab_size * embed_dim, vocab_size, embed_dim);
+    mat_xavier(E, vocab_size, embed_dim, TYPE_F32);
     return E;
+}
+
+Valerie v_model_new(const char* path, Dim* d, TypeId id) {
+    Valerie v = {0};
+
+    v.t = tokenizer_load(path);
+    v.dim = *d;
+    v.dim.vocab_size = v.t->vocab_size;
+
+    v.state = v_state_new(d);
+    v.layers = v_layers_new(d, id);
+    v.E = v_embed_new(d->vocab_size, d->d_model);
+    v.output = v.E;  // weight tying
+
+    // Final RMSNorm (same shape as d_model)
+    v.norm = calloc(d->d_model, sizeof(float));
+    for (int i = 0; i < d->d_model; i++) {
+        v.norm[i] = 1.0f;  // γ initialized to 1
+    }
+
+    return v;
+}
+
+void v_model_free(Valerie* v) {
+    if (v) {
+        tokenizer_free(v->t);
+        v_state_free(&v->state);
+        v_layers_free(v->layers, v->dim.layers);
+        mat_free(v->E, TYPE_F32);
+        free(v->norm);
+    }
 }
 
 /** @} */
@@ -352,10 +383,10 @@ int main(void) {
     lehmer_init(1337);
 
     Dim dim = v_dim_new();
-    Layer* layers = v_layers_new(&dim, TYPE_Q8);
+    Valerie v = v_model_new("models/tokenizer.model", &dim, TYPE_Q8);
 
     // Do stuff here
 
-    v_layers_free(layers, dim.layers);
+    v_model_free(&v);
     return 0;
 }
