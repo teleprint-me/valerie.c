@@ -93,12 +93,14 @@ typedef struct Attention {
     quant8_t* Wk;  // (d_model, n_kv_heads * head_dim)
     quant8_t* Wv;  // (d_model, n_kv_heads * head_dim)
     quant8_t* Wo;  // (n_heads * head_dim, d_model)
+    TypeId id;
 } Attention;
 
 typedef struct FeedForward {
     quant8_t* W1;  // (hidden, d_model)
     quant8_t* W2;  // (d_model, hidden)
     quant8_t* W3;  // (hidden, d_model)
+    TypeId id;
 } FeedForward;
 
 typedef struct Layer {
@@ -204,7 +206,7 @@ Dim v_dim_new(void) {
 }
 
 Attention v_attn_new(Dim* d, TypeId id) {
-    Attention attn = {0};
+    Attention attn = {.id = id};
 
     attn.Wq = mat_new(d->d_model, d->heads * d->head_dim, id);
     attn.Wk = mat_new(d->d_model, d->kv_heads * d->head_dim, id);
@@ -219,12 +221,12 @@ Attention v_attn_new(Dim* d, TypeId id) {
     return attn;
 }
 
-void v_attn_free(Attention* attn, TypeId id) {
+void v_attn_free(Attention* attn) {
     if (attn) {
-        mat_free(attn->Wq, id);
-        mat_free(attn->Wk, id);
-        mat_free(attn->Wv, id);
-        mat_free(attn->Wo, id);
+        mat_free(attn->Wq, attn->id);
+        mat_free(attn->Wk, attn->id);
+        mat_free(attn->Wv, attn->id);
+        mat_free(attn->Wo, attn->id);
     }
 }
 
@@ -242,13 +244,12 @@ float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
 
 int main(void) {
     lehmer_init(1337);
-    TypeId id_forward = TYPE_F32;
 
     Dim dim = v_dim_new();
-    Attention attn = v_attn_new(&dim, id_forward);
+    Attention attn = v_attn_new(&dim, TYPE_Q8);
 
     // Do stuff here
 
-    v_attn_free(&attn, id_forward);
+    v_attn_free(&attn);
     return 0;
 }
