@@ -3,7 +3,7 @@
 set(EXAMPLES
     "matrix"
     "embedding"
-    # "v"
+    "v"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/model)
