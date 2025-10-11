@@ -89,17 +89,17 @@ typedef struct Dim {
  */
 
 typedef struct Attention {
-    quant8_t* Wq;  // (d_model, n_heads * head_dim)
-    quant8_t* Wk;  // (d_model, n_kv_heads * head_dim)
-    quant8_t* Wv;  // (d_model, n_kv_heads * head_dim)
-    quant8_t* Wo;  // (n_heads * head_dim, d_model)
+    void* Wq;  // (d_model, n_heads * head_dim)
+    void* Wk;  // (d_model, n_kv_heads * head_dim)
+    void* Wv;  // (d_model, n_kv_heads * head_dim)
+    void* Wo;  // (n_heads * head_dim, d_model)
     TypeId id;
 } Attention;
 
 typedef struct FeedForward {
-    quant8_t* W1;  // (hidden, d_model)
-    quant8_t* W2;  // (d_model, hidden)
-    quant8_t* W3;  // (hidden, d_model)
+    void* W1;  // (hidden, d_model)
+    void* W2;  // (d_model, hidden)
+    void* W3;  // (hidden, d_model)
     TypeId id;
 } FeedForward;
 
