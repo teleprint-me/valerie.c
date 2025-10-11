@@ -186,7 +186,7 @@ typedef struct LayerOpt {
  */
 
 // Default micro configuration (~8–10M params)
-Dim v_dim_new(void) {
+Dim v_dim_new(Tokenizer* t) {
     const int d_model = 320;  // Model width
     const int heads = 32;  // Query heads
     const int kv_heads = 4;  // Shared key/value heads (GQA/MQA)
@@ -202,7 +202,7 @@ Dim v_dim_new(void) {
         .kv_heads = kv_heads,
         .kv_mul = heads / kv_heads,  // 8 → 8 Q per K/V
         .kv_dim = kv_heads * head_dim,  // total shared KV width
-        .vocab_size = 149,  // tiny test vocab
+        .vocab_size = t->vocab_size,  // tiny test vocab
         .seq_len = 128,  // context length
     };
 }
@@ -351,7 +351,6 @@ Valerie v_model_new(Tokenizer* t, Dim* d, TypeId id) {
 
     v.t = t;
     v.dim = *d;
-    v.dim.vocab_size = t->vocab_size;  // sync
 
     v.state = v_state_new(d);
     v.layers = v_layers_new(d, id);
@@ -382,8 +381,9 @@ void v_model_free(Valerie* v) {
 int main(void) {
     lehmer_init(1337);
 
-    Dim dim = v_dim_new();
     Tokenizer* t = tokenizer_load("models/tokenizer.model");
+
+    Dim dim = v_dim_new(t);
     Valerie v = v_model_new(t, &dim, TYPE_Q8);
 
     printf("Model initialized.\n");
