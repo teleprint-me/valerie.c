@@ -346,12 +346,12 @@ float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
     return E;
 }
 
-Valerie v_model_new(const char* path, Dim* d, TypeId id) {
+Valerie v_model_new(Tokenizer* t, Dim* d, TypeId id) {
     Valerie v = {0};
 
-    v.t = tokenizer_load(path);
+    v.t = t;
     v.dim = *d;
-    v.dim.vocab_size = v.t->vocab_size;
+    v.dim.vocab_size = t->vocab_size;  // sync
 
     v.state = v_state_new(d);
     v.layers = v_layers_new(d, id);
@@ -383,11 +383,11 @@ int main(void) {
     lehmer_init(1337);
 
     Dim dim = v_dim_new();
-    Valerie v = v_model_new("models/tokenizer.model", &dim, TYPE_Q8);
+    Tokenizer* t = tokenizer_load("models/tokenizer.model");
+    Valerie v = v_model_new(t, &dim, TYPE_Q8);
 
     printf("Model initialized.\n");
-    printf("Layers: %d, d_model: %d, vocab: %d\n",
-           v.dim.layers, v.dim.d_model, v.dim.vocab_size);
+    printf("Layers: %d, d_model: %d, vocab: %d\n", v.dim.layers, v.dim.d_model, v.dim.vocab_size);
 
     // Do stuff here
 
