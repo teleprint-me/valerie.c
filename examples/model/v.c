@@ -4,7 +4,9 @@
  * @copyright Copyright © 2025 Austin Berrio
  * @note Valerie is not a replica of Qwen3 and is incompatible as a result.
  * @ref https://github.com/adriancable/qwen3.c
- *
+ * @ref https://arxiv.org/abs/1207.0580
+ * @ref https://arxiv.org/abs/1608.05859
+ * @ref https://arxiv.org/pdf/2305.13245
  * ┌──────────────────────────────┐
  * │          Valerie             │  (struct Valerie)
  * │ ┌──────────────────────────┐ │
@@ -112,7 +114,6 @@ typedef struct Layer {
 
 typedef struct State {
     /// @note Output weights are tied to embeddings
-    /// @ref https://arxiv.org/abs/1608.05859
     float* E;  // (vocab_size, d_model)
 
     float* x;  // (d_model,)
@@ -183,7 +184,6 @@ typedef struct LayerOpt {
  */
 
 // Default micro configuration (~8–10M params)
-// Reference: https://arxiv.org/pdf/2305.13245
 Dim v_dim_new(void) {
     const int d_model = 320;  // Model width
     const int heads = 32;  // Query heads
