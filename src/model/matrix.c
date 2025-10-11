@@ -137,29 +137,65 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, T
     assert(rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    size_t stride = type_size(id);
-    assert(stride > 0);
+    switch (id) {
+        // I do not like this bifurcation. Also, the intermediary buffer allocations
+        // will become expensive once the parameter counts scale which will impact
+        // both space and time complexity. Block-wise processing is the culprit of this
+        // implementations additional complexity.
+        case TYPE_Q8: {
+            const quant8_t* Wq = (const quant8_t*) W;
+            const quant8_t* xq = (const quant8_t*) x;
+
+            float* Wf = malloc(rows * cols * sizeof(float));
+            float* xf = malloc(cols * sizeof(float));
+
+            // Decode once per operand
+            q8_decode(Wf, Wq, rows * cols, Q8_BLOCK_SIZE);
+            q8_decode(xf, xq, cols, Q8_BLOCK_SIZE);
+
+            // @note According to Microscaling (pg 3), we can do s * c,
+            // but this is more complex in application. It's simpler to
+            // just use a buffer directly.
+#pragma omp parallel for
+            for (size_t i = 0; i < rows; i++) {
+                float sum = 0.0f;
+                for (size_t j = 0; j < cols; j++) {
+                    sum += Wf[i * cols + j] * xf[j];
+                }
+                y[i] = sum;
+            }
+
+            free(Wf);
+            free(xf);
+            break;
+        }
+        default: {
+            size_t stride = type_size(id);
+            assert(stride > 0);
 
 #pragma omp parallel for
-    for (size_t i = 0; i < rows; i++) {
-        float sum = 0.0f;
-        for (size_t j = 0; j < cols; j++) {
-            // W[i][j]
-            float W_dst;
-            const void* W_src = (const uint8_t*) W + (i * cols + j) * stride;
-            dequant(&W_dst, W_src, id);
+            for (size_t i = 0; i < rows; i++) {
+                float sum = 0.0f;
+                for (size_t j = 0; j < cols; j++) {
+                    // W[i][j]
+                    float W_dst;
+                    const void* W_src = (const uint8_t*) W + (i * cols + j) * stride;
+                    dequant(&W_dst, W_src, id);
 
-            // x[j]
-            float x_dst;
-            const void* x_src = (const uint8_t*) x + j * stride;
-            dequant(&x_dst, x_src, id);
+                    // x[j]
+                    float x_dst;
+                    const void* x_src = (const uint8_t*) x + j * stride;
+                    dequant(&x_dst, x_src, id);
 
-            // dot product: W[i][j] * x[j]
-            sum += W_dst * x_dst;
+                    // dot product: W[i][j] * x[j]
+                    sum += W_dst * x_dst;
+                }
+
+                // y = W * x
+                y[i] = sum;
+            }
+            break;
         }
-
-        // y = W * x
-        y[i] = sum;
     }
 }
 
