@@ -253,13 +253,28 @@ void v_ffn_free(FeedForward* ffn) {
 }
 
 Layer* v_layers_new(Dim* d, TypeId id) {
+    assert(d && d->layers > 0 && id < TYPE_COUNT);
+
     Layer* layers = calloc(d->layers, sizeof(Layer));
-    if (!layers) return NULL;
+    if (!layers) {
+        return NULL;
+    }
+
     for (int i = 0; i < d->layers; i++) {
         layers[i].attn = v_attn_new(d, id);
         layers[i].ffn = v_ffn_new(d, id);
-        // not sure how to handle rms yet
+
+        // RMSNorm parameters (γ)
+        layers[i].rms_attn = calloc(d->d_model, sizeof(float));
+        layers[i].rms_ffn = calloc(d->d_model, sizeof(float));
+
+        // Initialize to 1.0 (identity scaling)
+        for (int j = 0; j < d->d_model; j++) {
+            layers[i].rms_attn[j] = 1.0f;
+            layers[i].rms_ffn[j] = 1.0f;
+        }
     }
+
     return layers;
 }
 
@@ -268,7 +283,10 @@ void v_layers_free(Layer* layers, int n_layers) {
         for (int i = 0; i < n_layers; i++) {
             v_attn_free(&layers[i].attn);
             v_ffn_free(&layers[i].ffn);
+            free(layers[i].rms_attn);
+            free(layers[i].rms_ffn);
         }
+        free(layers);
     }
 }
 
