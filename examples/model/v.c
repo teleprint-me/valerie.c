@@ -170,12 +170,12 @@ typedef struct State {
  * @section Transformer Model
  */
 typedef struct Valerie {
-    Dim dim;  // model dimensions and hyperparameters
-    State state;  // forward-pass working state
     Tokenizer* t;  // tokenizer reference
-    Layer* layers;  // array of transformer layers
-    Embedding embed;  // embedding and output weights
+    Dim dim;  // model dimensions and hyperparameters
     Rotary rope;  // precomputed rotary frequencies (non-learned)
+    Embedding embed;  // embedding and output weights
+    State state;  // forward-pass working state
+    Layer* layers;  // array of transformer layers
 } Valerie;
 
 /**
