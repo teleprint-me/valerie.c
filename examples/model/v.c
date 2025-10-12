@@ -67,35 +67,39 @@
 #include "model/matrix.h"
 
 /**
- * @section Dimensions
+ * @struct Dimensions
+ * Model-wide structural parameters.
  */
-
 typedef struct Dim {
-    int d_model;  // width of the model (hidden size)
-    int hidden;  // FFN hidden dimension (usually 4 * d_model)
+    int d_model;  // hidden size (width of the model)
+    int hidden;  // feed-forward hidden dimension (≈ 4 * d_model)
     int layers;  // number of transformer blocks (depth)
     int heads;  // number of attention heads
     int head_dim;  // per-head dimension (d_model / heads)
-    int proj_dim;  // heads * head_dim
-    int kv_dim;  // kv_heads * head_dim
-    int kv_mul;  // multi-query attention (heads / kv_heads)
+    int proj_dim;  // projection dimension (heads * head_dim)
+    int kv_dim;  // key/value dimension (kv_heads * head_dim)
+    int kv_mul;  // multi-query ratio (heads / kv_heads)
     int kv_heads;  // number of key/value heads (multiquery attention)
     int vocab_size;  // vocabulary size
     int seq_len;  // maximum context length
 } Dim;
 
 /**
- * @section Forward
+ * @struct Attention
+ * Learned parameters.
  */
-
 typedef struct Attention {
-    void* Wq;  // (d_model, n_heads * head_dim)
-    void* Wk;  // (d_model, n_kv_heads * head_dim)
-    void* Wv;  // (d_model, n_kv_heads * head_dim)
-    void* Wo;  // (n_heads * head_dim, d_model)
+    void* Wq;  // (d_model, heads * head_dim)
+    void* Wk;  // (d_model, kv_heads * head_dim)
+    void* Wv;  // (d_model, kv_heads * head_dim)
+    void* Wo;  // (heads * head_dim, d_model)
     TypeId id;
 } Attention;
 
+/**
+ * @struct FeedForward
+ * Learned parameters.
+ */
 typedef struct FeedForward {
     void* W1;  // (hidden, d_model)
     void* W2;  // (d_model, hidden)
@@ -103,30 +107,50 @@ typedef struct FeedForward {
     TypeId id;
 } FeedForward;
 
+/**
+ * @struct Cache
+ * Layer-wise key/value caches for autoregressive attention.
+ */
 typedef struct Cache {
     float* k;  // (seq_len, d_model)
     float* v;  // (seq_len, d_model)
 } Cache;
 
+/**
+ * @struct Layer
+ * Transformer Block.
+ */
 typedef struct Layer {
-    Attention attn;  // multi-headed self attention
+    Attention attn;  // multi-head self-attention
     FeedForward ffn;  // feed-forward network
-    Cache cache;  // layer-wise kv cache
-    float* rms_attn;  // (d_model,) RMSNorm params
-    float* rms_ffn;  // (d_model,) RMSNorm params
+    Cache cache;  // key/value cache
+    float* rms_attn;  // (d_model,) RMSNorm weights
+    float* rms_ffn;  // (d_model,) RMSNorm weights
 } Layer;
 
+/**
+ * @struct Embedding
+ * Trainable model-level parameters.
+ */
 typedef struct Embedding {
     float* token;  // token embeddings (vocab_size, d_model)
     float* output;  // tied output weights (vocab_size, d_model)
     float* norm;  // final norm weights (d_model,)
 } Embedding;
 
+/**
+ * @struct Rotary
+ * Precomputed, non-trainable rotary frequencies.
+ */
 typedef struct Rotary {
-    float* cos;  // (seq_len, head_dim/2)
-    float* sin;  // (seq_len, head_dim/2)
+    float* cos;  // (max_seq_len, head_dim/2)
+    float* sin;  // (max_seq_len, head_dim/2)
 } Rotary;
 
+/**
+ * @struct State
+ * Transient buffers for forward propagation.
+ */
 typedef struct State {
     float* x;  // (d_model,)
     float* x_norm;  // (d_model,)
@@ -136,19 +160,22 @@ typedef struct State {
     float* v;  // (d_model,)
     float* A;  // (heads, seq_len)
 
-    float* mlp_in;  // w1(x) (hidden,)
-    float* mlp_gate;  // w3(x) (hidden,)
+    float* mlp_in;  // w1(x) projection (hidden,)
+    float* mlp_gate;  // w3(x) projection (hidden,)
 
-    float* logits;  // (vocab_size,)
+    float* logits;  // output logits (vocab_size,)
 } State;
 
+/**
+ * @section Transformer Model
+ */
 typedef struct Valerie {
-    Dim dim;
-    State state;
-    Tokenizer* t;
-    Layer* layers;
-    Embedding embed;
-    Rotary rope;
+    Dim dim;  // model dimensions and hyperparameters
+    State state;  // forward-pass working state
+    Tokenizer* t;  // tokenizer reference
+    Layer* layers;  // array of transformer layers
+    Embedding embed;  // embedding and output weights
+    Rotary rope;  // precomputed rotary frequencies (non-learned)
 } Valerie;
 
 /**
