@@ -86,7 +86,7 @@ typedef struct Dim {
 
 /**
  * @struct Attention
- * Learned parameters.
+ * Trainable model-level parameters.
  */
 typedef struct Attention {
     void* Wq;  // (d_model, heads * head_dim)
@@ -98,7 +98,7 @@ typedef struct Attention {
 
 /**
  * @struct FeedForward
- * Learned parameters.
+ * Trainable model-level parameters.
  */
 typedef struct FeedForward {
     void* W1;  // (hidden, d_model)
