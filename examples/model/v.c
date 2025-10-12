@@ -57,6 +57,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 
 #include "core/type.h"
 #include "core/lehmer.h"
@@ -64,7 +65,6 @@
 #include "tokenizer/model.h"
 
 #include "model/matrix.h"
-#include "model/blocks.h"
 
 /**
  * @section Dimensions
@@ -139,46 +139,9 @@ typedef struct Valerie {
 
     /// @note Output weights are tied to embeddings
     float* E;  // (vocab_size, d_model)
-    float* output; // (vocab_size, d_model)
-    float* norm; // (d_model,)
+    float* output;  // (vocab_size, d_model)
+    float* norm;  // (d_model,)
 } Valerie;
-
-/**
- * @section Backward
- */
-
-typedef struct AttentionOpt {
-    // Derivatives
-    bfloat16_t* dWk;
-    bfloat16_t* dWq;
-    bfloat16_t* dWv;
-    bfloat16_t* dWo;
-
-    // Velocities
-    bfloat16_t* vWk;
-    bfloat16_t* vWq;
-    bfloat16_t* vWv;
-    bfloat16_t* vWo;
-} AttentionOpt;
-
-typedef struct FeedForwardOpt {
-    // Derivatives
-    bfloat16_t* dW1;
-    bfloat16_t* dW2;
-    bfloat16_t* dW3;
-
-    // Velocities
-    bfloat16_t* vW1;
-    bfloat16_t* vW2;
-    bfloat16_t* vW3;
-} FeedForwardOpt;
-
-typedef struct LayerOpt {
-    AttentionOpt attn;
-    FeedForwardOpt ffn;
-    float* drms_attn;  // (d_model,) RMSNorm params
-    float* drms_ffn;  // (d_model,) RMSNorm params
-} LayerOpt;
 
 /**
  * Model pipeline
@@ -373,6 +336,67 @@ void v_model_free(Valerie* v) {
         v_layers_free(v->layers, v->dim.layers);
         mat_free(v->E, TYPE_F32);
         free(v->norm);
+    }
+}
+
+/** @} */
+
+/**
+ * Model Blocks
+ */
+
+// Applied to feed-forward method.
+void rmsnorm(float* y, float* w, float* x, unsigned n) {
+    // Avoid division by 0
+    assert(n > 0 && "Division by zero!");
+
+    // calculate sum of squares
+    float sos = 0.0f;
+    for (unsigned i = 0; i < n; i++) {
+        sos += x[i] * x[i];
+    }
+    sos = 1.0f / sqrtf((sos / n) + 1e-6f);
+
+    // normalize and scale
+    for (unsigned i = 0; i < n; i++) {
+        y[i] = w[i] * (sos * x[i]);
+    }
+}
+
+/// @todo Add precomputed rotary cache.
+/// Applied to feed-forward method.
+void rotary(float* x, int pos, unsigned head_dim) {
+    unsigned half_dim = head_dim / 2;
+
+    for (unsigned i = 0; i < half_dim; i++) {
+        float angle = pos * powf(1e6f, -(float) i / half_dim);
+        float cos_a = cosf(angle), sin_a = sinf(angle);
+
+        float real = x[i];
+        float imag = x[i + half_dim];
+
+        x[i] = real * cos_a - imag * sin_a;
+        x[i + half_dim] = real * sin_a + imag * cos_a;
+    }
+}
+
+// Applied to multi-head self-attention
+void softmax(float* x, unsigned n) {
+    float max_score = x[0];
+    for (unsigned i = 1; i < n; i++) {
+        if (x[i] > max_score) {
+            max_score = x[i];
+        }
+    }
+
+    float sum = 0.0f;
+    for (unsigned i = 0; i < n; i++) {
+        x[i] = expf(x[i] - max_score);
+        sum += x[i];
+    }
+
+    for (unsigned i = 0; i < n; i++) {
+        x[i] /= sum;
     }
 }
 
