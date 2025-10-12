@@ -3,6 +3,7 @@
 set(EXAMPLES
     "matrix"
     "embedding"
+    "rotary"
     "v"
 )
 
