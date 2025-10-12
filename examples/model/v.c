@@ -116,6 +116,17 @@ typedef struct Layer {
     float* rms_ffn;  // (d_model,) RMSNorm params
 } Layer;
 
+typedef struct Embedding {
+    float* token;  // token embeddings (vocab_size, d_model)
+    float* output;  // tied output weights (vocab_size, d_model)
+    float* norm;  // final norm weights (d_model,)
+} Embedding;
+
+typedef struct Rotary {
+    float* cos;  // (seq_len, head_dim/2)
+    float* sin;  // (seq_len, head_dim/2)
+} Rotary;
+
 typedef struct State {
     float* x;  // (d_model,)
     float* x_norm;  // (d_model,)
@@ -136,11 +147,8 @@ typedef struct Valerie {
     State state;
     Tokenizer* t;
     Layer* layers;
-
-    /// @note Output weights are tied to embeddings
-    float* E;  // (vocab_size, d_model)
-    float* output;  // (vocab_size, d_model)
-    float* norm;  // (d_model,)
+    Embedding embed;
+    Rotary rope;
 } Valerie;
 
 /**
@@ -299,14 +307,68 @@ void v_state_free(State* s) {
     }
 }
 
-float* v_embed_new(unsigned vocab_size, unsigned embed_dim) {
-    float* E = mat_new(vocab_size, embed_dim, TYPE_F32);
-    if (!E) {
-        return NULL;
+Embedding v_embed_new(Dim* d) {
+    Embedding embed = {0};
+
+    embed.token = mat_new(d->vocab_size, d->d_model, TYPE_F32);
+    mat_xavier(embed.token, d->vocab_size, d->d_model, TYPE_F32);
+
+    // Tie input to output weights
+    embed.output = embed.token;
+
+    // Final RMSNorm (same shape as d_model)
+    embed.norm = calloc(d->d_model, sizeof(float));
+    for (int i = 0; i < d->d_model; i++) {
+        embed.norm[i] = 1.0f;  // γ initialized to 1
     }
 
-    mat_xavier(E, vocab_size, embed_dim, TYPE_F32);
-    return E;
+    return embed;
+}
+
+void v_embed_free(Embedding* embed) {
+    if (embed) {
+        mat_free(embed->token, TYPE_F32);
+        free(embed->norm);
+    }
+}
+
+Rotary v_rotary_new(Dim* d) {
+    Rotary rope = {0};
+
+    float theta = 10000.0f;
+
+    int dim = d->d_model / d->heads;  // per-head dimension
+    int rows = d->seq_len;
+    int cols = dim / 2;
+
+    // base frequencies
+    float* freqs = malloc(cols * sizeof(float));
+    for (int j = 0; j < cols; j++) {
+        // 1 / (theta ** (j / dim))
+        freqs[j] = 1.0f / powf(theta, (float) j / (float) dim);
+    }
+
+    // outer product
+    rope.cos = mat_new(rows, cols, TYPE_F32);
+    rope.sin = mat_new(rows, cols, TYPE_F32);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            float angle = (float) i * freqs[j];
+            rope.cos[i * cols + j] = cosf(angle);
+            rope.sin[i * cols + j] = sinf(angle);
+        }
+    }
+
+    free(freqs);
+
+    return rope;
+}
+
+void v_rotary_free(Rotary* rope) {
+    if (rope) {
+        mat_free(rope->cos, TYPE_F32);
+        mat_free(rope->sin, TYPE_F32);
+    }
 }
 
 Valerie v_model_new(Tokenizer* t, Dim* d, TypeId id) {
@@ -315,16 +377,10 @@ Valerie v_model_new(Tokenizer* t, Dim* d, TypeId id) {
     v.t = t;
     v.dim = *d;
 
+    v.rope = v_rotary_new(d);
+    v.embed = v_embed_new(d);
     v.state = v_state_new(d);
     v.layers = v_layers_new(d, id);
-    v.E = v_embed_new(d->vocab_size, d->d_model);
-    v.output = v.E;  // weight tying
-
-    // Final RMSNorm (same shape as d_model)
-    v.norm = calloc(d->d_model, sizeof(float));
-    for (int i = 0; i < d->d_model; i++) {
-        v.norm[i] = 1.0f;  // γ initialized to 1
-    }
 
     return v;
 }
@@ -332,10 +388,10 @@ Valerie v_model_new(Tokenizer* t, Dim* d, TypeId id) {
 void v_model_free(Valerie* v) {
     if (v) {
         tokenizer_free(v->t);
+        v_rotary_free(&v->rope);
+        v_embed_free(&v->embed);
         v_state_free(&v->state);
         v_layers_free(v->layers, v->dim.layers);
-        mat_free(v->E, TYPE_F32);
-        free(v->norm);
     }
 }
 
@@ -398,6 +454,14 @@ void softmax(float* x, unsigned n) {
     for (unsigned i = 0; i < n; i++) {
         x[i] /= sum;
     }
+}
+
+// id is the current token.
+// pos is the current position of that token.
+float* forward(Valerie* v, int id, int pos) {
+    (void) id;
+    (void) pos;
+    return v->state.logits;
 }
 
 /** @} */
