@@ -355,6 +355,7 @@ Embedding v_embed_new(Dim* d) {
 void v_embed_free(Embedding* embed) {
     if (embed) {
         mat_free(embed->token, TYPE_F32);
+        // output points to token, no need to free again
         free(embed->norm);
     }
 }
@@ -362,7 +363,7 @@ void v_embed_free(Embedding* embed) {
 Rotary v_rotary_new(Dim* d) {
     Rotary rope = {0};
 
-    float theta = 10000.0f;
+    float theta = 10000.0f;  // @todo temp hard-coded value
 
     int dim = d->d_model / d->heads;  // per-head dimension
     int rows = d->seq_len;
@@ -371,7 +372,7 @@ Rotary v_rotary_new(Dim* d) {
     // base frequencies
     float* freqs = malloc(cols * sizeof(float));
     for (int j = 0; j < cols; j++) {
-        // 1 / (theta ** (j / dim))
+        // freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[:(dim//2)] / dim))
         freqs[j] = 1.0f / powf(theta, (float) j / (float) dim);
     }
 
