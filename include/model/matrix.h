@@ -44,15 +44,15 @@ void mat_free(void* M, TypeId id);
  * @param lehmer_args Pointer to optional callback args (may be NULL)
  */
 void mat_init(
-    void* A, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args
+    void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args
 );
 
 /** @brief Uniform random initializer (Lehmer) */
-void mat_lehmer(void* A, size_t rows, size_t cols, TypeId id);
+void mat_lehmer(void* M, size_t rows, size_t cols, TypeId id);
 /** @brief Xavier/Glorot uniform initializer */
-void mat_xavier(void* A, size_t rows, size_t cols, TypeId id);
+void mat_xavier(void* M, size_t rows, size_t cols, TypeId id);
 /** @brief Xavier normal (Box-Muller) initializer */
-void mat_muller(void* A, size_t rows, size_t cols, TypeId id);
+void mat_muller(void* M, size_t rows, size_t cols, TypeId id);
 
 /** @} */
 
