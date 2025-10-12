@@ -101,15 +101,7 @@ typedef union Float32Union {
  *
  * A lightweight container storing quantized elements and their per-block scales.
  * The data structure intentionally omits shape or dimension metadata, which
- * is managed externally by tensor or array descriptors.
- *
- * Memory layout:
- * ```
- *  Q8 = {
- *      uint8_t* s;  // num_blocks elements, each E4M3-encoded scale
- *      int8_t*  q;  // n elements, signed quantized values
- *  }
- * ```
+ * is managed externally by user defined parameters.
  *
  * This representation minimizes memory footprint and bandwidth by
  * using 1 byte per quantized value and 1 byte per block scale.
@@ -141,14 +133,6 @@ static const Type TYPE_DATA[TYPE_COUNT] = {
  * These aliases improve readability in model and tensor code by providing
  * descriptive names for reduced-precision formats. Each alias maps directly
  * to its underlying storage type and does not introduce any runtime overhead.
- *
- * Example usage:
- * @code
- * float16_t * W;   // 16-bit IEEE-754 (e5m10)
- * bfloat16_t* g;   // 16-bit BF16 (e8m7)
- * float8_t  * a;   // 8-bit IEEE (e4m3)
- * quant8_t    qW;  // Block-quantized 8-bit microscaled format
- * @endcode
  *
  * These aliases are purely semantic conveniences for working with tensors
  * and quantized blocks, particularly in model-layer code and I/O pipelines.
