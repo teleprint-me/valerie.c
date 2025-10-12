@@ -18,14 +18,14 @@ int main(void) {
     int rows = seq_len;
     int cols = dim / 2;
 
-    float* cos = calloc(rows * cols, sizeof(float));
-    float* sin = calloc(rows * cols, sizeof(float));
+    float* cos = mat_new(rows, cols, TYPE_F32);
+    float* sin = mat_new(rows, cols, TYPE_F32);
     float* freqs = malloc(cols * sizeof(float));
 
     // base frequencies
     for (int j = 0; j < cols; j++) {
         // 1 / (theta ** (j / dim))
-        freqs[j] = 1.0f / powf(theta, -(float) j / (float) dim);
+        freqs[j] = 1.0f / powf(theta, (float) j / (float) dim);
     }
 
     // outer product
@@ -54,7 +54,7 @@ int main(void) {
     }
 
     free(freqs);
-    free(cos);
-    free(sin);
+    mat_free(cos, TYPE_F32);
+    mat_free(sin, TYPE_F32);
     return 0;
 }
