@@ -513,20 +513,22 @@ void rmsnorm(float* y, float* w, float* x, unsigned n) {
     }
 }
 
-/// @todo Add precomputed rotary cache.
 /// Applied to feed-forward method.
-void rotary(float* x, int pos, unsigned head_dim) {
+void rotary(float* x, int pos, unsigned head_dim, const float* cos, const float* sin) {
     unsigned half_dim = head_dim / 2;
 
+    const float* cos_t = cos + pos * half_dim;
+    const float* sin_t = sin + pos * half_dim;
+
     for (unsigned i = 0; i < half_dim; i++) {
-        float angle = pos * powf(1e6f, -(float) i / half_dim);
-        float cos_a = cosf(angle), sin_a = sinf(angle);
+        float c = cos_t[i];
+        float s = sin_t[i];
 
         float real = x[i];
         float imag = x[i + half_dim];
 
-        x[i] = real * cos_a - imag * sin_a;
-        x[i + half_dim] = real * sin_a + imag * cos_a;
+        x[i] = real * c - imag * s;
+        x[i + half_dim] = real * s + imag * c;
     }
 }
 
