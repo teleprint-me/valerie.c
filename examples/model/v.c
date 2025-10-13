@@ -67,8 +67,22 @@
 #include "model/matrix.h"
 
 /**
+ * @struct Params
+ * User-configurable settings for initializing a model.
+ */
+typedef struct Params {
+    int d_model;  // model width (hidden size)
+    int heads;  // number of attention heads
+    int kv_heads;  // number of key/value heads (for GQA/MQA)
+    int hidden_mul;  // FFN hidden multiplier
+    int layers;  // number of transformer blocks
+    int seq_len;  // maximum context length
+    int vocab_size;  // tokenizer map size
+} Params;
+
+/**
  * @struct Dimensions
- * Model-wide structural parameters.
+ * Pre-computed internal model dimensions from user-specified parameters.
  */
 typedef struct Dim {
     int d_model;  // hidden size (width of the model)
@@ -183,25 +197,50 @@ typedef struct Valerie {
  * @{
  */
 
+// These are user configurable parameters and can optionally
+// be overriden before creating and calculating the model dimensions.
+// These are sane (arbitrary) defaults to initialize a micro-model.
+// The Params object is a simple intermediate object that temporarily exists to
+// to initialize the model dimensions. e.g. create the params, pass to the cli,
+// then populate via inputs, and then pass to v_dim_new() to pre-compute dimensions.
+// Note that the vocab_size is fixed and is pre-computed by the tokenizer model.
+Params v_params_new(int vocab_size) {
+    Params params = {0};
+
+    params.d_model = 320;  // Model width
+    params.heads = 32;  // Query heads
+    params.kv_heads = 4;  // Shared key/value heads (GQA/MQA)
+    params.hidden_mul = 4;
+    params.layers = 6;
+    params.seq_len = 128;
+    params.vocab_size = vocab_size;
+
+    return params;
+}
+
 // Default micro configuration (~8–10M params)
-Dim v_dim_new(Tokenizer* t) {
-    const int d_model = 320;  // Model width
-    const int heads = 32;  // Query heads
-    const int kv_heads = 4;  // Shared key/value heads (GQA/MQA)
-    const int head_dim = d_model / heads;  // 10 dims per head
+// These are pre-computed model dimensions and depend upon user configured params.
+Dim v_dim_new(Params params) {
+    assert(params.d_model % params.heads == 0);
+    assert(params.heads % params.kv_heads == 0);
+
+    const int heads = params.heads;
+    const int kv_heads = params.kv_heads;  // Shared key/value heads (GQA/MQA)
+    const int head_dim = params.d_model / heads;  // 10 dims per head
+    const int hidden = params.hidden_mul * params.d_model;
 
     return (Dim) {
-        .d_model = d_model,
-        .hidden = 4 * d_model,  // FFN inner dimension
-        .layers = 6,  // Transformer depth
-        .heads = heads,
+        .d_model = params.d_model,  // model width
+        .hidden = hidden,  // FFN inner dimension
+        .layers = params.layers,  // Transformer depth
+        .heads = params.heads,  // Query heads
         .head_dim = head_dim,
         .proj_dim = heads * head_dim,  // == d_model
         .kv_heads = kv_heads,
         .kv_mul = heads / kv_heads,  // 8 → 8 Q per K/V
         .kv_dim = kv_heads * head_dim,  // total shared KV width
-        .vocab_size = t->vocab_size,  // tiny test vocab
-        .seq_len = 128,  // context length
+        .vocab_size = params.vocab_size,  // tiny test vocab
+        .seq_len = params.seq_len,  // context length
     };
 }
 
