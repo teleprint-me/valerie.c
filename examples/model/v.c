@@ -431,7 +431,7 @@ Rotary v_rotary_new(Dim* d) {
 
     float theta = 10000.0f;  // @todo temp hard-coded value
 
-    int dim = d->d_model / d->heads;  // per-head dimension
+    int dim = d->head_dim;  // per-head dimension
     int rows = d->seq_len;
     int cols = dim / 2;
 
