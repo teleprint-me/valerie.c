@@ -551,6 +551,12 @@ void softmax(float* x, unsigned n) {
     }
 }
 
+void attention(Valerie* v, int id, int pos) {
+    (void) v;
+    (void) id;
+    (void) pos;
+}
+
 // id is the current token.
 // pos is the current position of that token.
 float* forward(Valerie* v, int id, int pos) {
