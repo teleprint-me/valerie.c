@@ -465,16 +465,15 @@ void v_rotary_free(Rotary* rope) {
     }
 }
 
-Valerie v_model_new(Tokenizer* t, Dim* d, TypeId id) {
+Valerie v_model_new(Tokenizer* t, Params p, TypeId id) {
     Valerie v = {0};
 
     v.t = t;
-    v.dim = *d;
-
-    v.rope = v_rotary_new(d);
-    v.embed = v_embed_new(d);
-    v.state = v_state_new(d);
-    v.layers = v_layers_new(d, id);
+    v.dim = v_dim_new(p);
+    v.rope = v_rotary_new(&v.dim);
+    v.embed = v_embed_new(&v.dim);
+    v.state = v_state_new(&v.dim);
+    v.layers = v_layers_new(&v.dim, id);
 
     return v;
 }
@@ -566,13 +565,21 @@ int main(void) {
     lehmer_init(1337);
 
     Tokenizer* t = tokenizer_load("models/tokenizer.model");
-
     Params p = v_params_new(t->vocab_size);
-    Dim dim = v_dim_new(p);
-    Valerie v = v_model_new(t, &dim, TYPE_Q8);
+    Valerie v = v_model_new(t, p, TYPE_Q8);
 
     printf("Model initialized.\n");
-    printf("Layers: %d, d_model: %d, vocab: %d\n", v.dim.layers, v.dim.d_model, v.dim.vocab_size);
+    printf("d_model: %d\n", v.dim.d_model);
+    printf("hidden: %d\n", v.dim.hidden);
+    printf("layers: %d\n", v.dim.layers);
+    printf("heads: %d\n", v.dim.heads);
+    printf("head_dim: %d\n", v.dim.head_dim);
+    printf("proj_dim: %d\n", v.dim.proj_dim);
+    printf("kv_dim: %d\n", v.dim.kv_dim);
+    printf("kv_mul: %d\n", v.dim.kv_mul);
+    printf("kv_heads: %d\n", v.dim.kv_heads);
+    printf("vocab_size: %d\n", v.dim.vocab_size);
+    printf("seq_len: %d\n", v.dim.seq_len);
 
     // Do stuff here
 
