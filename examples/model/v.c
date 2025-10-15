@@ -625,15 +625,18 @@ float* forward(Valerie* v, int id, int pos) {
         }
 
         // Compute attention scores (Q * K^T / sqrt(d_k))
-        for (int i = 0; i < d->heads; i++) {
-            float* qh = s->q + i * d->head_dim;
-            for (int j = 0; j < d->heads; j++) {
-                float* kh = s->k + j * d->head_dim;
+        for (int h = 0; h < d->heads; h++) {
+            float* qh = s->q + h * d->head_dim;
+
+            for (int t = 0; t <= pos; t++) {
+                float* kt = s->k + t * d->d_model + h * d->head_dim;
+
                 float dot = 0.0f;
-                for (int k = 0; k < d->head_dim; d++) {
-                    dot += qh[k] * kh[k];
+                for (int k = 0; k < d->head_dim; k++) {
+                    dot += qh[k] * kt[k];
                 }
-                s->A[i * d->heads + j] = dot / sqrtf(d->head_dim);
+
+                s->A[h * d->seq_len + t] = dot / sqrtf((float) d->head_dim);
             }
         }
 
