@@ -10,11 +10,13 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#include <assert.h>
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
 #include <limits.h>
-#include <stdio.h>
 
 #include "core/path.h"
 #include "core/strext.h"
@@ -83,7 +85,6 @@ void tokenizer_free(Tokenizer* t) {
         token_score_free(t->scores);
         token_to_id_free(t->token_to_id);
         id_to_token_free(t->id_to_token, t->vocab_size);
-        free(t);
     }
 }
 
@@ -318,75 +319,41 @@ HashMap* token_score_create(HashMap* token_to_id, HashMap* ranks) {
     return scores;  // v : t -> f
 }
 
-Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special) {
-    if (!model) {
-        return NULL;
-    }
+Tokenizer tokenizer_create(BPEModel* model, SpecialToken* special) {
+    assert(model);
 
-    Tokenizer* t = calloc(1, sizeof(Tokenizer));
-    if (!t) {
-        LOG_ERROR("Failed to create tokenizer.");
-        return NULL;
-    }
+    Tokenizer t = {0};
 
     // Owns special tokens
-    t->special = special;  // Optional (can be NULL)
+    t.special = special;  // Optional (can be NULL)
 
     // Build ASCII table
     HashMap* ascii = token_ascii_create();
-    if (!ascii) {
-        LOG_ERROR("Failed to create ascii map.");
-        goto fail;
-    }
+    assert(ascii);
 
     // Create vocab token set
     HashSet* vocab = token_set_create(model, ascii);
-    token_ascii_free(ascii);
-    if (!vocab) {
-        LOG_ERROR("Failed to create vocab set.");
-        goto fail;
-    }
+    assert(vocab);
 
     // id_to_token (array) and vocab_size
-    t->id_to_token = id_to_token_create(vocab, special, &t->vocab_size);
-
-    // Clean up vocab token set
-    token_set_free(vocab);
-    if (!t->id_to_token) {
-        LOG_ERROR("Failed to create id to token array.");
-        goto fail;
-    }
+    t.id_to_token = id_to_token_create(vocab, special, &t.vocab_size);
 
     // token_to_id (map)
-    t->token_to_id = token_to_id_create(t->id_to_token, t->vocab_size);
-    if (!t->token_to_id) {
-        LOG_ERROR("Failed to create token to id map.");
-        goto fail;
-    }
+    t.token_to_id = token_to_id_create(t.id_to_token, t.vocab_size);
 
     // ranks (for BPE merges)
     HashMap* ranks = token_rank_create(model);
-    if (!ranks) {
-        LOG_ERROR("Failed to create rank map.");
-        goto fail;
-    }
+    assert(ranks);
 
     // scores (for greedy BPE merges)
-    t->scores = token_score_create(t->token_to_id, ranks);
+    t.scores = token_score_create(t.token_to_id, ranks);
 
-    // Clean up rank map
+    // Clean up intermediary representations
+    token_ascii_free(ascii);
+    token_set_free(vocab);
     token_rank_free(ranks);
-    if (!t->scores) {
-        LOG_ERROR("Failed to create score map.");
-        goto fail;
-    }
 
     return t;
-
-fail:
-    // Free all partially allocated fields (handles NULLs fine)
-    tokenizer_free(t);
-    return NULL;
 }
 
 /** @} */
@@ -472,38 +439,25 @@ bool tokenizer_save(Tokenizer* t, const char* path) {
     return true;
 }
 
-Tokenizer* tokenizer_load(const char* path) {
-    if (!path_is_file(path)) {
-        return NULL;
-    }
+Tokenizer tokenizer_load(const char* path) {
+    assert(path_is_file(path));
 
     FILE* file = fopen(path, "rb");
-    if (!file) {
-        goto fail_file;
-    }
+    assert(file);
 
     int magic;
     fread(&magic, sizeof(int), 1, file);
-    if (magic != TOKENIZER_MAGIC) {
-        goto fail_file;
-    }
+    assert(magic == TOKENIZER_MAGIC);
 
     int version;
     fread(&version, sizeof(int), 1, file);
-    if (version != TOKENIZER_VERSION) {
-        goto fail_file;
-    }
+    assert(version == TOKENIZER_VERSION);
 
-    Tokenizer* t = malloc(sizeof(Tokenizer));
-    if (!t) {
-        goto fail_tokenizer;
-    }
+    Tokenizer t = {0};
 
     // special tokens
-    t->special = malloc(sizeof(SpecialToken));
-    if (!t->special) {
-        goto fail_tokenizer;
-    }
+    t.special = malloc(sizeof(SpecialToken));
+    assert(t.special);
 
     for (size_t i = 0; i < 4; i++) {
         int len;
@@ -512,17 +466,15 @@ Tokenizer* tokenizer_load(const char* path) {
         fread(special, sizeof(char), len, file);
         special[len] = 0;
         // fingers crossed!
-        ((char**) &t->special->bos)[i] = special;
+        ((char**) &t.special->bos)[i] = special;
     }
 
     // scores (HashMap)
     int score_count;
     fread(&score_count, sizeof(int), 1, file);
 
-    t->scores = hash_map_create(score_count, HASH_STR);
-    if (!t->scores) {
-        goto fail_tokenizer;
-    }
+    t.scores = hash_map_create(score_count, HASH_STR);
+    assert(t.scores);
 
     for (int i = 0; i < score_count; i++) {
         // read token
@@ -539,17 +491,15 @@ Tokenizer* tokenizer_load(const char* path) {
         *score = v;
 
         // map token to score
-        hash_map_insert(t->scores, token, score);
+        hash_map_insert(t.scores, token, score);
     }
 
     // token-to-id (HashMap)
     int token_to_id_count;
     fread(&token_to_id_count, sizeof(int), 1, file);
 
-    t->token_to_id = hash_map_create(token_to_id_count, HASH_STR);
-    if (!t->token_to_id) {
-        goto fail_tokenizer;
-    }
+    t.token_to_id = hash_map_create(token_to_id_count, HASH_STR);
+    assert(t.token_to_id);
 
     for (int i = 0; i < token_to_id_count; i++) {
         // read token
@@ -566,18 +516,16 @@ Tokenizer* tokenizer_load(const char* path) {
         *id = v;
 
         // map token to id
-        hash_map_insert(t->token_to_id, token, id);
+        hash_map_insert(t.token_to_id, token, id);
     }
 
     // id-to-tokens (char**)
-    fread(&t->vocab_size, sizeof(int), 1, file);
+    fread(&t.vocab_size, sizeof(int), 1, file);
 
-    t->id_to_token = calloc(t->vocab_size, sizeof(char*));
-    if (!t->id_to_token) {
-        goto fail_tokenizer;
-    }
+    t.id_to_token = calloc(t.vocab_size, sizeof(char*));
+    assert(t.id_to_token);
 
-    for (int i = 0; i < t->vocab_size; i++) {
+    for (int i = 0; i < t.vocab_size; i++) {
         // read token
         int k_len;
         fread(&k_len, sizeof(int), 1, file);
@@ -586,17 +534,11 @@ Tokenizer* tokenizer_load(const char* path) {
         k[k_len] = 0;
 
         // map id to token
-        t->id_to_token[i] = k;
+        t.id_to_token[i] = k;
     }
 
     fclose(file);
     return t;
-
-fail_tokenizer:
-    tokenizer_free(t);
-fail_file:
-    fclose(file);
-    return NULL;
 }
 
 /** @} */

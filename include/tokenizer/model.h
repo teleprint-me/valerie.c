@@ -84,7 +84,7 @@ void token_special_free(SpecialToken* special);
  * @param special SpecialToken struct (ownership is transferred).
  * @return        Allocated Tokenizer struct, or NULL on failure.
  */
-Tokenizer* tokenizer_create(BPEModel* model, SpecialToken* special);
+Tokenizer tokenizer_create(BPEModel* model, SpecialToken* special);
 
 /**
  * @brief Free a Tokenizer and all associated memory.
@@ -114,7 +114,7 @@ bool tokenizer_save(Tokenizer* t, const char* path);
  * @param path Path to saved model file.
  * @return     Allocated Tokenizer struct, or NULL on error.
  */
-Tokenizer* tokenizer_load(const char* path);
+Tokenizer tokenizer_load(const char* path);
 
 /** @} */
 

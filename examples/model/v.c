@@ -205,7 +205,7 @@ typedef struct State {
  * @section Transformer Model
  */
 typedef struct Valerie {
-    Tokenizer* t;  // tokenizer reference
+    Tokenizer t;  // tokenizer reference
     Dim dim;  // model dimensions and hyperparameters
     Rotary rope;  // precomputed rotary frequencies (non-learned)
     Embedding embed;  // embedding and output weights
@@ -480,7 +480,7 @@ void v_rotary_free(Rotary* rope) {
     }
 }
 
-Valerie v_model_new(Tokenizer* t, Params p, TypeId id) {
+Valerie v_model_new(Tokenizer t, Params p, TypeId id) {
     Valerie v = {0};
 
     v.t = t;
@@ -495,7 +495,7 @@ Valerie v_model_new(Tokenizer* t, Params p, TypeId id) {
 
 void v_model_free(Valerie* v) {
     if (v) {
-        tokenizer_free(v->t);
+        tokenizer_free(&v->t);
         v_rotary_free(&v->rope);
         v_embed_free(&v->embed);
         v_state_free(&v->state);
@@ -585,8 +585,8 @@ float* forward(Valerie* v, int id, int pos) {
 int main(void) {
     lehmer_init(1337);
 
-    Tokenizer* t = tokenizer_load("models/tokenizer.model");
-    Params p = v_params_new(t->vocab_size);
+    Tokenizer t = tokenizer_load("models/tokenizer.model");
+    Params p = v_params_new(t.vocab_size);
     Valerie v = v_model_new(t, p, TYPE_Q8);
 
     LOG_INFO("Model initialized.");

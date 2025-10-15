@@ -171,33 +171,27 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    Tokenizer* t = tokenizer_create(model, special);
-    if (!t) {
-        bpe_free(model);
-        vocab_map_free(vocab);
-        cli_free(&cli);
-        return EXIT_FAILURE;
-    }
+    Tokenizer t = tokenizer_create(model, special);
 
     // Print debug info if enabled
     if (cli.verbose) {
-        printf("vocab size: %d\n", t->vocab_size);
+        printf("vocab size: %d\n", t.vocab_size);
         printf("model:\n");
-        for (int i = 0; i < t->vocab_size; i++) {
-            printf("  %03d -> %s\n", i, t->id_to_token[i]);
+        for (int i = 0; i < t.vocab_size; i++) {
+            printf("  %03d -> %s\n", i, t.id_to_token[i]);
         }
         printf("\n");
     }
 
     // Serialize tokenizer to output_dir
     out_path = path_join(cli.output_dir, "tokenizer.model");
-    tokenizer_save(t, out_path);
+    tokenizer_save(&t, out_path);
     printf("Saved tokenizer to %s\n\n", out_path);
     free(out_path);
 
     printf("Encoding:\n");
     int id_count;
-    int* ids = tokenizer_encode(t, "Hello, world!", &id_count, false, false);
+    int* ids = tokenizer_encode(&t, "Hello, world!", &id_count, false, false);
     if (!ids) {
         fprintf(stderr, "Failed to encode text!\n");
         return EXIT_FAILURE;
@@ -209,7 +203,7 @@ int main(int argc, const char* argv[]) {
     printf("\n");
 
     printf("Decoding:\n");
-    char* text = tokenizer_decode(t, ids, id_count);
+    char* text = tokenizer_decode(&t, ids, id_count);
     if (!text) {
         fprintf(stderr, "Failed to decode ids!\n");
     }
@@ -218,7 +212,7 @@ int main(int argc, const char* argv[]) {
     free(ids);
 
     // Clean up
-    tokenizer_free(t);
+    tokenizer_free(&t);
     bpe_free(model);
     vocab_map_free(vocab);
     cli_free(&cli);

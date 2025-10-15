@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <math.h>
 
 #include "core/logger.h"
 #include "core/path.h"
@@ -18,7 +17,6 @@
 #include "tokenizer/model.h"
 
 #include "model/matrix.h"
-#include "model/blocks.h"
 
 /**
  * @section Embeddings
@@ -213,15 +211,11 @@ int main(int argc, const char* argv[]) {
     }
 
     // Load the tokenizer model
-    Tokenizer* t = tokenizer_load(cli.model_path);
-    if (!t) {
-        LOG_ERROR("Failed to load tokenizer model.");
-        goto fail_cli;
-    }
+    Tokenizer t = tokenizer_load(cli.model_path);
 
     // Encode text to ids
     int seq_len;
-    int* ids = tokenizer_encode(t, cli.prompt, &seq_len, cli.add_bos, cli.add_eos);
+    int* ids = tokenizer_encode(&t, cli.prompt, &seq_len, cli.add_bos, cli.add_eos);
     if (!ids) {
         LOG_ERROR("Failed to encode text: %s", cli.prompt);
         goto fail_tokenizer;
@@ -232,13 +226,13 @@ int main(int argc, const char* argv[]) {
 
     // Create embedding table E ∈ ℝ^(|V| × D)
     size_t embed_dim = 16;
-    float* E = embeddings_create(t->vocab_size, embed_dim);
+    float* E = embeddings_create(t.vocab_size, embed_dim);
     if (!E) {
         goto fail_encoder;
     }
 
     // Print initialized embeddings table
-    embeddings_log_table(E, ids, seq_len, embed_dim, t->id_to_token);
+    embeddings_log_table(E, ids, seq_len, embed_dim, t.id_to_token);
 
     float* E_out = mat_new(seq_len, embed_dim, TYPE_F32);
     if (!E_out) {
@@ -249,10 +243,10 @@ int main(int argc, const char* argv[]) {
     embeddings_lookup(E_out, E, ids, seq_len, embed_dim);
 
     // Print looked-up embeddings
-    embeddings_log_lookup(E_out, ids, seq_len, embed_dim, t->id_to_token);
+    embeddings_log_lookup(E_out, ids, seq_len, embed_dim, t.id_to_token);
 
     // Ids to text
-    char* text = tokenizer_decode(t, ids, seq_len);
+    char* text = tokenizer_decode(&t, ids, seq_len);
     if (!text) {
         fprintf(stderr, "Failed to decode ids!\n");
     }
@@ -262,7 +256,7 @@ int main(int argc, const char* argv[]) {
     free(E_out);
     free(E);
     free(ids);
-    tokenizer_free(t);
+    tokenizer_free(&t);
     cli_free(&cli);
 
     return EXIT_SUCCESS;
@@ -272,7 +266,7 @@ fail_lookup:
 fail_encoder:
     free(ids);
 fail_tokenizer:
-    tokenizer_free(t);
+    tokenizer_free(&t);
 fail_cli:
     cli_free(&cli);
     return EXIT_FAILURE;
