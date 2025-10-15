@@ -607,9 +607,9 @@ float* forward(Valerie* v, int id, int pos) {
         // @note x_norm is float*, but mat_mul expects void* for W and x as the same dtype.
         // x_norm needs to be quantized to the layers dtype. Need to keep fleshing this out
         // to figure out how to improve the interface.
-        mat_mul(s->q, L->attn.Wq, s->x_norm, d->d_model, d->proj_dim, L->attn.id);
-        mat_mul(s->k, L->attn.Wk, s->x_norm, d->d_model, d->kv_dim, L->attn.id);
-        mat_mul(s->v, L->attn.Wv, s->x_norm, d->d_model, d->kv_dim, L->attn.id);
+        mat_mul(s->q, L->attn.Wq, s->x_norm, d->proj_dim, d->d_model, L->attn.id);
+        mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, L->attn.id);
+        mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, L->attn.id);
 
         // Apply rotary embedding
         rotary(s->q, pos, d->head_dim, v->rope.cos, v->rope.sin);
@@ -625,7 +625,7 @@ float* forward(Valerie* v, int id, int pos) {
         attention(v, id, pos);
 
         // Compute residual connection from input
-        residual(s->x_norm, L->rms_ffn, d->d_model);
+        residual(s->x, s->x_norm, d->d_model);
 
         // --- FeedForward Block ---
 
@@ -647,7 +647,7 @@ float* forward(Valerie* v, int id, int pos) {
         }
 
         // Project back to model dimension
-        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->hidden, d->d_model, L->ffn.id);
+        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->d_model, d->hidden, L->ffn.id);
 
         // final residual connection
         residual(s->x, s->x_norm, d->d_model);
