@@ -59,6 +59,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include "core/logger.h"
 #include "core/type.h"
 #include "core/lehmer.h"
 
@@ -269,6 +270,20 @@ Dim v_dim_new(Params params) {
         .vocab_size = params.vocab_size,  // tokenizer vocabulary size
         .seq_len = params.seq_len,  // context length
     };
+}
+
+void v_dim_log(Dim dim) {
+    LOG_INFO("d_model: %d", dim.d_model);
+    LOG_INFO("hidden: %d", dim.hidden);
+    LOG_INFO("layers: %d", dim.layers);
+    LOG_INFO("heads: %d", dim.heads);
+    LOG_INFO("head_dim: %d", dim.head_dim);
+    LOG_INFO("proj_dim: %d", dim.proj_dim);
+    LOG_INFO("kv_dim: %d", dim.kv_dim);
+    LOG_INFO("kv_mul: %d", dim.kv_mul);
+    LOG_INFO("kv_heads: %d", dim.kv_heads);
+    LOG_INFO("vocab_size: %d", dim.vocab_size);
+    LOG_INFO("seq_len: %d", dim.seq_len);
 }
 
 Attention v_attn_new(Dim* d, TypeId id) {
@@ -574,22 +589,12 @@ int main(void) {
     Params p = v_params_new(t->vocab_size);
     Valerie v = v_model_new(t, p, TYPE_Q8);
 
-    printf("Model initialized.\n");
-    printf("d_model: %d\n", v.dim.d_model);
-    printf("hidden: %d\n", v.dim.hidden);
-    printf("layers: %d\n", v.dim.layers);
-    printf("heads: %d\n", v.dim.heads);
-    printf("head_dim: %d\n", v.dim.head_dim);
-    printf("proj_dim: %d\n", v.dim.proj_dim);
-    printf("kv_dim: %d\n", v.dim.kv_dim);
-    printf("kv_mul: %d\n", v.dim.kv_mul);
-    printf("kv_heads: %d\n", v.dim.kv_heads);
-    printf("vocab_size: %d\n", v.dim.vocab_size);
-    printf("seq_len: %d\n", v.dim.seq_len);
+    LOG_INFO("Model initialized.");
+    v_dim_log(v.dim);
 
     // Do stuff here
 
     v_model_free(&v);
-    printf("Model freed cleanly.\n");
+    LOG_INFO("Model freed cleanly.");
     return 0;
 }
