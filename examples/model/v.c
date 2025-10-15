@@ -661,7 +661,7 @@ float* forward(Valerie* v, int id, int pos) {
         // Project concatenated heads back to model dimension (Wo)
         mat_mul(s->x_norm, L->attn.Wo, s->x_norm, d->d_model, d->proj_dim, TYPE_F32);
 
-        // Compute residual connection from input
+        // Attention residual connection
         residual(s->x, s->x_norm, d->d_model);
 
         // --- FeedForward Block ---
@@ -669,24 +669,19 @@ float* forward(Valerie* v, int id, int pos) {
         // Normalize input
         rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
 
-        // Project to hidden dimension
-        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->hidden, d->d_model, L->ffn.id);
-        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->hidden, d->d_model, L->ffn.id);
+        // Up-projection (W1, W3)
+        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->hidden, d->d_model, TYPE_F32);
+        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->hidden, d->d_model, TYPE_F32);
 
-        // Apply activation to gate (SiLU)
+        // SwiGLU (SiLU activation)
         for (int i = 0; i < d->hidden; i++) {
-            s->mlp_gate[i] = s->mlp_gate[i] / (1.0f + expf(-s->mlp_gate[i]));
+            s->mlp_in[i] *= silu(s->mlp_gate[i]);
         }
 
-        // Element-wise gated product
-        for (int i = 0; i < d->hidden; i++) {
-            s->mlp_in[i] *= s->mlp_gate[i];
-        }
+        // Down projection (W2)
+        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->d_model, d->hidden, TYPE_F32);
 
-        // Project back to model dimension
-        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->d_model, d->hidden, L->ffn.id);
-
-        // final residual connection
+        // FFN residual connection
         residual(s->x, s->x_norm, d->d_model);
     }
 
