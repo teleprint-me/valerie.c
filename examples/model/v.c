@@ -212,6 +212,7 @@ typedef struct Valerie {
     Embedding embed;  // embedding and output weights
     State state;  // forward-pass working state
     Layer* layers;  // array of transformer layers
+    TypeId dtype;
 } Valerie;
 
 /**
@@ -393,8 +394,8 @@ State v_state_new(Dim* d) {
     s.x = calloc(d->d_model, sizeof(float));
     s.x_norm = calloc(d->d_model, sizeof(float));
     s.q = calloc(d->d_model, sizeof(float));
-    s.k = calloc(d->d_model, sizeof(float));
-    s.v = calloc(d->d_model, sizeof(float));
+    s.k = NULL;  // Alias for key cache
+    s.v = NULL;  // Alias for value cache
     s.A = mat_new(d->heads, d->seq_len, TYPE_F32);
     s.mlp_in = calloc(d->hidden, sizeof(float));
     s.mlp_gate = calloc(d->hidden, sizeof(float));
@@ -407,8 +408,8 @@ void v_state_free(State* s) {
         free(s->x);
         free(s->x_norm);
         free(s->q);
-        free(s->k);
-        free(s->v);
+        // Do not free key alias
+        // Do not free value alias
         free(s->A);
         free(s->mlp_in);
         free(s->mlp_gate);
@@ -598,24 +599,24 @@ float* forward(Valerie* v, int id, int pos) {
     for (int l = 0; l < d->layers; l++) {
         Layer* L = &layers[l];
 
-        // Cache KV for current position (this needs to be fixed)
-        s->k = L->cache.k + pos * d->d_model;
-        s->v = L->cache.v + pos * d->d_model;
+        // Alias current cache slot
+        s->k = L->cache.k + pos * d->kv_dim;
+        s->v = L->cache.v + pos * d->kv_dim;
 
         // --- Attention Block ---
 
         // Normalize input
         rmsnorm(s->x_norm, L->rms_attn, s->x, d->d_model);
 
-        // Compute Q, K, V projections
         // @note x_norm is float*, but mat_mul expects void* for W and x as the same dtype.
-        // x_norm needs to be quantized to the layers dtype. Need to keep fleshing this out
-        // to figure out how to improve the interface.
-        mat_mul(s->q, L->attn.Wq, s->x_norm, d->proj_dim, d->d_model, L->attn.id);
-        mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, L->attn.id);
-        mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, L->attn.id);
+        // x_norm needs to be quantized to the layers dtype.
+        // Need to keep fleshing this out to figure out how to improve the interface.
+        // Compute Q, K, V projections (float-only for now)
+        mat_mul(s->q, L->attn.Wq, s->x_norm, d->proj_dim, d->d_model, TYPE_F32);
+        mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, TYPE_F32);
+        mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, TYPE_F32);
 
-        // Apply rotary for grouped-query attention
+        // Apply rotary embeddings per head/group
         for (int h = 0; h < d->heads; h++) {
             int group = h / d->kv_mul;
             float* qh = s->q + h * d->head_dim;
@@ -627,18 +628,38 @@ float* forward(Valerie* v, int id, int pos) {
         // Compute attention scores (Q * K^T / sqrt(d_k))
         for (int h = 0; h < d->heads; h++) {
             float* qh = s->q + h * d->head_dim;
+            float* att = s->A + h * d->seq_len;
 
             for (int t = 0; t <= pos; t++) {
-                float* kt = s->k + t * d->d_model + h * d->head_dim;
+                // each K_t per head group
+                float* kt = L->cache.k + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
 
                 float dot = 0.0f;
                 for (int k = 0; k < d->head_dim; k++) {
                     dot += qh[k] * kt[k];
                 }
 
-                s->A[h * d->seq_len + t] = dot / sqrtf((float) d->head_dim);
+                att[t] = dot / sqrtf((float) d->head_dim);
+            }
+
+            // Softmax attention scores
+            softmax(att, pos + 1);
+
+            // Weighted sum of scores (context vector)
+            float* out_h = s->x_norm + h * d->head_dim;
+            memset(out_h, 0, d->head_dim * sizeof(float));
+
+            for (int t = 0; t <= pos; t++) {
+                float w = att[t];
+                float* vt = L->cache.v + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+                for (int k = 0; k < d->head_dim; k++) {
+                    out_h[k] += w * vt[k];
+                }
             }
         }
+
+        // Project concatenated heads back to model dimension (Wo)
+        mat_mul(s->x_norm, L->attn.Wo, s->x_norm, d->d_model, d->proj_dim, TYPE_F32);
 
         // Compute residual connection from input
         residual(s->x, s->x_norm, d->d_model);
@@ -649,8 +670,8 @@ float* forward(Valerie* v, int id, int pos) {
         rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
 
         // Project to hidden dimension
-        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->d_model, d->hidden, L->ffn.id);
-        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->d_model, d->hidden, L->ffn.id);
+        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->hidden, d->d_model, L->ffn.id);
+        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->hidden, d->d_model, L->ffn.id);
 
         // Apply activation to gate (SiLU)
         for (int i = 0; i < d->hidden; i++) {
