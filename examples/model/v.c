@@ -567,6 +567,15 @@ void softmax(float* x, unsigned n) {
     }
 }
 
+// In place vector addition
+void residual(float* y, float* x, int n) {
+    assert(n > 0);
+
+    for (int i = 0; i < n; i++) {
+        y[i] += x[i];
+    }
+}
+
 void attention(Valerie* v, int id, int pos) {
     (void) v;
     (void) id;
@@ -588,12 +597,15 @@ float* forward(Valerie* v, int id, int pos) {
     for (int l = 0; l < d->layers; l++) {
         Layer* L = &layers[l];
 
+        // --- Attention Block ---
+
         // Normalize input
         rmsnorm(s->x_norm, L->rms_attn, s->x, d->d_model);
 
         // Compute Q, K, V projections
         // @note x_norm is float*, but mat_mul expects void* for W and x as the same dtype.
-        // x_norm needs to be quantized to the layers dtype.
+        // x_norm needs to be quantized to the layers dtype. Need to keep fleshing this out
+        // to figure out how to improve the interface.
         mat_mul(s->q, L->attn.Wq, s->x_norm, d->d_model, d->proj_dim, L->attn.id);
         mat_mul(s->k, L->attn.Wk, s->x_norm, d->d_model, d->kv_dim, L->attn.id);
         mat_mul(s->v, L->attn.Wv, s->x_norm, d->d_model, d->kv_dim, L->attn.id);
@@ -610,6 +622,34 @@ float* forward(Valerie* v, int id, int pos) {
 
         // Compute forward attention
         attention(v, id, pos);
+
+        // Compute residual connection from input
+        residual(s->x_norm, L->rms_ffn, d->d_model);
+
+        // --- FeedForward Block ---
+
+        // Normalize input
+        rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
+
+        // Project to hidden dimension
+        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->d_model, d->hidden, L->ffn.id);
+        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->d_model, d->hidden, L->ffn.id);
+
+        // Apply activation to gate (SiLU)
+        for (int i = 0; i < d->hidden; i++) {
+            s->mlp_gate[i] = s->mlp_gate[i] / (1.0f + expf(-s->mlp_gate[i]));
+        }
+
+        // Element-wise gated product
+        for (int i = 0; i < d->hidden; i++) {
+            s->mlp_in[i] *= s->mlp_gate[i];
+        }
+
+        // Project back to model dimension
+        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->hidden, d->d_model, L->ffn.id);
+
+        // final residual connection
+        residual(s->x, s->x_norm, d->d_model);
     }
 
     return v->state.logits;
