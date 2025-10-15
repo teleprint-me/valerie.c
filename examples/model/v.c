@@ -598,6 +598,10 @@ float* forward(Valerie* v, int id, int pos) {
     for (int l = 0; l < d->layers; l++) {
         Layer* L = &layers[l];
 
+        // Cache KV for current position (this needs to be fixed)
+        s->k = L->cache.k + pos * d->d_model;
+        s->v = L->cache.v + pos * d->d_model;
+
         // --- Attention Block ---
 
         // Normalize input
@@ -619,12 +623,6 @@ float* forward(Valerie* v, int id, int pos) {
             rotary(qh, pos, d->head_dim, v->rope.cos, v->rope.sin);
             rotary(kh, pos, d->head_dim, v->rope.cos, v->rope.sin);
         }
-
-        // Cache KV for current position
-        float* k_pos = L->cache.k + pos * d->d_model;
-        float* v_pos = L->cache.v + pos * d->d_model;
-        memcpy(k_pos, s->k, d->d_model * sizeof(float));
-        memcpy(v_pos, s->v, d->d_model * sizeof(float));
 
         // Compute attention scores (Q * K^T / sqrt(d_k))
         for (int i = 0; i < d->heads; i++) {
