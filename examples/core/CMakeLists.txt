@@ -2,6 +2,7 @@
 
 set(EXAMPLES
     "lehmer"
+    "alias"
     "map"
     "set"
     "q8"

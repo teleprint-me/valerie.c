@@ -4,6 +4,7 @@ set(EXAMPLES
     "matrix"
     "embedding"
     "rotary"
+    "cache"
     "v"
 )
 
