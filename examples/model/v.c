@@ -148,8 +148,8 @@ typedef struct FeedForward {
  * Layer-wise key/value caches for autoregressive attention.
  */
 typedef struct Cache {
-    float* k;  // (seq_len, d_model)
-    float* v;  // (seq_len, d_model)
+    float* k;  // (seq_len, kv_dim)
+    float* v;  // (seq_len, kv_dim)
 } Cache;
 
 /**
@@ -337,8 +337,8 @@ void v_ffn_free(FeedForward* ffn) {
 
 Cache v_cache_new(Dim* d) {
     return (Cache) {
-        .k = mat_new(d->seq_len, d->d_model, TYPE_F32),
-        .v = mat_new(d->seq_len, d->d_model, TYPE_F32),
+        .k = mat_new(d->seq_len, d->kv_dim, TYPE_F32),
+        .v = mat_new(d->seq_len, d->kv_dim, TYPE_F32),
     };
 }
 
