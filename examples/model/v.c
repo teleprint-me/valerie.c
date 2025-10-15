@@ -2,7 +2,6 @@
  * @file examples/model/v.c
  * @brief Valerie is a transformer model that mirrors the Qwen3 architecture.
  * @copyright Copyright © 2025 Austin Berrio
- * @note Valerie is not a replica of Qwen3 and is incompatible as a result.
  * @ref https://github.com/adriancable/qwen3.c
  * @ref https://arxiv.org/abs/1207.0580
  * @ref https://arxiv.org/abs/1608.05859
@@ -584,8 +583,10 @@ void attention(Valerie* v, int id, int pos) {
     (void) pos;
 }
 
-// id is the current token.
-// pos is the current position of that token.
+// Single-token forward pass (autoregressive)
+// @param id  current token id
+// @param pos current position (0..n)
+// @returns updated logit stream
 float* forward(Valerie* v, int id, int pos) {
     Dim* d = &v->dim;
     State* s = &v->state;
