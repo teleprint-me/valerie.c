@@ -653,7 +653,12 @@ float* forward(Valerie* v, int id, int pos) {
         residual(s->x, s->x_norm, d->d_model);
     }
 
-    return v->state.logits;
+    // Final layer normalization
+    rmsnorm(s->x_norm, e->norm, s->x, d->d_model);
+
+    // Output projection
+    mat_mul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, TYPE_F32);
+    return s->logits;
 }
 
 /** @} */
