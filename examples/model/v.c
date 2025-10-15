@@ -65,6 +65,7 @@
 
 #include "tokenizer/model.h"
 
+#include "model/activation.h"
 #include "model/matrix.h"
 
 /**
@@ -577,6 +578,20 @@ void attention(Valerie* v, int id, int pos) {
 float* forward(Valerie* v, int id, int pos) {
     (void) id;
     (void) pos;
+
+    Dim d = v->dim;
+    State s = v->state;
+    Embedding e = v->embed;
+
+    // Copy embeddings into input vector
+    memcpy(s.x, e.token + id * d.d_model, d.d_model * sizeof(float));
+
+    for (int l = 0; l < d.layers; l++) {
+        Layer layer = v->layers[l];
+        s.k = layer.cache.k + pos * d.kv_dim;
+        s.v = layer.cache.v + pos * d.kv_dim;
+    }
+
     return v->state.logits;
 }
 
