@@ -611,15 +611,12 @@ float* forward(Valerie* v, int id, int pos) {
         mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, L->attn.id);
         mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, L->attn.id);
 
-        // Apply rotary to each query head
+        // Apply rotary for grouped-query attention
         for (int h = 0; h < d->heads; h++) {
+            int group = h / d->kv_mul;
             float* qh = s->q + h * d->head_dim;
+            float* kh = s->k + group * d->head_dim;
             rotary(qh, pos, d->head_dim, v->rope.cos, v->rope.sin);
-        }
-
-        // Apply rotary to each key head (assert kv_heads <= heads)
-        for (int h = 0; h < d->kv_heads; h++) {
-            float* kh = s->k + h * d->head_dim;
             rotary(kh, pos, d->head_dim, v->rope.cos, v->rope.sin);
         }
 
