@@ -148,8 +148,8 @@ typedef struct FeedForward {
  * Layer-wise key/value caches for autoregressive attention.
  */
 typedef struct Cache {
-    float* k;  // (seq_len, kv_dim)
-    float* v;  // (seq_len, kv_dim)
+    float* k;  // key buffer (seq_len, kv_dim)
+    float* v;  // value buffer (seq_len, kv_dim)
 } Cache;
 
 /**
@@ -179,8 +179,8 @@ typedef struct Embedding {
  * Precomputed, non-trainable rotary frequencies.
  */
 typedef struct Rotary {
-    float* cos;  // (max_seq_len, head_dim/2)
-    float* sin;  // (max_seq_len, head_dim/2)
+    float* cos;  // (seq_len, head_dim / 2)
+    float* sin;  // (seq_len, head_dim / 2)
 } Rotary;
 
 /**
@@ -192,8 +192,8 @@ typedef struct State {
     float* x_norm;  // (d_model,)
 
     float* q;  // (d_model,)
-    float* k;  // (d_model,)
-    float* v;  // (d_model,)
+    float* k;  // transient view into cache (d_model,)
+    float* v;  // transient view into cache (d_model,)
     float* A;  // (heads, seq_len)
 
     float* mlp_in;  // w1(x) projection (hidden,)
@@ -592,7 +592,7 @@ float* forward(Valerie* v, int id, int pos) {
     Embedding* e = &v->embed;
     Layer* layers = v->layers;
 
-    // Copy embeddings into input vector
+    // Token embedding lookup
     memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
 
     // Iterate over model layers
