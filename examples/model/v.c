@@ -510,7 +510,7 @@ void v_model_free(Valerie* v) {
  * Model Blocks
  */
 
-// Applied to feed-forward method.
+// @ref https://arxiv.org/abs/1910.07467
 void rmsnorm(float* y, float* w, float* x, unsigned n) {
     // Avoid division by 0
     assert(n > 0 && "Division by zero!");
@@ -528,7 +528,7 @@ void rmsnorm(float* y, float* w, float* x, unsigned n) {
     }
 }
 
-/// Applied to feed-forward method.
+// @ref https://arxiv.org/abs/2104.09864
 void rotary(float* x, int pos, unsigned head_dim, const float* cos, const float* sin) {
     unsigned half_dim = head_dim / 2;
 
@@ -567,7 +567,7 @@ void softmax(float* x, unsigned n) {
     }
 }
 
-// In place vector addition
+// @ref https://arxiv.org/abs/1512.03385
 void residual(float* y, float* x, int n) {
     assert(n > 0);
 
@@ -576,6 +576,7 @@ void residual(float* y, float* x, int n) {
     }
 }
 
+// @ref https://arxiv.org/abs/1706.03762
 void attention(Valerie* v, int id, int pos) {
     (void) v;
     (void) id;
