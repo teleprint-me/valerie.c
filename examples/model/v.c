@@ -576,20 +576,40 @@ void attention(Valerie* v, int id, int pos) {
 // id is the current token.
 // pos is the current position of that token.
 float* forward(Valerie* v, int id, int pos) {
-    (void) id;
-    (void) pos;
-
-    Dim d = v->dim;
-    State s = v->state;
-    Embedding e = v->embed;
+    Dim* d = &v->dim;
+    State* s = &v->state;
+    Embedding* e = &v->embed;
+    Layer* layers = v->layers;
 
     // Copy embeddings into input vector
-    memcpy(s.x, e.token + id * d.d_model, d.d_model * sizeof(float));
+    memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
 
-    for (int l = 0; l < d.layers; l++) {
-        Layer layer = v->layers[l];
-        s.k = layer.cache.k + pos * d.kv_dim;
-        s.v = layer.cache.v + pos * d.kv_dim;
+    // Iterate over model layers
+    for (int l = 0; l < d->layers; l++) {
+        Layer* L = &layers[l];
+
+        // Normalize input
+        rmsnorm(s->x_norm, L->rms_attn, s->x, d->d_model);
+
+        // Compute Q, K, V projections
+        // @note x_norm is float*, but mat_mul expects void* for W and x as the same dtype.
+        // x_norm needs to be quantized to the layers dtype.
+        mat_mul(s->q, L->attn.Wq, s->x_norm, d->d_model, d->proj_dim, L->attn.id);
+        mat_mul(s->k, L->attn.Wk, s->x_norm, d->d_model, d->kv_dim, L->attn.id);
+        mat_mul(s->v, L->attn.Wv, s->x_norm, d->d_model, d->kv_dim, L->attn.id);
+
+        // Apply rotary embedding
+        rotary(s->q, pos, d->head_dim, v->rope.cos, v->rope.sin);
+        rotary(s->k, pos, d->head_dim, v->rope.cos, v->rope.sin);
+
+        // Cache KV for current position
+        float* k_pos = L->cache.k + pos * d->d_model;
+        float* v_pos = L->cache.v + pos * d->d_model;
+        memcpy(k_pos, s->k, d->d_model * sizeof(float));
+        memcpy(v_pos, s->v, d->d_model * sizeof(float));
+
+        // Compute forward attention
+        attention(v, id, pos);
     }
 
     return v->state.logits;
