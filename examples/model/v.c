@@ -626,8 +626,18 @@ float* forward(Valerie* v, int id, int pos) {
         memcpy(k_pos, s->k, d->d_model * sizeof(float));
         memcpy(v_pos, s->v, d->d_model * sizeof(float));
 
-        // Compute forward attention
-        attention(v, id, pos);
+        // Compute attention scores (Q * K^T / sqrt(d_k))
+        for (int i = 0; i < d->heads; i++) {
+            float* qh = s->q + i * d->head_dim;
+            for (int j = 0; j < d->heads; j++) {
+                float* kh = s->k + j * d->head_dim;
+                float dot = 0.0f;
+                for (int k = 0; k < d->head_dim; d++) {
+                    dot += qh[k] * kh[k];
+                }
+                s->A[i * d->heads + j] = dot / sqrtf(d->head_dim);
+            }
+        }
 
         // Compute residual connection from input
         residual(s->x, s->x_norm, d->d_model);
