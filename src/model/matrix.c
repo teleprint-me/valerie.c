@@ -155,12 +155,13 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, T
     // Dequantize input vector once (shared across rows)
     float* xf = malloc(cols * sizeof(float));
     dequant_vec(xf, x, cols, id);
-    
+
+    // Alias this weights current row
     void* row_ptr = NULL;
 
 #pragma omp parallel for
     for (size_t i = 0; i < rows; i++) {
-        // Each thread gets its own workspace for a decoded row
+        // Allocate memory to this row for this thread
         float* Wf = malloc(cols * sizeof(float));
 
         // Decode this row of W into float buffer
@@ -173,11 +174,11 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, T
                 .s = q8->s + i * blocks_per_row,
             };
             row_ptr = &row_view;
+            dequant_vec(Wf, row_ptr, cols, id);
         } else {
             row_ptr = (uint8_t*) W + i * cols * stride;
+            dequant_vec(Wf, row_ptr, cols, id);
         }
-
-        dequant_vec(Wf, row_ptr, cols, id);
 
         // Compute dot(W[i, :], x)
         float sum = 0.0f;
