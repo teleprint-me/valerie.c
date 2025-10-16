@@ -182,25 +182,37 @@ typedef struct Rotary {
 
 /**
  * @struct State
- * Transient buffers for forward propagation.
+ * @brief Transient forward-pass buffers (not trainable).
+ *
+ * All buffers are allocated once per model instantiation and reused across tokens.
+ * The `k` and `v` pointers are transient views into each layer's cache.
  */
 typedef struct State {
-    float* x;  // (d_model,)
-    float* x_norm;  // (d_model,)
+    // Core stream
+    float* x;  // (d_model,) residual stream
+    float* x_norm;  // (d_model,) normalized stream
 
-    float* q;  // (d_model,)
-    float* k;  // transient view into cache (d_model,)
-    float* v;  // transient view into cache (d_model,)
-    float* A;  // (heads, seq_len)
+    // Attention intermediates
+    float* q;  // (proj_dim,)
+    float* k;  // view into cache (kv_dim,)
+    float* v;  // view into cache (kv_dim,)
+    float* attn_scores;  // (heads, seq_len) attention weights
+    float* attn_out;  // (d_model,) attention output accumulator
 
-    float* mlp_in;  // w1(x) projection (hidden,)
-    float* mlp_gate;  // w3(x) projection (hidden,)
+    // Feed-forward intermediates
+    float* mlp_in;  // (hidden,)
+    float* mlp_gate;  // (hidden,)
 
-    float* logits;  // output logits (vocab_size,)
+    // Output
+    float* logits;  // (vocab_size,)
+
+    // Quantization scratch
+    void* xq_dmodel;  // Embedding column width (d_model,)
+    void* xq_hidden;  // MLP hidden width (hidden,)
 } State;
 
 /**
- * @section Transformer Model
+ * @struct Transformer Model
  */
 typedef struct Valerie {
     Tokenizer t;  // tokenizer reference
@@ -386,31 +398,37 @@ void v_layers_free(Layer* layers, int n, TypeId id) {
     }
 }
 
-State v_state_new(Dim* d) {
+State v_state_new(Dim* d, TypeId id) {
     State s = {0};
     s.x = calloc(d->d_model, sizeof(float));
     s.x_norm = calloc(d->d_model, sizeof(float));
     s.q = calloc(d->d_model, sizeof(float));
     s.k = NULL;  // Alias for key cache
     s.v = NULL;  // Alias for value cache
-    s.A = mat_new(d->heads, d->seq_len, TYPE_F32);
+    s.attn_scores = calloc(d->heads * d->seq_len, sizeof(float));
+    s.attn_out = calloc(d->d_model, sizeof(float));
     s.mlp_in = calloc(d->hidden, sizeof(float));
     s.mlp_gate = calloc(d->hidden, sizeof(float));
     s.logits = calloc(d->vocab_size, sizeof(float));
+    s.xq_dmodel = vec_new(d->d_model, id);
+    s.xq_hidden = vec_new(d->hidden, id);
     return s;
 }
 
-void v_state_free(State* s) {
+void v_state_free(State* s, TypeId id) {
     if (s) {
         free(s->x);
         free(s->x_norm);
         free(s->q);
         // Do not free key alias
         // Do not free value alias
-        free(s->A);
+        free(s->attn_scores);
+        free(s->attn_out);
         free(s->mlp_in);
         free(s->mlp_gate);
         free(s->logits);
+        vec_free(s->xq_dmodel, id);
+        vec_free(s->xq_hidden, id);
     }
 }
 
@@ -488,7 +506,7 @@ Valerie v_model_new(Tokenizer t, Params p, TypeId id) {
     v.dim = v_dim_new(p);
     v.rope = v_rotary_new(&v.dim);
     v.embed = v_embed_new(&v.dim);
-    v.state = v_state_new(&v.dim);
+    v.state = v_state_new(&v.dim, v.id);
     v.layers = v_layers_new(&v.dim, v.id);
 
     return v;
@@ -499,7 +517,7 @@ void v_model_free(Valerie* v) {
         tokenizer_free(&v->t);
         v_rotary_free(&v->rope);
         v_embed_free(&v->embed);
-        v_state_free(&v->state);
+        v_state_free(&v->state, v->id);
         v_layers_free(v->layers, v->dim.layers, v->id);
     }
 }
@@ -610,13 +628,13 @@ float* forward(Valerie* v, int id, int pos) {
         // Normalize input
         rmsnorm(s->x_norm, L->rms_attn, s->x, d->d_model);
 
-        // @note x_norm is float*, but mat_mul expects void* for W and x as the same dtype.
-        // x_norm needs to be quantized to the layers dtype.
-        // Need to keep fleshing this out to figure out how to improve the interface.
-        // Compute Q, K, V projections (float-only for now)
-        mat_mul(s->q, L->attn.Wq, s->x_norm, d->proj_dim, d->d_model, dtype);
-        mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, dtype);
-        mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, dtype);
+        // Quantize normed input
+        quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
+
+        // Compute Q, K, V projections
+        mat_mul(s->q, L->attn.Wq, s->xq_dmodel, d->proj_dim, d->d_model, dtype);
+        mat_mul(s->k, L->attn.Wk, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
+        mat_mul(s->v, L->attn.Wv, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
 
         // Apply rotary embeddings per head/group
         for (int h = 0; h < d->heads; h++) {
@@ -630,7 +648,7 @@ float* forward(Valerie* v, int id, int pos) {
         // Compute attention scores (Q * K^T / sqrt(d_k))
         for (int h = 0; h < d->heads; h++) {
             float* qh = s->q + h * d->head_dim;
-            float* att = s->A + h * d->seq_len;
+            float* scores = s->attn_scores + h * d->seq_len;
 
             for (int t = 0; t <= pos; t++) {
                 // each K_t per head group
@@ -641,18 +659,18 @@ float* forward(Valerie* v, int id, int pos) {
                     dot += qh[k] * kt[k];
                 }
 
-                att[t] = dot / sqrtf((float) d->head_dim);
+                scores[t] = dot / sqrtf((float) d->head_dim);
             }
 
             // Softmax attention scores
-            softmax(att, pos + 1);
+            softmax(scores, pos + 1);
 
             // Weighted sum of scores (context vector)
-            float* out_h = s->x_norm + h * d->head_dim;
+            float* out_h = s->attn_out + h * d->head_dim;
             memset(out_h, 0, d->head_dim * sizeof(float));
 
             for (int t = 0; t <= pos; t++) {
-                float w = att[t];
+                float w = scores[t];
                 float* vt = L->cache.v + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
                 for (int k = 0; k < d->head_dim; k++) {
                     out_h[k] += w * vt[k];
@@ -660,8 +678,11 @@ float* forward(Valerie* v, int id, int pos) {
             }
         }
 
+        // Quantize attention output
+        quant_vec(s->xq_dmodel, s->attn_out, d->d_model, dtype);
+
         // Project concatenated heads back to model dimension (Wo)
-        mat_mul(s->x_norm, L->attn.Wo, s->x_norm, d->d_model, d->proj_dim, dtype);
+        mat_mul(s->x_norm, L->attn.Wo, s->xq_dmodel, d->d_model, d->proj_dim, dtype);
 
         // Attention residual connection
         residual(s->x, s->x_norm, d->d_model);
@@ -671,18 +692,24 @@ float* forward(Valerie* v, int id, int pos) {
         // Normalize input
         rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
 
+        // Quantize normed input
+        quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
+
         // Up-projection (W1)
-        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->hidden, d->d_model, dtype);
+        mat_mul(s->mlp_in, L->ffn.W1, s->xq_dmodel, d->hidden, d->d_model, dtype);
         // Gating path (W2)
-        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->hidden, d->d_model, dtype);
+        mat_mul(s->mlp_gate, L->ffn.W3, s->xq_dmodel, d->hidden, d->d_model, dtype);
 
         // SwiGLU (SiLU activation)
         for (int i = 0; i < d->hidden; i++) {
             s->mlp_in[i] *= silu(s->mlp_gate[i]);
         }
 
+        // Quanitze up-projection (W1)
+        quant_vec(s->xq_hidden, s->mlp_in, d->hidden, dtype);
+
         // Down projection (W2)
-        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->d_model, d->hidden, dtype);
+        mat_mul(s->x_norm, L->ffn.W2, s->xq_hidden, d->d_model, d->hidden, dtype);
 
         // FFN residual connection
         residual(s->x, s->x_norm, d->d_model);
@@ -691,8 +718,8 @@ float* forward(Valerie* v, int id, int pos) {
     // Final layer normalization
     rmsnorm(s->x_norm, e->norm, s->x, d->d_model);
 
-    // Output projection
-    mat_mul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, dtype);
+    // Output projection (is always F32)
+    mat_mul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, TYPE_F32);
     return s->logits;
 }
 
