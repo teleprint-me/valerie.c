@@ -732,7 +732,7 @@ int main(void) {
     Params p = v_params_new(t.vocab_size);
     // Q8 has a bug that causes the whole thing to crash.
     // @todo diagnose and track down the bug.
-    Valerie v = v_model_new(t, p, TYPE_F32);
+    Valerie v = v_model_new(t, p, TYPE_Q8);
 
     LOG_INFO("Model initialized.");
     v_dim_log(v.dim);
