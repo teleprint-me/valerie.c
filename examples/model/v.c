@@ -735,7 +735,25 @@ int main(void) {
     LOG_INFO("Model initialized.");
     v_dim_log(v.dim);
 
-    // Do stuff here
+    int token_id = 0;
+    int pos = 0;
+    float* logits = forward(&v, token_id, pos);
+
+    int top_n = 10;
+    printf("Logits (first %d values):\n", top_n);
+    for (int i = 0; i < top_n && i < v.dim.vocab_size; i++) {
+        printf("  [%4d]: % .5f\n", i, (double) logits[i]);
+    }
+
+    int max_id = 0;
+    float max_val = logits[0];
+    for (int i = 1; i < v.dim.vocab_size; i++) {
+        if (logits[i] > max_val) {
+            max_val = logits[i];
+            max_id = i;
+        }
+    }
+    printf("Predicted next token: %d (logit=%.5f)\n", max_id, (double) max_val);
 
     v_model_free(&v);
     LOG_INFO("Model freed cleanly.");
