@@ -15,18 +15,16 @@
 #include "core/type.h"
 
 #include "model/activation.h"
+#include "model/matrix.h"
 
 /**
  * @section Matrix Allocation and Initialization
  * @{
  */
 
-// Create a row-major matrix
-void* mat_new(size_t rows, size_t cols, TypeId id) {
-    assert(rows > 0 && cols > 0);
-    assert(id < TYPE_COUNT);
+void* vec_new(size_t len, TypeId id) {
+    assert(len > 0 && id < TYPE_COUNT);
 
-    size_t len = rows * cols;
     switch (id) {
         case TYPE_Q8: {
             quant8_t* q8 = malloc(sizeof(quant8_t));
@@ -47,20 +45,34 @@ void* mat_new(size_t rows, size_t cols, TypeId id) {
     }
 }
 
-void mat_free(void* M, TypeId id) {
-    if (M) {
+void vec_free(void* x, TypeId id) {
+    if (x) {
         switch (id) {
             case TYPE_Q8: {
-                quant8_t* q8 = M;
+                quant8_t* q8 = x;
                 free(q8->q);
                 free(q8->s);
                 free(q8);
                 break;
             }
             default:
-                free(M);
+                free(x);
                 break;
         }
+    }
+}
+
+// Create a row-major matrix
+void* mat_new(size_t rows, size_t cols, TypeId id) {
+    assert(rows > 0 && cols > 0);
+    assert(id < TYPE_COUNT);
+
+    return vec_new(rows * cols, id);
+}
+
+void mat_free(void* W, TypeId id) {
+    if (W) {
+        vec_free(W, id);
     }
 }
 
@@ -68,8 +80,8 @@ void mat_free(void* M, TypeId id) {
 /// omp_get_thread_num()
 /// Other possible solutions are thread-locking or chunking per thread.
 /// For now, it's best to just operate linearly to keep complexity low.
-void mat_init(void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args) {
-    assert(M && rows > 0 && cols > 0);
+void mat_init(void* W, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args) {
+    assert(W && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
     assert(lehmer_fn);
 
@@ -79,7 +91,7 @@ void mat_init(void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, 
     switch (id) {
         // Init block-wise
         case TYPE_Q8: {
-            quant8_t* q8 = (quant8_t*) M;
+            quant8_t* q8 = (quant8_t*) W;
             float* src = malloc(len * sizeof(float));
             for (size_t i = 0; i < len; i++) {
                 src[i] = lehmer_fn(lehmer_args);
@@ -94,7 +106,7 @@ void mat_init(void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, 
             assert(stride > 0);
             for (size_t i = 0; i < len; i++) {
                 float value = lehmer_fn(lehmer_args);
-                void* dst = (uint8_t*) M + i * stride;
+                void* dst = (uint8_t*) W + i * stride;
                 quant(dst, value, id);
             }
             break;
@@ -102,25 +114,25 @@ void mat_init(void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, 
     }
 }
 
-void mat_lehmer(void* M, size_t rows, size_t cols, TypeId id) {
-    assert(M && rows > 0 && cols > 0);
+void mat_lehmer(void* W, size_t rows, size_t cols, TypeId id) {
+    assert(W && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    mat_init(M, rows, cols, id, lehmer_float_cb, NULL);
+    mat_init(W, rows, cols, id, lehmer_float_cb, NULL);
 }
 
-void mat_xavier(void* M, size_t rows, size_t cols, TypeId id) {
-    assert(M && rows > 0 && cols > 0);
+void mat_xavier(void* W, size_t rows, size_t cols, TypeId id) {
+    assert(W && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    mat_init(M, rows, cols, id, lehmer_xavier_cb, &(LehmerArgs) {rows, cols});
+    mat_init(W, rows, cols, id, lehmer_xavier_cb, &(LehmerArgs) {rows, cols});
 }
 
-void mat_muller(void* M, size_t rows, size_t cols, TypeId id) {
-    assert(M && rows > 0 && cols > 0);
+void mat_muller(void* W, size_t rows, size_t cols, TypeId id) {
+    assert(W && rows > 0 && cols > 0);
     assert(id < TYPE_COUNT);
 
-    mat_init(M, rows, cols, id, lehmer_muller_cb, &(LehmerArgs) {rows, cols});
+    mat_init(W, rows, cols, id, lehmer_muller_cb, &(LehmerArgs) {rows, cols});
 }
 
 /** @} */

@@ -24,6 +24,9 @@ extern "C" {
  * @{
  */
 
+void* vec_new(size_t len, TypeId id);
+void vec_free(void* x, TypeId id);
+
 /**
  * @brief Allocate a row-major matrix (calloc) for a given type and shape.
  * @param rows Number of rows
@@ -32,11 +35,11 @@ extern "C" {
  * @return Pointer to buffer (must be freed by caller)
  */
 void* mat_new(size_t rows, size_t cols, TypeId id);
-void mat_free(void* M, TypeId id);
+void mat_free(void* W, TypeId id);
 
 /**
  * @brief Initialize matrix A (rows x cols) with values from a custom random distribution.
- * @param A         Matrix buffer (void*, length = rows * cols, type = id)
+ * @param W         Matrix buffer (void*, length = rows * cols, type = id)
  * @param rows      Number of rows
  * @param cols      Number of columns
  * @param id        Data type (see TypeId)
@@ -44,15 +47,15 @@ void mat_free(void* M, TypeId id);
  * @param lehmer_args Pointer to optional callback args (may be NULL)
  */
 void mat_init(
-    void* M, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args
+    void* W, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args
 );
 
 /** @brief Uniform random initializer (Lehmer) */
-void mat_lehmer(void* M, size_t rows, size_t cols, TypeId id);
+void mat_lehmer(void* W, size_t rows, size_t cols, TypeId id);
 /** @brief Xavier/Glorot uniform initializer */
-void mat_xavier(void* M, size_t rows, size_t cols, TypeId id);
+void mat_xavier(void* W, size_t rows, size_t cols, TypeId id);
 /** @brief Xavier normal (Box-Muller) initializer */
-void mat_muller(void* M, size_t rows, size_t cols, TypeId id);
+void mat_muller(void* W, size_t rows, size_t cols, TypeId id);
 
 /** @} */
 
