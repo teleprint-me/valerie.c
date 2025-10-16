@@ -128,7 +128,6 @@ typedef struct Attention {
     void* Wk;  // (d_model, kv_heads * head_dim)
     void* Wv;  // (d_model, kv_heads * head_dim)
     void* Wo;  // (heads * head_dim, d_model)
-    TypeId id;
 } Attention;
 
 /**
@@ -139,7 +138,6 @@ typedef struct FeedForward {
     void* W1;  // (hidden, d_model)
     void* W2;  // (d_model, hidden)
     void* W3;  // (hidden, d_model)
-    TypeId id;
 } FeedForward;
 
 /**
@@ -211,7 +209,7 @@ typedef struct Valerie {
     Embedding embed;  // embedding and output weights
     State state;  // forward-pass working state
     Layer* layers;  // array of transformer layers
-    TypeId dtype;
+    TypeId id;
 } Valerie;
 
 /**
@@ -288,7 +286,7 @@ void v_dim_log(Dim dim) {
 }
 
 Attention v_attn_new(Dim* d, TypeId id) {
-    Attention attn = {.id = id};
+    Attention attn = {0};
 
     attn.Wq = mat_new(d->d_model, d->heads * d->head_dim, id);
     attn.Wk = mat_new(d->d_model, d->kv_heads * d->head_dim, id);
@@ -303,17 +301,17 @@ Attention v_attn_new(Dim* d, TypeId id) {
     return attn;
 }
 
-void v_attn_free(Attention* attn) {
+void v_attn_free(Attention* attn, TypeId id) {
     if (attn) {
-        mat_free(attn->Wq, attn->id);
-        mat_free(attn->Wk, attn->id);
-        mat_free(attn->Wv, attn->id);
-        mat_free(attn->Wo, attn->id);
+        mat_free(attn->Wq, id);
+        mat_free(attn->Wk, id);
+        mat_free(attn->Wv, id);
+        mat_free(attn->Wo, id);
     }
 }
 
 FeedForward v_ffn_new(Dim* d, TypeId id) {
-    FeedForward ffn = {.id = id};
+    FeedForward ffn = {0};
 
     ffn.W1 = mat_new(d->hidden, d->d_model, id);
     ffn.W2 = mat_new(d->d_model, d->hidden, id);
@@ -326,11 +324,11 @@ FeedForward v_ffn_new(Dim* d, TypeId id) {
     return ffn;
 }
 
-void v_ffn_free(FeedForward* ffn) {
+void v_ffn_free(FeedForward* ffn, TypeId id) {
     if (ffn) {
-        mat_free(ffn->W1, ffn->id);
-        mat_free(ffn->W2, ffn->id);
-        mat_free(ffn->W3, ffn->id);
+        mat_free(ffn->W1, id);
+        mat_free(ffn->W2, id);
+        mat_free(ffn->W3, id);
     }
 }
 
@@ -375,11 +373,11 @@ Layer* v_layers_new(Dim* d, TypeId id) {
     return layers;
 }
 
-void v_layers_free(Layer* layers, int n_layers) {
+void v_layers_free(Layer* layers, int n, TypeId id) {
     if (layers) {
-        for (int i = 0; i < n_layers; i++) {
-            v_attn_free(&layers[i].attn);
-            v_ffn_free(&layers[i].ffn);
+        for (int i = 0; i < n; i++) {
+            v_attn_free(&layers[i].attn, id);
+            v_ffn_free(&layers[i].ffn, id);
             v_cache_free(&layers[i].cache);
             free(layers[i].rms_attn);
             free(layers[i].rms_ffn);
@@ -485,11 +483,13 @@ Valerie v_model_new(Tokenizer t, Params p, TypeId id) {
     Valerie v = {0};
 
     v.t = t;
+    v.id = id;
+
     v.dim = v_dim_new(p);
     v.rope = v_rotary_new(&v.dim);
     v.embed = v_embed_new(&v.dim);
     v.state = v_state_new(&v.dim);
-    v.layers = v_layers_new(&v.dim, id);
+    v.layers = v_layers_new(&v.dim, v.id);
 
     return v;
 }
@@ -500,7 +500,7 @@ void v_model_free(Valerie* v) {
         v_rotary_free(&v->rope);
         v_embed_free(&v->embed);
         v_state_free(&v->state);
-        v_layers_free(v->layers, v->dim.layers);
+        v_layers_free(v->layers, v->dim.layers, v->id);
     }
 }
 
@@ -592,6 +592,7 @@ float* forward(Valerie* v, int id, int pos) {
     State* s = &v->state;
     Embedding* e = &v->embed;
     Layer* layers = v->layers;
+    TypeId dtype = v->id;  // disambiguate
 
     // Token embedding lookup
     memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
@@ -600,9 +601,9 @@ float* forward(Valerie* v, int id, int pos) {
     for (int l = 0; l < d->layers; l++) {
         Layer* L = &layers[l];
 
-        // Alias current cache slot
-        s->k = L->cache.k + pos * d->kv_dim;
-        s->v = L->cache.v + pos * d->kv_dim;
+        // Tie current KV cache slot to state buffer (seq_len, kv_dim)
+        s->k = L->cache.k + pos * d->kv_dim;  // share cache owned ref with k
+        s->v = L->cache.v + pos * d->kv_dim;  // share cache owned ref with v
 
         // --- Attention Block ---
 
@@ -613,9 +614,9 @@ float* forward(Valerie* v, int id, int pos) {
         // x_norm needs to be quantized to the layers dtype.
         // Need to keep fleshing this out to figure out how to improve the interface.
         // Compute Q, K, V projections (float-only for now)
-        mat_mul(s->q, L->attn.Wq, s->x_norm, d->proj_dim, d->d_model, TYPE_F32);
-        mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, TYPE_F32);
-        mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, TYPE_F32);
+        mat_mul(s->q, L->attn.Wq, s->x_norm, d->proj_dim, d->d_model, dtype);
+        mat_mul(s->k, L->attn.Wk, s->x_norm, d->kv_dim, d->d_model, dtype);
+        mat_mul(s->v, L->attn.Wv, s->x_norm, d->kv_dim, d->d_model, dtype);
 
         // Apply rotary embeddings per head/group
         for (int h = 0; h < d->heads; h++) {
@@ -660,7 +661,7 @@ float* forward(Valerie* v, int id, int pos) {
         }
 
         // Project concatenated heads back to model dimension (Wo)
-        mat_mul(s->x_norm, L->attn.Wo, s->x_norm, d->d_model, d->proj_dim, TYPE_F32);
+        mat_mul(s->x_norm, L->attn.Wo, s->x_norm, d->d_model, d->proj_dim, dtype);
 
         // Attention residual connection
         residual(s->x, s->x_norm, d->d_model);
@@ -670,9 +671,10 @@ float* forward(Valerie* v, int id, int pos) {
         // Normalize input
         rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
 
-        // Up-projection (W1, W3)
-        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->hidden, d->d_model, TYPE_F32);
-        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->hidden, d->d_model, TYPE_F32);
+        // Up-projection (W1)
+        mat_mul(s->mlp_in, L->ffn.W1, s->x_norm, d->hidden, d->d_model, dtype);
+        // Gating path (W2)
+        mat_mul(s->mlp_gate, L->ffn.W3, s->x_norm, d->hidden, d->d_model, dtype);
 
         // SwiGLU (SiLU activation)
         for (int i = 0; i < d->hidden; i++) {
@@ -680,7 +682,7 @@ float* forward(Valerie* v, int id, int pos) {
         }
 
         // Down projection (W2)
-        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->d_model, d->hidden, TYPE_F32);
+        mat_mul(s->x_norm, L->ffn.W2, s->mlp_in, d->d_model, d->hidden, dtype);
 
         // FFN residual connection
         residual(s->x, s->x_norm, d->d_model);
@@ -690,7 +692,7 @@ float* forward(Valerie* v, int id, int pos) {
     rmsnorm(s->x_norm, e->norm, s->x, d->d_model);
 
     // Output projection
-    mat_mul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, TYPE_F32);
+    mat_mul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, dtype);
     return s->logits;
 }
 
