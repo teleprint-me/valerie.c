@@ -221,7 +221,7 @@ typedef struct Valerie {
     Embedding embed;  // embedding and output weights
     State state;  // forward-pass working state
     Layer* layers;  // array of transformer layers
-    TypeId id;
+    TypeId dtype;
 } Valerie;
 
 /**
@@ -297,50 +297,50 @@ void v_dim_log(Dim dim) {
     LOG_INFO("seq_len: %d", dim.seq_len);
 }
 
-Attention v_attn_new(Dim* d, TypeId id) {
+Attention v_attn_new(Dim* d, TypeId dtype) {
     Attention attn = {0};
 
-    attn.Wq = mat_new(d->d_model, d->heads * d->head_dim, id);
-    attn.Wk = mat_new(d->d_model, d->kv_heads * d->head_dim, id);
-    attn.Wv = mat_new(d->d_model, d->kv_heads * d->head_dim, id);
-    attn.Wo = mat_new(d->heads * d->head_dim, d->d_model, id);
+    attn.Wq = mat_new(d->d_model, d->heads * d->head_dim, dtype);
+    attn.Wk = mat_new(d->d_model, d->kv_heads * d->head_dim, dtype);
+    attn.Wv = mat_new(d->d_model, d->kv_heads * d->head_dim, dtype);
+    attn.Wo = mat_new(d->heads * d->head_dim, d->d_model, dtype);
 
-    mat_xavier(attn.Wq, d->d_model, d->heads * d->head_dim, id);
-    mat_xavier(attn.Wk, d->d_model, d->kv_heads * d->head_dim, id);
-    mat_xavier(attn.Wv, d->d_model, d->kv_heads * d->head_dim, id);
-    mat_xavier(attn.Wo, d->heads * d->head_dim, d->d_model, id);
+    mat_xavier(attn.Wq, d->d_model, d->heads * d->head_dim, dtype);
+    mat_xavier(attn.Wk, d->d_model, d->kv_heads * d->head_dim, dtype);
+    mat_xavier(attn.Wv, d->d_model, d->kv_heads * d->head_dim, dtype);
+    mat_xavier(attn.Wo, d->heads * d->head_dim, d->d_model, dtype);
 
     return attn;
 }
 
-void v_attn_free(Attention* attn, TypeId id) {
+void v_attn_free(Attention* attn, TypeId dtype) {
     if (attn) {
-        mat_free(attn->Wq, id);
-        mat_free(attn->Wk, id);
-        mat_free(attn->Wv, id);
-        mat_free(attn->Wo, id);
+        mat_free(attn->Wq, dtype);
+        mat_free(attn->Wk, dtype);
+        mat_free(attn->Wv, dtype);
+        mat_free(attn->Wo, dtype);
     }
 }
 
-FeedForward v_ffn_new(Dim* d, TypeId id) {
+FeedForward v_ffn_new(Dim* d, TypeId dtype) {
     FeedForward ffn = {0};
 
-    ffn.W1 = mat_new(d->hidden, d->d_model, id);
-    ffn.W2 = mat_new(d->d_model, d->hidden, id);
-    ffn.W3 = mat_new(d->hidden, d->d_model, id);
+    ffn.W1 = mat_new(d->hidden, d->d_model, dtype);
+    ffn.W2 = mat_new(d->d_model, d->hidden, dtype);
+    ffn.W3 = mat_new(d->hidden, d->d_model, dtype);
 
-    mat_xavier(ffn.W1, d->hidden, d->d_model, id);
-    mat_xavier(ffn.W2, d->d_model, d->hidden, id);
-    mat_xavier(ffn.W3, d->hidden, d->d_model, id);
+    mat_xavier(ffn.W1, d->hidden, d->d_model, dtype);
+    mat_xavier(ffn.W2, d->d_model, d->hidden, dtype);
+    mat_xavier(ffn.W3, d->hidden, d->d_model, dtype);
 
     return ffn;
 }
 
-void v_ffn_free(FeedForward* ffn, TypeId id) {
+void v_ffn_free(FeedForward* ffn, TypeId dtype) {
     if (ffn) {
-        mat_free(ffn->W1, id);
-        mat_free(ffn->W2, id);
-        mat_free(ffn->W3, id);
+        mat_free(ffn->W1, dtype);
+        mat_free(ffn->W2, dtype);
+        mat_free(ffn->W3, dtype);
     }
 }
 
@@ -358,8 +358,8 @@ void v_cache_free(Cache* cache) {
     }
 }
 
-Layer* v_layers_new(Dim* d, TypeId id) {
-    assert(d && d->layers > 0 && id < TYPE_COUNT);
+Layer* v_layers_new(Dim* d, TypeId dtype) {
+    assert(d && d->layers > 0 && dtype < TYPE_COUNT);
 
     Layer* layers = calloc(d->layers, sizeof(Layer));
     if (!layers) {
@@ -367,8 +367,8 @@ Layer* v_layers_new(Dim* d, TypeId id) {
     }
 
     for (int i = 0; i < d->layers; i++) {
-        layers[i].attn = v_attn_new(d, id);
-        layers[i].ffn = v_ffn_new(d, id);
+        layers[i].attn = v_attn_new(d, dtype);
+        layers[i].ffn = v_ffn_new(d, dtype);
         layers[i].cache = v_cache_new(d);
 
         // RMSNorm parameters (γ)
@@ -385,11 +385,11 @@ Layer* v_layers_new(Dim* d, TypeId id) {
     return layers;
 }
 
-void v_layers_free(Layer* layers, int n, TypeId id) {
+void v_layers_free(Layer* layers, int n, TypeId dtype) {
     if (layers) {
         for (int i = 0; i < n; i++) {
-            v_attn_free(&layers[i].attn, id);
-            v_ffn_free(&layers[i].ffn, id);
+            v_attn_free(&layers[i].attn, dtype);
+            v_ffn_free(&layers[i].ffn, dtype);
             v_cache_free(&layers[i].cache);
             free(layers[i].rms_attn);
             free(layers[i].rms_ffn);
@@ -398,7 +398,7 @@ void v_layers_free(Layer* layers, int n, TypeId id) {
     }
 }
 
-State v_state_new(Dim* d, TypeId id) {
+State v_state_new(Dim* d, TypeId dtype) {
     State s = {0};
     s.x = calloc(d->d_model, sizeof(float));
     s.x_norm = calloc(d->d_model, sizeof(float));
@@ -410,12 +410,12 @@ State v_state_new(Dim* d, TypeId id) {
     s.mlp_in = calloc(d->hidden, sizeof(float));
     s.mlp_gate = calloc(d->hidden, sizeof(float));
     s.logits = calloc(d->vocab_size, sizeof(float));
-    s.xq_dmodel = vec_new(d->d_model, id);
-    s.xq_hidden = vec_new(d->hidden, id);
+    s.xq_dmodel = vec_new(d->d_model, dtype);
+    s.xq_hidden = vec_new(d->hidden, dtype);
     return s;
 }
 
-void v_state_free(State* s, TypeId id) {
+void v_state_free(State* s, TypeId dtype) {
     if (s) {
         free(s->x);
         free(s->x_norm);
@@ -427,8 +427,8 @@ void v_state_free(State* s, TypeId id) {
         free(s->mlp_in);
         free(s->mlp_gate);
         free(s->logits);
-        vec_free(s->xq_dmodel, id);
-        vec_free(s->xq_hidden, id);
+        vec_free(s->xq_dmodel, dtype);
+        vec_free(s->xq_hidden, dtype);
     }
 }
 
@@ -497,17 +497,17 @@ void v_rotary_free(Rotary* rope) {
     }
 }
 
-Valerie v_model_new(Tokenizer t, Params p, TypeId id) {
+Valerie v_model_new(Tokenizer t, Params p, TypeId dtype) {
     Valerie v = {0};
 
     v.t = t;
-    v.id = id;
+    v.dtype = dtype;
 
     v.dim = v_dim_new(p);
     v.rope = v_rotary_new(&v.dim);
     v.embed = v_embed_new(&v.dim);
-    v.state = v_state_new(&v.dim, v.id);
-    v.layers = v_layers_new(&v.dim, v.id);
+    v.state = v_state_new(&v.dim, v.dtype);
+    v.layers = v_layers_new(&v.dim, v.dtype);
 
     return v;
 }
@@ -517,8 +517,8 @@ void v_model_free(Valerie* v) {
         tokenizer_free(&v->t);
         v_rotary_free(&v->rope);
         v_embed_free(&v->embed);
-        v_state_free(&v->state, v->id);
-        v_layers_free(v->layers, v->dim.layers, v->id);
+        v_state_free(&v->state, v->dtype);
+        v_layers_free(v->layers, v->dim.layers, v->dtype);
     }
 }
 
@@ -610,7 +610,7 @@ float* forward(Valerie* v, int id, int pos) {
     State* s = &v->state;
     Embedding* e = &v->embed;
     Layer* layers = v->layers;
-    TypeId dtype = v->id;  // disambiguate
+    TypeId dtype = v->dtype;
 
     // Token embedding lookup
     memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
