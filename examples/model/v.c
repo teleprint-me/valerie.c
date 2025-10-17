@@ -4,8 +4,6 @@
  * @copyright Copyright © 2025 Austin Berrio
  * @ref https://github.com/adriancable/qwen3.c
  * @ref https://arxiv.org/abs/1207.0580
- * @ref https://arxiv.org/abs/1608.05859
- * @ref https://arxiv.org/pdf/2305.13245
  * ┌──────────────────────────────┐
  * │          Valerie             │  (struct Valerie)
  * │ ┌──────────────────────────┐ │
@@ -164,6 +162,7 @@ typedef struct Layer {
 /**
  * @struct Embedding
  * Trainable model-level parameters.
+ * @ref https://arxiv.org/abs/1608.05859
  */
 typedef struct Embedding {
     float* token;  // token embeddings (vocab_size, d_model)
@@ -616,6 +615,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     mat_mul(s->v, L->attn.Wv, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
 
     // Apply rotary embeddings per head/group
+    // @ref https://arxiv.org/pdf/2305.13245
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         float* qh = s->q + h * d->head_dim;
