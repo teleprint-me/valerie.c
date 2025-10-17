@@ -595,7 +595,7 @@ void residual(float* y, float* x, int n) {
 }
 
 // @ref https://arxiv.org/abs/1706.03762
-void attention(Valerie* v, Layer* L, int pos) {
+void v_forward_attn(Valerie* v, Layer* L, int pos) {
     Dim* d = &v->dim;
     State* s = &v->state;
     TypeId dtype = v->dtype;
@@ -667,7 +667,7 @@ void attention(Valerie* v, Layer* L, int pos) {
     residual(s->x, s->x_norm, d->d_model);
 }
 
-void feed_forward(Valerie* v, Layer* L) {
+void v_forward_ffn(Valerie* v, Layer* L) {
     Dim* d = &v->dim;
     State* s = &v->state;
     TypeId dtype = v->dtype;
@@ -702,7 +702,7 @@ void feed_forward(Valerie* v, Layer* L) {
 // @param id  current token id
 // @param pos current position (0..n)
 // @returns updated logit stream
-float* forward(Valerie* v, int id, int pos) {
+float* v_forward(Valerie* v, int id, int pos) {
     Dim* d = &v->dim;
     State* s = &v->state;
     Embedding* e = &v->embed;
@@ -713,8 +713,8 @@ float* forward(Valerie* v, int id, int pos) {
     // Iterate over model layers
     for (int l = 0; l < d->layers; l++) {
         Layer* L = &v->layers[l];
-        attention(v, L, pos);
-        feed_forward(v, L);
+        v_forward_attn(v, L, pos);
+        v_forward_ffn(v, L);
     }
 
     // Final layer normalization
@@ -739,7 +739,7 @@ int main(void) {
 
     int token_id = 0;
     int pos = 0;
-    float* logits = forward(&v, token_id, pos);
+    float* logits = v_forward(&v, token_id, pos);
 
     int top_n = 10;
     printf("Logits (first %d values):\n", top_n);
