@@ -667,6 +667,37 @@ void attention(Valerie* v, Layer* L, int pos) {
     residual(s->x, s->x_norm, d->d_model);
 }
 
+void feed_forward(Valerie* v, Layer* L) {
+    Dim* d = &v->dim;
+    State* s = &v->state;
+    TypeId dtype = v->dtype;
+
+    // Normalize input
+    rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
+
+    // Quantize normed input
+    quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
+
+    // Up-projection (W1)
+    mat_mul(s->mlp_in, L->ffn.W1, s->xq_dmodel, d->hidden, d->d_model, dtype);
+    // Gating path (W2)
+    mat_mul(s->mlp_gate, L->ffn.W3, s->xq_dmodel, d->hidden, d->d_model, dtype);
+
+    // SwiGLU (SiLU activation)
+    for (int i = 0; i < d->hidden; i++) {
+        s->mlp_in[i] *= silu(s->mlp_gate[i]);
+    }
+
+    // Quanitze up-projection (W1)
+    quant_vec(s->xq_hidden, s->mlp_in, d->hidden, dtype);
+
+    // Down projection (W2)
+    mat_mul(s->x_norm, L->ffn.W2, s->xq_hidden, d->d_model, d->hidden, dtype);
+
+    // FFN residual connection
+    residual(s->x, s->x_norm, d->d_model);
+}
+
 // Single-token forward pass (autoregressive)
 // @param id  current token id
 // @param pos current position (0..n)
@@ -675,44 +706,15 @@ float* forward(Valerie* v, int id, int pos) {
     Dim* d = &v->dim;
     State* s = &v->state;
     Embedding* e = &v->embed;
-    Layer* layers = v->layers;
-    TypeId dtype = v->dtype;
 
     // Token embedding lookup
     memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
 
     // Iterate over model layers
     for (int l = 0; l < d->layers; l++) {
-        Layer* L = &layers[l];
-
+        Layer* L = &v->layers[l];
         attention(v, L, pos);
-
-        // --- FeedForward Block ---
-
-        // Normalize input
-        rmsnorm(s->x_norm, L->rms_ffn, s->x, d->d_model);
-
-        // Quantize normed input
-        quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
-
-        // Up-projection (W1)
-        mat_mul(s->mlp_in, L->ffn.W1, s->xq_dmodel, d->hidden, d->d_model, dtype);
-        // Gating path (W2)
-        mat_mul(s->mlp_gate, L->ffn.W3, s->xq_dmodel, d->hidden, d->d_model, dtype);
-
-        // SwiGLU (SiLU activation)
-        for (int i = 0; i < d->hidden; i++) {
-            s->mlp_in[i] *= silu(s->mlp_gate[i]);
-        }
-
-        // Quanitze up-projection (W1)
-        quant_vec(s->xq_hidden, s->mlp_in, d->hidden, dtype);
-
-        // Down projection (W2)
-        mat_mul(s->x_norm, L->ffn.W2, s->xq_hidden, d->d_model, d->hidden, dtype);
-
-        // FFN residual connection
-        residual(s->x, s->x_norm, d->d_model);
+        feed_forward(v, L);
     }
 
     // Final layer normalization
