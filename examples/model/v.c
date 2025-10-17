@@ -595,10 +595,76 @@ void residual(float* y, float* x, int n) {
 }
 
 // @ref https://arxiv.org/abs/1706.03762
-void attention(Valerie* v, int id, int pos) {
-    (void) v;
-    (void) id;
-    (void) pos;
+void attention(Valerie* v, Layer* L, int pos) {
+    Dim* d = &v->dim;
+    State* s = &v->state;
+    TypeId dtype = v->dtype;
+
+    // Tie current KV cache slot to state buffer (seq_len, kv_dim)
+    s->k = L->cache.k + pos * d->kv_dim;  // share cache owned ref with k
+    s->v = L->cache.v + pos * d->kv_dim;  // share cache owned ref with v
+
+    // Normalize input
+    rmsnorm(s->x_norm, L->rms_attn, s->x, d->d_model);
+
+    // Quantize normed input
+    quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
+
+    // Compute Q, K, V projections
+    mat_mul(s->q, L->attn.Wq, s->xq_dmodel, d->proj_dim, d->d_model, dtype);
+    mat_mul(s->k, L->attn.Wk, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
+    mat_mul(s->v, L->attn.Wv, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
+
+    // Apply rotary embeddings per head/group
+    for (int h = 0; h < d->heads; h++) {
+        int group = h / d->kv_mul;
+        float* qh = s->q + h * d->head_dim;
+        float* kh = s->k + group * d->head_dim;
+        rotary(qh, pos, d->head_dim, v->rope.cos, v->rope.sin);
+        rotary(kh, pos, d->head_dim, v->rope.cos, v->rope.sin);
+    }
+
+    // Compute attention scores (Q * K^T / sqrt(d_k))
+    for (int h = 0; h < d->heads; h++) {
+        float* qh = s->q + h * d->head_dim;
+        float* scores = s->attn_scores + h * d->seq_len;
+
+        for (int t = 0; t <= pos; t++) {
+            // each K_t per head group
+            float* kt = L->cache.k + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+
+            float dot = 0.0f;
+            for (int k = 0; k < d->head_dim; k++) {
+                dot += qh[k] * kt[k];
+            }
+
+            scores[t] = dot / sqrtf((float) d->head_dim);
+        }
+
+        // Softmax attention scores
+        softmax(scores, pos + 1);
+
+        // Weighted sum of scores (context vector)
+        float* out_h = s->attn_out + h * d->head_dim;
+        memset(out_h, 0, d->head_dim * sizeof(float));
+
+        for (int t = 0; t <= pos; t++) {
+            float w = scores[t];
+            float* vt = L->cache.v + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+            for (int k = 0; k < d->head_dim; k++) {
+                out_h[k] += w * vt[k];
+            }
+        }
+    }
+
+    // Quantize attention output
+    quant_vec(s->xq_dmodel, s->attn_out, d->d_model, dtype);
+
+    // Project concatenated heads back to model dimension (Wo)
+    mat_mul(s->x_norm, L->attn.Wo, s->xq_dmodel, d->d_model, d->proj_dim, dtype);
+
+    // Attention residual connection
+    residual(s->x, s->x_norm, d->d_model);
 }
 
 // Single-token forward pass (autoregressive)
@@ -619,73 +685,7 @@ float* forward(Valerie* v, int id, int pos) {
     for (int l = 0; l < d->layers; l++) {
         Layer* L = &layers[l];
 
-        // Tie current KV cache slot to state buffer (seq_len, kv_dim)
-        s->k = L->cache.k + pos * d->kv_dim;  // share cache owned ref with k
-        s->v = L->cache.v + pos * d->kv_dim;  // share cache owned ref with v
-
-        // --- Attention Block ---
-
-        // Normalize input
-        rmsnorm(s->x_norm, L->rms_attn, s->x, d->d_model);
-
-        // Quantize normed input
-        quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
-
-        // Compute Q, K, V projections
-        mat_mul(s->q, L->attn.Wq, s->xq_dmodel, d->proj_dim, d->d_model, dtype);
-        mat_mul(s->k, L->attn.Wk, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
-        mat_mul(s->v, L->attn.Wv, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
-
-        // Apply rotary embeddings per head/group
-        for (int h = 0; h < d->heads; h++) {
-            int group = h / d->kv_mul;
-            float* qh = s->q + h * d->head_dim;
-            float* kh = s->k + group * d->head_dim;
-            rotary(qh, pos, d->head_dim, v->rope.cos, v->rope.sin);
-            rotary(kh, pos, d->head_dim, v->rope.cos, v->rope.sin);
-        }
-
-        // Compute attention scores (Q * K^T / sqrt(d_k))
-        for (int h = 0; h < d->heads; h++) {
-            float* qh = s->q + h * d->head_dim;
-            float* scores = s->attn_scores + h * d->seq_len;
-
-            for (int t = 0; t <= pos; t++) {
-                // each K_t per head group
-                float* kt = L->cache.k + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
-
-                float dot = 0.0f;
-                for (int k = 0; k < d->head_dim; k++) {
-                    dot += qh[k] * kt[k];
-                }
-
-                scores[t] = dot / sqrtf((float) d->head_dim);
-            }
-
-            // Softmax attention scores
-            softmax(scores, pos + 1);
-
-            // Weighted sum of scores (context vector)
-            float* out_h = s->attn_out + h * d->head_dim;
-            memset(out_h, 0, d->head_dim * sizeof(float));
-
-            for (int t = 0; t <= pos; t++) {
-                float w = scores[t];
-                float* vt = L->cache.v + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
-                for (int k = 0; k < d->head_dim; k++) {
-                    out_h[k] += w * vt[k];
-                }
-            }
-        }
-
-        // Quantize attention output
-        quant_vec(s->xq_dmodel, s->attn_out, d->d_model, dtype);
-
-        // Project concatenated heads back to model dimension (Wo)
-        mat_mul(s->x_norm, L->attn.Wo, s->xq_dmodel, d->d_model, d->proj_dim, dtype);
-
-        // Attention residual connection
-        residual(s->x, s->x_norm, d->d_model);
+        attention(v, L, pos);
 
         // --- FeedForward Block ---
 
