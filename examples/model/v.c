@@ -565,7 +565,7 @@ void rotary(float* x, int pos, unsigned head_dim, const float* cos, const float*
     }
 }
 
-// Applied to multi-head self-attention
+// @ref https://deeplearningbook.org/contents/mlp.html#pf11
 void softmax(float* x, unsigned n) {
     float max_score = x[0];
     for (unsigned i = 1; i < n; i++) {
@@ -667,6 +667,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     residual(s->x, s->x_norm, d->d_model);
 }
 
+// @ref https://deeplearningbook.org/contents/mlp.html#pf1
 void v_forward_ffn(Valerie* v, Layer* L) {
     Dim* d = &v->dim;
     State* s = &v->state;
