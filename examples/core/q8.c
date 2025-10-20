@@ -19,8 +19,8 @@ int main(void) {
     }
 
     Q8 q8 = {
-        .s = calloc((N + B - 1) / B, sizeof(uint8_t)),
         .q = calloc(N, sizeof(int8_t)),
+        .w = calloc(N / B, sizeof(uint8_t)),
     };
 
     q8_encode(&q8, x, N, B);
@@ -34,6 +34,6 @@ int main(void) {
         printf("%4zu | %+10.5f  %4d  %+10.5f\n", i, (double) x[i], q8.q[i], (double) recon[i]);
     }
 
-    free(q8.s);
+    free(q8.w);
     free(q8.q);
 }

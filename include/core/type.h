@@ -107,7 +107,7 @@ typedef union Float32Union {
  * using 1 byte per quantized value and 1 byte per block scale.
  */
 typedef struct Q8 {
-    uint8_t* s;  ///< Shared scaling factors (E4M3-encoded per block).
+    int8_t* w;  ///< Shared scaling factors (E4M3-encoded per block).
     int8_t* q;  ///< Signed quantized values (per element).
 } Q8;
 

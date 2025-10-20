@@ -292,54 +292,78 @@ float e4m3_decode(uint8_t b) {
  */
 
 void q8_encode(Q8* dst, const float* src, size_t n, size_t block_size) {
-    const int8_t limit = 127;
-    const float eps = 1e-6f;
+    assert(block_size > 0 && "Requires at least 1 block");
+    assert(n > block_size && "Length must be greater than block size");
+    assert(n % block_size == 0 && "Length must be evenly divisible by block size");
 
-    const size_t num_blocks = (n + block_size - 1) / block_size;
+    const int q8_max = 127;  // largest representable value for int8
+    const int e4m3_exp_max = 7;  // largest representable exponent for e4m3
+    const size_t num_blocks = n / block_size;  // number of blocks in this vector
 
     for (size_t b = 0; b < num_blocks; b++) {
-        const size_t offset = b * block_size;
-        const size_t len = (offset + block_size <= n) ? block_size : (n - offset);
+        // Calculate offsets
+        int8_t* q = dst->q + b * block_size;
+        const float* x = src + b * block_size;
 
-        const float* xb = src + offset;
-        int8_t* qb = dst->q + offset;
-
-        // Find max magnitude
+        // Find max normal |x|
         float max_abs = 0.0f;
-        for (size_t i = 0; i < len; i++) {
-            if (fabsf(xb[i]) > max_abs) {
-                max_abs = fabsf(xb[i]);
+        for (size_t i = 0; i < block_size; i++) {
+            float absval = fabsf(x[i]);
+            if (absval > max_abs) {
+                max_abs = absval;
             }
         }
+        // handle all-zero/subnormal case
+        int all_zero = (max_abs == 0.0f);
 
-        // Shared scale (linear variant)
-        float scale = (max_abs < eps) ? 1.0f : (max_abs / (float) limit);
+        // Compute shared exponent and scale
+        int ilogb_p = all_zero ? 0 : ilogbf(max_abs);  // ilogb(0) is FP_ILOGB0, but we check above
+        int w = all_zero ? 0 : ilogb_p - e4m3_exp_max;
+        // For e4m3, exponent range is -7 to 8, so clamp w if needed
+        if (!all_zero) {
+            if (w < -7) {
+                w = -7;
+            }
+            if (w > 8) {
+                w = 8;
+            }
+        }
+        // store scale for this block
+        dst->w[b] = w;
 
-        // Encode scale as E4M3 (shared per block)
-        dst->s[b] = e4m3_encode(scale);
+        // compute scale for this block
+        float scale = ldexpf(1.0f, w);  // 1.0 x 2^w = 2^w
 
         // Quantize
-        for (size_t i = 0; i < len; i++) {
-            float q = xb[i] / scale;
-            qb[i] = (int8_t) fminf(fmaxf(roundf(q), -limit), limit);
+        for (size_t i = 0; i < block_size; i++) {
+            // scale float to 8-bit
+            float xw = all_zero ? 0.0f : x[i] / scale;
+
+            // symmetric clamp to 8-bit range
+            int r = (int) nearbyintf(xw);
+            if (r > q8_max) {
+                r = q8_max;
+            }
+            if (r < -q8_max) {
+                r = -q8_max;
+            }
+
+            // store block scaled element
+            q[i] = r;
         }
     }
 }
 
 void q8_decode(float* dst, const Q8* src, size_t n, size_t block_size) {
-    const size_t num_blocks = (n + block_size - 1) / block_size;
+    assert(block_size > 0 && "Requires at least 1 block");
+    assert(n > block_size && "Length must be greater than block size");
+    assert(n % block_size == 0 && "Length must be evenly divisible by block size");
 
-    for (size_t b = 0; b < num_blocks; b++) {
-        const size_t offset = b * block_size;
-        const size_t len = (offset + block_size <= n) ? block_size : (n - offset);
-
-        const float scale = e4m3_decode(src->s[b]);
-        const int8_t* qb = src->q + offset;
-        float* xb = dst + offset;
-
-        for (size_t i = 0; i < len; i++) {
-            xb[i] = qb[i] * scale;
-        }
+    // Dequantize
+    for (size_t i = 0; i < n; i++) {
+        size_t block = i / block_size;
+        float scale = ldexpf(1.0f, src->w[block]);
+        dst[i] = src->q[i] * scale;
     }
 }
 

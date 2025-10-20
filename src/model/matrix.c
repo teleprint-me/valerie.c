@@ -35,7 +35,7 @@ void* vec_new(size_t len, TypeId id) {
             size_t blocks = (len + Q8_BLOCK_SIZE - 1) / Q8_BLOCK_SIZE;
 
             q8->q = calloc(len, sizeof(int8_t));
-            q8->s = calloc(blocks, sizeof(uint8_t));
+            q8->w = calloc(blocks, sizeof(uint8_t));
 
             return q8;
         }
@@ -51,7 +51,7 @@ void vec_free(void* x, TypeId id) {
             case TYPE_Q8: {
                 quant8_t* q8 = x;
                 free(q8->q);
-                free(q8->s);
+                free(q8->w);
                 free(q8);
                 break;
             }
@@ -171,7 +171,7 @@ void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, T
 
             Q8 row_view = {
                 .q = q8->q + i * cols,
-                .s = q8->s + i * blocks_per_row,
+                .w = q8->w + i * blocks_per_row,
             };
             row_ptr = &row_view;
             dequant_vec(Wf, row_ptr, cols, id);
