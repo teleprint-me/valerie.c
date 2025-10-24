@@ -1,39 +1,67 @@
 /**
- * @file q8.c
- * @brief Microscaling-style Q8 quantization using shared E4M3 block scales.
+ * @file bin/micro.c
+ * @brief Microscaling Floating Point Formats for Large Language Models.
+ * @ref https://arxiv.org/abs/2510.01863
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#include <assert.h>
 #include <math.h>
-#include "linear/type.h"
+
+#include "linear/lehmer.h"
+#include "linear/q8.h"
 
 int main(void) {
-    const size_t N = 32;
-    const size_t B = 8;
+    lehmer_init(42);
 
-    float x[N];
-    for (size_t i = 0; i < N; i++) {
-        x[i] = sinf((float) i * 0.25f) * 5.0f;
+    // Emulate a quant sequence
+    const size_t length = 16;  // input sequence vector
+
+    // Create and init input vector
+    float x[length];
+    for (size_t i = 0; i < length; i++) {
+        x[i] = lehmer_float() * sinf(i + 1 * 0.25f) * 5.0f;
     }
 
-    Q8 q8 = {
-        .q = calloc(N, sizeof(int8_t)),
-        .w = calloc(N / B, sizeof(uint8_t)),
-    };
+    // Encode input vector
+    quant8_t q8 = q8_vec_new(length);
+    q8_vec_encode(&q8, x, length);
 
-    q8_encode(&q8, x, N, B);
+    // Decode input vector
+    float y[length];
+    q8_vec_decode(y, &q8, length);
 
-    float recon[N];
-    q8_decode(recon, &q8, N, B);
-
-    printf(" idx | original    quant  recon\n");
+    printf(" idx |    x    q    w    y    e\n");
     printf("-----+----------------------------\n");
-    for (size_t i = 0; i < N; i++) {
-        printf("%4zu | %+10.5f  %4d  %+10.5f\n", i, (double) x[i], q8.q[i], (double) recon[i]);
+    for (size_t i = 0; i < length; i++) {
+        size_t b = q8_block(i);
+        float err = fabsf(x[i] - y[i]);
+        printf(
+            "%4zu | %+10.5f  %4d  %4d  %+10.5f  %+10.5f\n",
+            i,
+            (double) x[i],
+            q8.q[i],
+            q8.w[b],
+            (double) y[i],
+            (double) err
+        );
     }
 
-    free(q8.w);
-    free(q8.q);
+    float max_err = 0.0f, mae = 0.0f;
+    for (size_t i = 0; i < length; i++) {
+        float err = fabsf(x[i] - y[i]);
+        if (err > max_err) {
+            max_err = err;
+        }
+        mae += err;
+    }
+    mae /= length;
+    printf("Max error: %g, Mean absolute error: %g\n", (double) max_err, (double) mae);
+
+    // Clean up
+    q8_vec_free(&q8);
+    return 0;
 }
