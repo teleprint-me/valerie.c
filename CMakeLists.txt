@@ -51,6 +51,9 @@ add_library(valerie SHARED
     "src/linear/compare.c"     # Numeric and floating-point comparisons
     "src/linear/activation.c"  # Activation functions and their derivatives
     "src/linear/lehmer.c"      # Lehmer linear congruential generator
+    "src/linear/scalar.c"
+    "src/linear/q8.c"
+    "src/linear/quant.c"
     "src/linear/type.c"        # Numeric data types (precision metadata)
 
     # BPE tokenizer model

@@ -34,9 +34,10 @@
 #define DATA_TYPE_H
 
 #include <stdalign.h>
-#include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
+
+#include "linear/scalar.h"
+#include "linear/q8.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,44 +75,6 @@ typedef struct Type {
 } Type;
 
 /**
- * @union Float32Union
- * @brief Utility union for bit-level reinterpretation between float and uint32.
- *
- * Used internally for encoding and decoding IEEE-754 32-bit values.
- */
-typedef union Float32Union {
-    float v;  ///< 32-bit float value.
-    uint32_t b;  ///< 32-bit unsigned integer representation.
-} Float32Union;
-
-/**
- * @def Q8_BLOCK_SIZE
- * @brief Default number of elements per Q8 quantization block.
- *
- * Each block shares a single E4M3-encoded scaling factor. Override this macro
- * before including the header to change the default block granularity.
- */
-#ifndef Q8_BLOCK_SIZE
-    #define Q8_BLOCK_SIZE 32
-#endif
-
-/**
- * @struct Q8
- * @brief Microscaling 8-bit quantized block format.
- *
- * A lightweight container storing quantized elements and their per-block scales.
- * The data structure intentionally omits shape or dimension metadata, which
- * is managed externally by user defined parameters.
- *
- * This representation minimizes memory footprint and bandwidth by
- * using 1 byte per quantized value and 1 byte per block scale.
- */
-typedef struct Q8 {
-    int8_t* w;  ///< Shared scaling factors (E4M3-encoded per block).
-    int8_t* q;  ///< Signed quantized values (per element).
-} Q8;
-
-/**
  * @brief Static table of data type metadata.
  *
  * The array index corresponds to the `TypeId` enumeration.
@@ -119,32 +82,12 @@ typedef struct Q8 {
  */
 static const Type TYPE_DATA[TYPE_COUNT] = {
     [TYPE_F32] = {"f32", alignof(float), sizeof(float), TYPE_F32},
-    [TYPE_E8M23] = {"e8m23", alignof(uint32_t), sizeof(uint32_t), TYPE_E8M23},
-    [TYPE_E5M10] = {"e5m10", alignof(uint16_t), sizeof(uint16_t), TYPE_E5M10},
-    [TYPE_E8M7] = {"e8m7", alignof(uint16_t), sizeof(uint16_t), TYPE_E8M7},
-    [TYPE_E4M3] = {"e4m3", alignof(uint8_t), sizeof(uint8_t), TYPE_E4M3},
-    [TYPE_Q8] = {"q8", alignof(Q8), sizeof(Q8), TYPE_Q8},
+    [TYPE_E8M23] = {"e8m23", alignof(float32_t), sizeof(float32_t), TYPE_E8M23},
+    [TYPE_E5M10] = {"e5m10", alignof(float16_t), sizeof(float16_t), TYPE_E5M10},
+    [TYPE_E8M7] = {"e8m7", alignof(bfloat16_t), sizeof(float16_t), TYPE_E8M7},
+    [TYPE_E4M3] = {"e4m3", alignof(float8_t), sizeof(float8_t), TYPE_E4M3},
+    [TYPE_Q8] = {"q8", alignof(quant8_t), sizeof(quant8_t), TYPE_Q8},
 };
-
-/**
- * Type aliases
- * @brief Common shorthand aliases for low-precision and quantized types.
- *
- * These aliases improve readability in model and tensor code by providing
- * descriptive names for reduced-precision formats. Each alias maps directly
- * to its underlying storage type and does not introduce any runtime overhead.
- *
- * These aliases are purely semantic conveniences for working with tensors
- * and quantized blocks, particularly in model-layer code and I/O pipelines.
- * @{
- */
-
-typedef uint16_t float16_t;  ///< IEEE-754 half precision (e5m10)
-typedef uint16_t bfloat16_t;  ///< Brain floating-point format (e8m7)
-typedef uint8_t float8_t;  ///< 8-bit float (e4m3)
-typedef Q8 quant8_t;  ///< 8-bit quantized block format (e4m3 microscaling)
-
-/** @} */
 
 /**
  * Metadata Accessors
@@ -171,116 +114,6 @@ const char* type_name(TypeId id);
  * @return Size in bytes, or 0 if invalid.
  */
 uint32_t type_size(TypeId id);
-
-/** @} */
-
-/**
- * Floating-Point Conversions
- * @{
- */
-
-/* IEEE-754 float32 */
-uint32_t e8m23_encode(float v);
-float e8m23_decode(uint32_t b);
-
-/* Half precision (e5m10) */
-uint16_t e5m10_encode(float v);
-float e5m10_decode(uint16_t b);
-
-/* Extended 16-bit precision (e8m7) */
-uint16_t e8m7_encode(float v);
-float e8m7_decode(uint16_t b);
-
-/* 8-bit float (e4m3) */
-uint8_t e4m3_encode(float v);
-float e4m3_decode(uint8_t b);
-
-/** @} */
-
-/**
- * Block Quantization
- * @{
- */
-
-/**
- * @brief Quantize a float array into Q8 format using shared E4M3 block scales.
- * @param[out] dst Output Q8 structure containing quantized values and scales.
- * @param[in] src Input float array.
- * @param[in] n Number of elements.
- * @param[in] block_size Elements per block (typically Q8_BLOCK_SIZE).
- */
-void q8_encode(Q8* dst, const float* src, size_t n, size_t block_size);
-
-/**
- * @brief Dequantize Q8 blocks back into float values.
- * @param[out] dst Output float array.
- * @param[in] src Input Q8 structure.
- * @param[in] n Number of elements.
- * @param[in] block_size Elements per block (typically Q8_BLOCK_SIZE).
- */
-void q8_decode(float* dst, const Q8* src, size_t n, size_t block_size);
-
-/** @} */
-
-/**
- * Quantization Interface
- * @{
- */
-
-/**
- * @brief Quantize a single scalar into a target type.
- * @param[out] dst Destination buffer for encoded value.
- * @param[in] src Input float value.
- * @param[in] dst_id Destination type identifier.
- * @return true if successful, false if type unsupported.
- */
-bool quant(void* dst, float src, TypeId dst_id);
-
-/**
- * @brief Decode a single scalar from a quantized value.
- * @param[out] dst Output float value.
- * @param[in] src Encoded value buffer.
- * @param[in] src_id Source type identifier.
- * @return true if successful, false if type unsupported.
- */
-bool dequant(float* dst, const void* src, TypeId src_id);
-
-/**
- * @brief Quantize a 1D array of float values into a target format.
- *
- * This is the general-purpose vector quantization routine.
- * For TYPE_Q8, this will internally call `q8_encode`.
- */
-bool quant_vec(void* dst, const float* src, size_t len, TypeId dst_id);
-
-/**
- * @brief Dequantize a 1D array from a quantized format to float32.
- *
- * For TYPE_Q8, this will internally call `q8_decode`.
- */
-bool dequant_vec(float* dst, const void* src, size_t len, TypeId src_id);
-
-/**
- * @brief Quantize a 2D matrix (flattened) of float values into a target format.
- * @param[out] dst Destination buffer for encoded values.
- * @param[in] src Input float matrix.
- * @param[in] rows Number of rows.
- * @param[in] cols Number of columns.
- * @param[in] dst_id Destination type identifier.
- * @return true if successful, false otherwise.
- */
-bool quant_mat(void* dst, const float* src, size_t rows, size_t cols, TypeId dst_id);
-
-/**
- * @brief Dequantize a 2D matrix (flattened) from a quantized format to float32.
- * @param[out] dst Output float matrix.
- * @param[in] src Input encoded matrix.
- * @param[in] rows Number of rows.
- * @param[in] cols Number of columns.
- * @param[in] src_id Source type identifier.
- * @return true if successful, false otherwise.
- */
-bool dequant_mat(float* dst, const void* src, size_t rows, size_t cols, TypeId src_id);
 
 /** @} */
 
