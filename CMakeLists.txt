@@ -35,34 +35,34 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Core shared library (valerie)
 add_library(valerie SHARED
     # Data structures and algorithms
-    "src/core/memory.c"      # POSIX memory allocation and deallocation
-    "src/core/logger.c"      # Logging utility
-    "src/core/test.c"        # Unit testing utility
-    "src/core/regex.c"       # PCRE2 regex compile/free wrapper
-    "src/core/strext.c"      # Libc string extensions (transitive helpers)
-    "src/core/path.c"        # POSIX-compatible path utilities
-    "src/core/hash.c"        # General-purpose hash table (base for map/set)
-    "src/core/map.c"         # Hash map with linear probing (key-value store)
-    "src/core/set.c"         # Hash set (unique keys, set algebra)
-    "src/core/page.c"        # Hash page (table style memory allocator)
-    "src/core/sort.c"        # Heap sort routines
+    "src/core/memory.c"        # POSIX memory allocation and deallocation
+    "src/core/logger.c"        # Logging utility
+    "src/core/test.c"          # Unit testing utility
+    "src/core/regex.c"         # PCRE2 regex compile/free wrapper
+    "src/core/strext.c"        # Libc string extensions (transitive helpers)
+    "src/core/path.c"          # POSIX-compatible path utilities
+    "src/core/hash.c"          # General-purpose hash table (base for map/set)
+    "src/core/map.c"           # Hash map with linear probing (key-value store)
+    "src/core/set.c"           # Hash set (unique keys, set algebra)
+    "src/core/page.c"          # Hash page (table style memory allocator)
+    "src/core/sort.c"          # Heap sort routines
 
     # Linear algebra
     "src/linear/compare.c"     # Numeric and floating-point comparisons
     "src/linear/activation.c"  # Activation functions and their derivatives
     "src/linear/lehmer.c"      # Lehmer linear congruential generator
-    "src/linear/scalar.c"
-    "src/linear/q8.c"
-    "src/linear/quant.c"
+    "src/linear/scalar.c"      # IEEE-754 and reduced-precision floating-point types
+    "src/linear/q8.c"          # Microscaling floating-point format for LLMs
+    "src/linear/quant.c"       # Unified quantization interface for scalars, vectors, and matrices
     "src/linear/type.c"        # Numeric data types (precision metadata)
 
     # BPE tokenizer model
-    "src/tokenizer/vocab.c"  # String-to-int frequency vocab map
-    "src/tokenizer/bpe.c"    # Byte Pair Encoding (BPE) algorithms
-    "src/tokenizer/model.c"  # BPE tokenizer model interface
+    "src/tokenizer/vocab.c"    # String-to-int frequency vocab map
+    "src/tokenizer/bpe.c"      # Byte Pair Encoding (BPE) algorithms
+    "src/tokenizer/model.c"    # BPE tokenizer model interface
 
     # Transformer model
-    "src/model/matrix.c"     # Type-generic matrix operations (forward, backward, SGD)
+    "src/model/matrix.c"       # Type-generic matrix operations (forward, backward, SGD)
     "src/model/blocks.c"
 )
 
