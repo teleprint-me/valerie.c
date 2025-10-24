@@ -1,6 +1,7 @@
 /**
  * @file bin/tensor.c
  * @brief Driver for experimental Tensor API.
+ * @copyright Copyright © 2023 Austin Berrio
  */
 
 #include <stdlib.h>
