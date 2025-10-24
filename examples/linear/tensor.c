@@ -34,8 +34,8 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
     assert(W_stride > 0);  // at least 1 byte
 
     // Convert input to float
-    float* xf = calloc(x->shape.dims[0], type_size(x->id));
-    dequant_vec(xf, x->data, x->shape.dims[0], x->id);
+    float* xf = calloc(x_cols, type_size(x->id));
+    dequant_vec(xf, x->data, x_cols, x->id);
 
     // Temporary buffer for each row of W
     float* wf = malloc(W_cols * sizeof(float));
