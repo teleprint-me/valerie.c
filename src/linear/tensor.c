@@ -262,3 +262,54 @@ void tensor_muller(Tensor* t) {
 }
 
 /** @} */
+
+/**
+ * Tensor log
+ */
+
+void tensor_log(const Tensor* t) {
+    printf("Tensor [%s] shape(", type_name(t->id));
+    for (size_t i = 0; i < (t->shape.id == SHAPE_MAT ? 2 : 1); ++i) {
+        printf("%zu%s", t->shape.dims[i], (i ? "" : ", "));
+    }
+    printf("):\n");
+    switch (t->shape.id) {
+        case SHAPE_VEC: {
+            size_t len = t->shape.dims[0];
+            float* x = calloc(len, sizeof(float));
+            dequant_vec(x, t->data, len, t->id);
+            printf("[");
+            for (size_t i = 0; i < len; ++i) {
+                printf(" % .5f", (double) x[i]);
+            }
+            printf(" ]\n");
+            free(x);
+            break;
+        }
+        case SHAPE_MAT: {
+            size_t rows = t->shape.dims[0];
+            size_t cols = t->shape.dims[1];
+            size_t stride = type_size(t->id);
+            float* dst = calloc(cols, sizeof(float));
+            for (size_t r = 0; r < rows; ++r) {
+                const void* src;
+                if (t->id == TYPE_Q8) {
+                    src = (const uint8_t*) t->data + r * stride;
+                } else {
+                    src = (const uint8_t*) t->data + r * cols * stride;
+                }
+                dequant_vec(dst, src, cols, t->id);
+
+                printf("[");
+                for (size_t c = 0; c < cols; ++c) {
+                    printf(" % .5f", (double) dst[c]);
+                }
+                printf(" ]\n");
+            }
+            free(dst);
+            break;
+        }
+    }
+}
+
+/** @} */

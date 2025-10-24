@@ -139,6 +139,12 @@ void tensor_xavier(Tensor* t);
  */
 void tensor_muller(Tensor* t);
 
+/**
+ * @brief Prints a tensor to standard output.
+ * @param t Tensor pointer
+ */
+void tensor_log(const Tensor* t);
+
 #ifdef __cplusplus
 }
 #endif
