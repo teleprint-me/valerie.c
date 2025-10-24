@@ -1,12 +1,13 @@
-# examples/core/CMakeLists.txt
+# examples/linear/CMakeLists.txt
 
 set(EXAMPLES
-    "map"
-    "set"
+    "lehmer"
+    "alias"
+    "q8"
 )
 
-set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/core)
-set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/build/examples/core)
+set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/linear)
+set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/build/examples/linear)
 
 foreach(example IN LISTS EXAMPLES)
     add_executable(${example} ${INPUT_DIR}/${example}.c)
