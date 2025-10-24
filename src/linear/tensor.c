@@ -1,3 +1,9 @@
+/**
+ * @file tensor.c
+ * @brief Minimal tensor abstraction for 1D/2D numeric data.
+ * @copyright Copyright © 2023 Austin Berrio
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

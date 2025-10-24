@@ -1,6 +1,7 @@
 /**
  * @file tensor.h
  * @brief Minimal tensor abstraction for 1D/2D numeric data.
+ * @copyright Copyright © 2023 Austin Berrio
  *
  * Provides heap-allocated vector/matrix storage with runtime-typed elements,
  * quantization-aware allocation, and utility functions for initialization,
