@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "core/type.h"
+#include "linear/type.h"
 
 /**
  * Metadata Accessors

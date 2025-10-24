@@ -1,4 +1,4 @@
-#include "core/type.h"
+#include "linear/type.h"
 
 /**
  * @section Backward

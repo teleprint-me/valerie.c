@@ -57,12 +57,10 @@
 #include <math.h>
 
 #include "core/logger.h"
-#include "core/type.h"
-#include "core/lehmer.h"
-
+#include "linear/type.h"
+#include "linear/lehmer.h"
+#include "linear/activation.h"
 #include "tokenizer/model.h"
-
-#include "model/activation.h"
 #include "model/matrix.h"
 
 /**

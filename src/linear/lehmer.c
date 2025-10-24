@@ -25,7 +25,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "core/lehmer.h"
+#include "linear/lehmer.h"
 
 /**
  * Global State

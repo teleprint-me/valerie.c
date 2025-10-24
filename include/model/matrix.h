@@ -12,8 +12,8 @@
 
 #include <stddef.h>  // size_t
 #include <stdbool.h>
-#include "core/type.h"  // TypeId, quant/dequant helpers
-#include "core/lehmer.h"  // LehmerFn, LehmerArgs
+#include "linear/type.h"  // TypeId, quant/dequant helpers
+#include "linear/lehmer.h"  // LehmerFn, LehmerArgs
 
 #ifdef __cplusplus
 extern "C" {

@@ -11,8 +11,8 @@
 
 #include "core/logger.h"
 #include "core/path.h"
-#include "core/lehmer.h"
-#include "core/type.h"
+#include "linear/lehmer.h"
+#include "linear/type.h"
 
 #include "tokenizer/model.h"
 

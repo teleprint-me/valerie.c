@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "core/type.h"
+#include "linear/type.h"
 #include "model/matrix.h"
 
 int main(void) {

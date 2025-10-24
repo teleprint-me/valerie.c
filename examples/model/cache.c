@@ -2,7 +2,7 @@
  * @file examples/model/cache.c
  */
 
-#include "core/lehmer.h"
+#include "linear/lehmer.h"
 #include "model/matrix.h"
 #include <stdio.h>
 

@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "core/lehmer.h"
-#include "core/type.h"
+#include "linear/lehmer.h"
+#include "linear/type.h"
 #include "model/matrix.h"
 
 int main(void) {

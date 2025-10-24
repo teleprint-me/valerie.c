@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "core/compare.h"
+#include "linear/compare.h"
 
 // Pre-computed lookup table
 static const double tolerance_table[16]

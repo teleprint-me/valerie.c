@@ -2,7 +2,7 @@
  * @file examples/core/alias.c
  */
 
-#include "core/lehmer.h"
+#include "linear/lehmer.h"
 
 #include <stdlib.h>
 #include <stdio.h>

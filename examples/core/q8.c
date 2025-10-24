@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
-#include "core/type.h"
+#include "linear/type.h"
 
 int main(void) {
     const size_t N = 32;

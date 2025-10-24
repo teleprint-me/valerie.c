@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <omp.h>
-#include "core/lehmer.h"
+#include "linear/lehmer.h"
 
 #define LIMIT 10
 

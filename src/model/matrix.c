@@ -11,10 +11,9 @@
 
 #include <assert.h>
 
-#include "core/lehmer.h"
-#include "core/type.h"
-
-#include "model/activation.h"
+#include "linear/activation.h"
+#include "linear/lehmer.h"
+#include "linear/type.h"
 #include "model/matrix.h"
 
 /**

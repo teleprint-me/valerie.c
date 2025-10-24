@@ -12,7 +12,7 @@
 
 #include <math.h>
 
-#include "model/activation.h"
+#include "linear/activation.h"
 
 /**
  * @section Forward propagation
