@@ -1,5 +1,5 @@
 /**
- * @file bin/matrix.c
+ * @file examples/linear/matmul.c
  */
 
 #include <stddef.h>

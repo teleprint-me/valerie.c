@@ -5,7 +5,7 @@ set(EXAMPLES
     "alias"
     "e4m3"
     "q8"
-    "matrix"
+    "matmul"
     "tensor"
 )
 
