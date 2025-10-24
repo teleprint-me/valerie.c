@@ -1,7 +1,6 @@
 # examples/model
 
 set(EXAMPLES
-    "matrix"
     "embedding"
     "rotary"
     "cache"
