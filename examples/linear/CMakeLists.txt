@@ -3,7 +3,10 @@
 set(EXAMPLES
     "lehmer"
     "alias"
+    "e4m3"
     "q8"
+    "matrix"
+    "tensor"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/linear)
