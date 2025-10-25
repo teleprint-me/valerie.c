@@ -2,9 +2,9 @@
  * @file examples/model/cache.c
  */
 
-#include "linear/lehmer.h"
-#include "model/matrix.h"
+#include <stdlib.h>
 #include <stdio.h>
+#include "linear/lehmer.h"
 
 int main(void) {
     lehmer_init(42);
@@ -12,8 +12,10 @@ int main(void) {
     int seq_len = 4;
     int kv_dim = 8;
 
-    float* K = mat_new(seq_len, kv_dim, TYPE_F32);
-    mat_xavier(K, seq_len, kv_dim, TYPE_F32);
+    float* K = calloc(seq_len * kv_dim, sizeof(float));
+    for (int i = 0; i < seq_len * kv_dim; i++) {
+        K[i] = lehmer_xavier(seq_len, kv_dim);
+    }
 
     printf("keys matrix:\n");
     for (int i = 0; i < seq_len; ++i) {
@@ -46,6 +48,6 @@ int main(void) {
         printf("\n");
     }
 
-    mat_free(K, TYPE_F32);
+    free(K);
     return 0;
 }
