@@ -3,10 +3,9 @@
  * @brief Driver for precomputing RoPE frequencies.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "linear/type.h"
-#include "model/matrix.h"
 
 int main(void) {
     int d_model = 16;
@@ -18,8 +17,8 @@ int main(void) {
     int rows = seq_len;
     int cols = dim / 2;
 
-    float* cos = mat_new(rows, cols, TYPE_F32);
-    float* sin = mat_new(rows, cols, TYPE_F32);
+    float* cos = calloc(rows * cols, sizeof(float));
+    float* sin = calloc(rows * cols, sizeof(float));
     float* freqs = malloc(cols * sizeof(float));
 
     // base frequencies
@@ -54,7 +53,7 @@ int main(void) {
     }
 
     free(freqs);
-    mat_free(cos, TYPE_F32);
-    mat_free(sin, TYPE_F32);
+    free(cos);
+    free(sin);
     return 0;
 }
