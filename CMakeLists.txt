@@ -55,6 +55,7 @@ add_library(valerie SHARED
     "src/linear/q8.c"          # Microscaling floating-point format for LLMs
     "src/linear/quant.c"       # Unified quantization interface for scalars, vectors, and matrices
     "src/linear/type.c"        # Numeric data types (precision metadata)
+    "src/linear/tensor.c"
 
     # BPE tokenizer model
     "src/tokenizer/vocab.c"    # String-to-int frequency vocab map
@@ -62,10 +63,11 @@ add_library(valerie SHARED
     "src/tokenizer/model.c"    # BPE tokenizer model interface
 
     # Transformer model
-    "src/model/matrix.c"       # Type-generic matrix operations (forward, backward, SGD)
+    # "src/model/matrix.c"       # Type-generic matrix operations (forward, backward, SGD)
     "src/model/blocks.c"
 )
 
+target_compile_definitions(valerie PRIVATE Q8_BLOCK_SIZE=8)
 target_include_directories(valerie PUBLIC include)
 target_link_libraries(valerie PUBLIC m rt pthread pcre2-8)
 
