@@ -193,15 +193,14 @@ Rotary v_rotary_new(const Dim* d) {
 
     float theta = 10000.0f;  // @todo temp hard-coded value
 
-    int dim = d->head_dim;  // per-head dimension
     int rows = d->seq_len;
-    int cols = dim / 2;
+    int cols = d->head_dim / 2;
 
     // base frequencies
     float* freqs = malloc(cols * sizeof(float));
     for (int j = 0; j < cols; j++) {
         // freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[:(dim//2)] / dim))
-        freqs[j] = 1.0f / powf(theta, (float) j / (float) dim);
+        freqs[j] = 1.0f / powf(theta, (float) j / (float) d->head_dim);
     }
 
     // outer product
