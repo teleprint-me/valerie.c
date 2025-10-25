@@ -13,68 +13,10 @@
 #include <stddef.h>  // size_t
 #include <stdbool.h>
 #include "linear/type.h"  // TypeId, quant/dequant helpers
-#include "linear/lehmer.h"  // LehmerFn, LehmerArgs
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @section Matrix Allocation and Initialization
- * @{
- */
-
-void* vec_new(size_t len, TypeId id);
-void vec_free(void* x, TypeId id);
-
-/**
- * @brief Allocate a row-major matrix (calloc) for a given type and shape.
- * @param rows Number of rows
- * @param cols Number of columns
- * @param id   Data type (see TypeId)
- * @return Pointer to buffer (must be freed by caller)
- */
-void* mat_new(size_t rows, size_t cols, TypeId id);
-void mat_free(void* W, TypeId id);
-
-/**
- * @brief Initialize matrix A (rows x cols) with values from a custom random distribution.
- * @param W         Matrix buffer (void*, length = rows * cols, type = id)
- * @param rows      Number of rows
- * @param cols      Number of columns
- * @param id        Data type (see TypeId)
- * @param lehmer_fn Random number callback (see core/lehmer.h)
- * @param lehmer_args Pointer to optional callback args (may be NULL)
- */
-void mat_init(
-    void* W, size_t rows, size_t cols, TypeId id, LehmerFn lehmer_fn, void* lehmer_args
-);
-
-/** @brief Uniform random initializer (Lehmer) */
-void mat_lehmer(void* W, size_t rows, size_t cols, TypeId id);
-/** @brief Xavier/Glorot uniform initializer */
-void mat_xavier(void* W, size_t rows, size_t cols, TypeId id);
-/** @brief Xavier normal (Box-Muller) initializer */
-void mat_muller(void* W, size_t rows, size_t cols, TypeId id);
-
-/** @} */
-
-/**
- * @section Matrix Math
- */
-
-/**
- * @brief Matrix-vector multiply: y = W x
- * @param[out] y   Output vector (float*, length = rows)
- * @param[in]  W   Row-major matrix (void*, rows x cols, type = id)
- * @param[in]  x   Input vector (void*, length = cols, type = id)
- * @param[in]  rows Number of rows (output length)
- * @param[in]  cols Number of columns (input length)
- * @param[in]  id   Data type for W and x
- */
-void mat_mul(float* y, const void* W, const void* x, size_t rows, size_t cols, TypeId id);
-
-/** @} */
 
 /**
  * @section Backward/Gradient Ops
