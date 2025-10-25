@@ -1,6 +1,6 @@
 /**
- * @file      model/matrix.h
- * @brief     Type-generic matrix operations (forward, backward, SGD) for ML.
+ * @file      model/opt.h
+ * @brief     Type-generic tensor operations (backward/SGD) for ML.
  * @copyright Copyright © 2023 Austin Berrio
  *
  * - Supports float, bfloat16, Q8, and custom types for all key ops.

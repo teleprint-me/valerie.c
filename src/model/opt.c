@@ -1,10 +1,7 @@
 /**
- * @file      model/matrix.c
- * @brief     Type-generic matrix operations (forward, backward, SGD) for ML.
+ * @file      model/opt.c
+ * @brief     Type-generic tensor operations (backward/SGD) for ML.
  * @copyright Copyright © 2023 Austin Berrio
- *
- * - Supports float, bfloat16, Q8, and custom types for all key ops.
- * - Minimal dependencies. Consistent, idiomatic, and easy to extend.
  */
 
 #include <stdlib.h>
@@ -14,7 +11,7 @@
 #include "linear/activation.h"
 #include "linear/type.h"
 #include "linear/quant.h"
-#include "model/matrix.h"
+#include "model/opt.h"
 
 /**
  * @section Backward/Gradient Ops
