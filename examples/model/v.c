@@ -135,6 +135,7 @@ void residual(float* y, float* x, int n) {
     }
 }
 
+// https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
 void matmul(Tensor* y, Tensor* W, Tensor* x) {
     assert(y && W && x);
     assert(y->shape.id == SHAPE_VEC);
