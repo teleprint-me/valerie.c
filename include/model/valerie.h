@@ -1,5 +1,8 @@
 /**
  * @file valerie.h
+ * @brief Valerie is a transformer model that mirrors the Qwen3 architecture.
+ * @copyright Copyright © 2025 Austin Berrio
+ * @ref https://github.com/adriancable/qwen3.c
  */
 
 #ifndef VALERIE_H
