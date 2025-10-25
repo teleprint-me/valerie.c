@@ -63,8 +63,9 @@ add_library(valerie SHARED
     "src/tokenizer/model.c"    # BPE tokenizer model interface
 
     # Transformer model
-    # "src/model/matrix.c"       # Type-generic matrix operations (forward, backward, SGD)
+    "src/model/opt.c"       # Type-generic optimization (backward/SGD)
     "src/model/blocks.c"
+    "src/model/valerie.c"
 )
 
 target_compile_definitions(valerie PRIVATE Q8_BLOCK_SIZE=8)
