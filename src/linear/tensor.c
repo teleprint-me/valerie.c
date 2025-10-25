@@ -16,7 +16,7 @@
  * @{
  */
 
-static inline size_t shape_count(const Shape* s) {
+size_t shape_count(const Shape* s) {
     size_t product = 1;
     for (size_t i = 0; i < s->id; ++i) {
         product *= s->dims[i];
@@ -24,11 +24,11 @@ static inline size_t shape_count(const Shape* s) {
     return product;
 }
 
-static inline Shape shape_vec(size_t len) {
+Shape shape_vec(size_t len) {
     return (Shape) {{len, 0}, SHAPE_VEC};
 }
 
-static inline Shape shape_mat(size_t rows, size_t cols) {
+Shape shape_mat(size_t rows, size_t cols) {
     return (Shape) {{rows, cols}, SHAPE_MAT};
 }
 

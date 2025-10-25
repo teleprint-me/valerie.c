@@ -58,14 +58,14 @@ typedef struct Tensor {
  * @param s Shape pointer
  * @return Number of elements (product of active dimensions)
  */
-static inline size_t shape_count(const Shape* s);
+size_t shape_count(const Shape* s);
 
 /**
  * @brief Construct 1D vector shape.
  * @param len Number of elements
  * @return Shape struct for a vector of length @p len
  */
-static inline Shape shape_vec(size_t len);
+Shape shape_vec(size_t len);
 
 /**
  * @brief Construct 2D matrix shape.
@@ -73,7 +73,7 @@ static inline Shape shape_vec(size_t len);
  * @param cols Number of columns
  * @return Shape struct for a matrix with @p rows and @p cols
  */
-static inline Shape shape_mat(size_t rows, size_t cols);
+Shape shape_mat(size_t rows, size_t cols);
 
 /**
  * @brief Create a heap-allocated tensor of specified shape and type.
