@@ -3,6 +3,7 @@
  */
 
 #include <assert.h>
+#include <math.h>
 #include "core/logger.h"
 #include "model/valerie.h"
 
@@ -160,5 +161,130 @@ void v_layers_free(Layer* layers, size_t n) {
             tensor_free(&layers[i].rms_ffn);
         }
         free(layers);
+    }
+}
+
+Embedding v_embed_new(const Dim* d) {
+    Embedding embed = {0};
+
+    embed.token = tensor_new(shape_mat(d->vocab_size, d->d_model), TYPE_F32);
+    tensor_xavier(&embed.token);
+
+    // Tie input to output weights
+    embed.output = embed.token;
+
+    // Final RMSNorm (same shape as d_model)
+    embed.norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
+    tensor_ones(&embed.norm);
+
+    return embed;
+}
+
+void v_embed_free(Embedding* embed) {
+    if (embed) {
+        tensor_free(&embed->token);
+        // output points to token, no need to free again
+        tensor_free(&embed->norm);
+    }
+}
+
+Rotary v_rotary_new(const Dim* d) {
+    Rotary rope = {0};
+
+    float theta = 10000.0f;  // @todo temp hard-coded value
+
+    int dim = d->head_dim;  // per-head dimension
+    int rows = d->seq_len;
+    int cols = dim / 2;
+
+    // base frequencies
+    float* freqs = malloc(cols * sizeof(float));
+    for (int j = 0; j < cols; j++) {
+        // freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[:(dim//2)] / dim))
+        freqs[j] = 1.0f / powf(theta, (float) j / (float) dim);
+    }
+
+    // outer product
+    rope.cos = tensor_new(shape_mat(rows, cols), TYPE_F32);
+    rope.sin = tensor_new(shape_mat(rows, cols), TYPE_F32);
+
+    // type cast tensors to float
+    float* cos = (float*) rope.cos.data;
+    float* sin = (float*) rope.sin.data;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            float angle = (float) i * freqs[j];
+            cos[i * cols + j] = cosf(angle);
+            sin[i * cols + j] = sinf(angle);
+        }
+    }
+
+    free(freqs);
+    return rope;
+}
+
+void v_rotary_free(Rotary* rope) {
+    if (rope) {
+        tensor_free(&rope->cos);
+        tensor_free(&rope->sin);
+    }
+}
+
+State v_state_new(const Dim* d, TypeId dtype) {
+    State s = {0};
+    s.x = calloc(d->d_model, sizeof(float));
+    s.x_norm = calloc(d->d_model, sizeof(float));
+    s.q = calloc(d->d_model, sizeof(float));
+    s.k = NULL;  // Alias for key cache
+    s.v = NULL;  // Alias for value cache
+    s.attn_scores = calloc(d->heads * d->seq_len, sizeof(float));
+    s.attn_out = calloc(d->d_model, sizeof(float));
+    s.mlp_in = calloc(d->hidden, sizeof(float));
+    s.mlp_gate = calloc(d->hidden, sizeof(float));
+    s.logits = calloc(d->vocab_size, sizeof(float));
+    s.xq_dmodel = tensor_new(shape_vec(d->d_model), dtype);
+    s.xq_hidden = tensor_new(shape_vec(d->hidden), dtype);
+    return s;
+}
+
+void v_state_free(State* s) {
+    if (s) {
+        free(s->x);
+        free(s->x_norm);
+        free(s->q);
+        // Do not free key alias
+        // Do not free value alias
+        free(s->attn_scores);
+        free(s->attn_out);
+        free(s->mlp_in);
+        free(s->mlp_gate);
+        free(s->logits);
+        tensor_free(&s->xq_dmodel);
+        tensor_free(&s->xq_hidden);
+    }
+}
+
+Valerie v_model_new(Tokenizer t, Params p, TypeId dtype) {
+    Valerie v = {0};
+
+    v.t = t;
+    v.dtype = dtype;
+
+    v.dim = v_dim_new(p);
+    v.rope = v_rotary_new(&v.dim);
+    v.embed = v_embed_new(&v.dim);
+    v.state = v_state_new(&v.dim, v.dtype);
+    v.layers = v_layers_new(&v.dim, v.dtype);
+
+    return v;
+}
+
+void v_model_free(Valerie* v) {
+    if (v) {
+        tokenizer_free(&v->t);
+        v_rotary_free(&v->rope);
+        v_embed_free(&v->embed);
+        v_state_free(&v->state);
+        v_layers_free(v->layers, v->dim.layers);
     }
 }

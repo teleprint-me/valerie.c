@@ -140,22 +140,22 @@ typedef struct Rotary {
  */
 typedef struct State {
     // Core stream
-    Tensor x;  // (d_model,) residual stream
-    Tensor x_norm;  // (d_model,) normalized stream
+    float* x;  // (d_model,) residual stream
+    float* x_norm;  // (d_model,) normalized stream
 
     // Attention intermediates
-    Tensor q;  // (proj_dim,)
-    Tensor k;  // view into cache (kv_dim,)
-    Tensor v;  // view into cache (kv_dim,)
-    Tensor attn_scores;  // (heads, seq_len) attention weights
-    Tensor attn_out;  // (d_model,) attention output accumulator
+    float* q;  // (proj_dim,)
+    float* k;  // view into cache (kv_dim,)
+    float* v;  // view into cache (kv_dim,)
+    float* attn_scores;  // (heads, seq_len) attention weights
+    float* attn_out;  // (d_model,) attention output accumulator
 
     // Feed-forward intermediates
-    Tensor mlp_in;  // (hidden,)
-    Tensor mlp_gate;  // (hidden,)
+    float* mlp_in;  // (hidden,)
+    float* mlp_gate;  // (hidden,)
 
     // Output
-    Tensor logits;  // (vocab_size,)
+    float* logits;  // (vocab_size,)
 
     // Quantization scratch
     Tensor xq_dmodel;  // Embedding column width (d_model,)
@@ -206,5 +206,17 @@ void v_cache_free(Cache* cache);
 
 Layer* v_layers_new(const Dim* d, TypeId dtype);
 void v_layers_free(Layer* layers, size_t n);
+
+Embedding v_embed_new(const Dim* d);
+void v_embed_free(Embedding* embed);
+
+Rotary v_rotary_new(const Dim* d);
+void v_rotary_free(Rotary* rope);
+
+State v_state_new(const Dim* d, TypeId dtype);
+void v_state_free(State* s);
+
+Valerie v_model_new(Tokenizer t, Params p, TypeId dtype);
+void v_model_free(Valerie* v);
 
 #endif  // VALERIE_H
