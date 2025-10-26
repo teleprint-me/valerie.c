@@ -105,7 +105,7 @@ void tensor_new_em(Tensor* t) {
  *        Allocates data and sets workspace to NULL.
  * @param shape Shape object (dims/n must be set)
  * @param id TypeId for storage (e.g. TYPE_F32, TYPE_Q8)
- * @return Tensor struct, .data is allocated, .workspace=NULL.
+ * @return Tensor struct, .data is allocated, .buffer=NULL.
  */
 Tensor tensor_new(Shape shape, TypeId id) {
     Tensor t = {0};
@@ -116,7 +116,7 @@ Tensor tensor_new(Shape shape, TypeId id) {
     } else {
         tensor_new_em(&t);
     }
-    t.workspace = NULL;
+    t.buffer = NULL;
     return t;
 }
 
@@ -133,9 +133,9 @@ void tensor_free(Tensor* t) {
             }
             t->data = NULL;
         }
-        if (t->workspace) {
-            free(t->workspace);
-            t->workspace = NULL;
+        if (t->buffer) {
+            free(t->buffer);
+            t->buffer = NULL;
         }
     }
 }

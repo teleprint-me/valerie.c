@@ -48,7 +48,7 @@ typedef struct Shape {
  */
 typedef struct Tensor {
     void* data; /**< Pointer to storage buffer, type per @ref TypeId */
-    float* workspace; /**< Optional temporary buffer for (de)quantization */
+    float* buffer; /**< Optional temporary buffer for (de)quantization */
     Shape shape; /**< Shape descriptor (vector or matrix) */
     TypeId id; /**< Numeric type identifier (e.g., TYPE_F32, TYPE_Q8) */
 } Tensor;
