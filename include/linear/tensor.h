@@ -95,6 +95,14 @@ Tensor tensor_new(Shape shape, TypeId id);
 void tensor_free(Tensor* t);
 
 /**
+ * @brief Returns a pointer to the data of the specified row in a 2D tensor.
+ * @param t A pointer to the Tensor structure representing the 2D tensor.
+ * @param row The index of the row to access.
+ * @return A void pointer to the start of the row in the tensor's data.
+ */
+void* tensor_row(const Tensor* t, size_t row);
+
+/**
  * @brief Fill tensor with a constant value.
  *
  * For quantized types, fills each row/block with quantized @p value.

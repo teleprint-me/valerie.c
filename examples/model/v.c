@@ -161,12 +161,7 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
 
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
-        const void* wsrc;
-        if (W->id == TYPE_Q8) {
-            wsrc = (const uint8_t*) W->data + r * W_stride;
-        } else {
-            wsrc = (const uint8_t*) W->data + r * W_cols * W_stride;
-        }
+        const void* wsrc = tensor_row(W, r);
         dequant_vec(wf, wsrc, W_cols, W->id);
 
         // Compute dot product

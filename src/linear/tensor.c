@@ -143,6 +143,24 @@ void tensor_free(Tensor* t) {
 /** @} */
 
 /**
+ * Tensor view
+ */
+
+void* tensor_row(const Tensor* t, size_t row) {
+    assert(t->shape.id == SHAPE_MAT);
+    size_t cols = t->shape.dims[1];
+    size_t stride = type_size(t->id);
+    // Q8: one quant8_t per row
+    if (t->id == TYPE_Q8) {
+        return (uint8_t*) t->data + row * stride;
+    }
+    // Dense: row-major, one element per col
+    return (uint8_t*) t->data + row * cols * stride;
+}
+
+/** @} */
+
+/**
  * Tensor fill
  * @{
  */
@@ -169,16 +187,8 @@ void tensor_fill(Tensor* t, float value) {
                 src[i] = value;
             }
 
-            size_t stride = type_size(t->id);
             for (size_t r = 0; r < rows; r++) {
-                void* dst;  // Each row's destination pointer
-                if (t->id == TYPE_Q8) {
-                    // Q8: one quant8_t per row
-                    dst = (uint8_t*) t->data + r * stride;
-                } else {
-                    // Dense: row-major, one element per col
-                    dst = (uint8_t*) t->data + r * cols * stride;
-                }
+                void* dst = tensor_row(t, r);
                 quant_vec(dst, src, cols, t->id);
             }
             free(src);
@@ -219,22 +229,13 @@ void tensor_init(Tensor* t, LehmerFn prng, void* args) {
             size_t rows = t->shape.dims[0];
             size_t cols = t->shape.dims[1];
             float* src = malloc(cols * sizeof(float));
-            size_t stride = type_size(t->id);
             for (size_t r = 0; r < rows; r++) {
                 // fill row buffer
                 for (size_t c = 0; c < cols; c++) {
                     src[c] = prng(args);
                 }
 
-                // get current vec from mat
-                void* dst;
-                if (t->id == TYPE_Q8) {
-                    dst = (uint8_t*) t->data + r * stride;
-                } else {
-                    dst = (uint8_t*) t->data + r * cols * stride;
-                }
-
-                // populate current vec with row buffer
+                void* dst = tensor_row(t, r);
                 quant_vec(dst, src, cols, t->id);
             }
             free(src);
@@ -289,15 +290,9 @@ void tensor_log(const Tensor* t) {
         case SHAPE_MAT: {
             size_t rows = t->shape.dims[0];
             size_t cols = t->shape.dims[1];
-            size_t stride = type_size(t->id);
             float* dst = calloc(cols, sizeof(float));
             for (size_t r = 0; r < rows; ++r) {
-                const void* src;
-                if (t->id == TYPE_Q8) {
-                    src = (const uint8_t*) t->data + r * stride;
-                } else {
-                    src = (const uint8_t*) t->data + r * cols * stride;
-                }
+                const void* src = tensor_row(t, r);
                 dequant_vec(dst, src, cols, t->id);
 
                 printf("[");
