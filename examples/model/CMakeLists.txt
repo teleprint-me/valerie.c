@@ -4,7 +4,6 @@ set(EXAMPLES
     "embedding"
     "rotary"
     "cache"
-    "blocks"
     # "v"
 )
 
