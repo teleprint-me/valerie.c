@@ -165,12 +165,31 @@ void tensor_quant_vec(Tensor* dst, float* src, size_t len);
 void tensor_dequant_vec(float* dst, const Tensor* src, size_t len);
 
 /**
- * @brief Returns a pointer to the data of the specified row in a 2D tensor.
- * @param t A pointer to the Tensor structure representing the 2D tensor.
- * @param row The index of the row to access.
- * @return A void pointer to the start of the row in the tensor's data.
+ * @brief Returns a pointer to a sub-tensor starting at the given offset.
+ *
+ * This function returns a pointer to the data of a tensor starting at the specified offset
+ * in the tensor's data buffer. The offset is multiplied by the stride of the tensor to
+ * get the correct position in memory.
+ *
+ * @param t Pointer to the Tensor structure.
+ * @param offset The offset in elements from the start of the tensor.
+ * @return void* A pointer to the data at the specified offset.
  */
-void* tensor_mat_row(const Tensor* t, size_t row);
+void* tensor_view(const Tensor* t, size_t offset);
+
+/**
+ * @brief Returns a pointer to a specific row of a 2D tensor.
+ *
+ * This function returns a pointer to a specific row in a 2D tensor. It assumes that the
+ * tensor is a matrix (i.e., has a 2D shape). The row index is converted to an offset
+ * in the tensor's data buffer using the number of columns in the tensor.
+ *
+ * @param t Pointer to the Tensor structure.
+ * @param row The row index (0-based) in the tensor.
+ * @return void* A pointer to the data of the specified row.
+ * @note This function asserts that the tensor is a matrix using tensor_is_mat().
+ */
+void* tensor_view_row(const Tensor* t, size_t row);
 
 /**
  * @brief Fill tensor with a constant value.

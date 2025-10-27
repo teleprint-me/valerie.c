@@ -43,7 +43,7 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
 
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
-        const void* wsrc = tensor_mat_row(W, r);
+        const void* wsrc = tensor_view_row(W, r);
         dequant_vec(wf, wsrc, W_cols, W->id);
 
         // Compute dot product

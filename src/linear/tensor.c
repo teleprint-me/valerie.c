@@ -196,16 +196,22 @@ void tensor_dequant_vec(float* dst, const Tensor* src, size_t len) {
  * Tensor view
  */
 
-void* tensor_mat_row(const Tensor* t, size_t row) {
-    assert(tensor_is_mat(t));
+void* tensor_view(const Tensor* t, size_t offset) {
     size_t stride = type_size(t->id);
+    if (t->id == TYPE_Q8 && t->shape.id == SHAPE_VEC) {
+        return (uint8_t*) t->data;  // single container with a vector
+    }
+    return (uint8_t*) t->data + offset * stride;
+}
+
+void* tensor_view_row(const Tensor* t, size_t row) {
+    assert(tensor_is_mat(t));
     // Q8: one quant8_t per row
     if (t->id == TYPE_Q8) {
-        return (uint8_t*) t->data + row * stride;
+        return (uint8_t*) tensor_view(t, row);
     }
     // Dense: row-major, one element per col
-    size_t cols = tensor_cols(t);
-    return (uint8_t*) t->data + row * cols * stride;
+    return (uint8_t*) tensor_view(t, row * tensor_cols(t));
 }
 
 /** @} */
@@ -239,7 +245,7 @@ void tensor_fill(Tensor* t, float value) {
             }
 
             for (size_t r = 0; r < rows; r++) {
-                void* dst = tensor_mat_row(t, r);
+                void* dst = tensor_view_row(t, r);
                 quant_vec(dst, src, cols, t->id);
             }
             free(src);
@@ -287,7 +293,7 @@ void tensor_init(Tensor* t, LehmerFn prng, void* args) {
                     src[c] = prng(args);
                 }
 
-                void* dst = tensor_mat_row(t, r);
+                void* dst = tensor_view_row(t, r);
                 quant_vec(dst, src, cols, t->id);
             }
             free(src);
@@ -345,7 +351,7 @@ void tensor_log(const Tensor* t) {
             size_t cols = tensor_cols(t);
             float* dst = calloc(cols, sizeof(float));
             for (size_t r = 0; r < rows; ++r) {
-                const void* src = tensor_mat_row(t, r);
+                const void* src = tensor_view_row(t, r);
                 dequant_vec(dst, src, cols, t->id);
 
                 printf("[");
