@@ -105,6 +105,30 @@ size_t tensor_cols(const Tensor* t);
 size_t tensor_rows(const Tensor* t);
 
 /**
+ * Checks if two tensors have the same number of columns.
+ * @param a First tensor.
+ * @param b Second tensor.
+ * @return true if both tensors have the same number of columns, false otherwise.
+ */
+bool tensor_cols_match(Tensor* a, Tensor* b);
+
+/**
+ * Checks if the number of columns in tensor a matches the number of rows in tensor b.
+ * @param a First tensor.
+ * @param b Second tensor.
+ * @return true if the number of columns in a equals the number of rows in b, false otherwise.
+ */
+bool tensor_cols_match_rows(Tensor* a, Tensor* b);
+
+/**
+ * Checks if two tensors have the same number of rows.
+ * @param a First tensor.
+ * @param b Second tensor.
+ * @return true if both tensors have the same number of rows, false otherwise.
+ */
+bool tensor_rows_match(Tensor* a, Tensor* b);
+
+/**
  * @brief Create a heap-allocated tensor of specified shape and type.
  *
  * Data buffer is allocated and zero-initialized. Workspace is NULL.

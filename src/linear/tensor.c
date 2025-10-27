@@ -59,6 +59,18 @@ size_t tensor_rows(const Tensor* t) {
     return t->shape.dims[0];
 }
 
+bool tensor_cols_match(Tensor* a, Tensor* b) {
+    return tensor_cols(a) == tensor_cols(b);
+}
+
+bool tensor_cols_match_rows(Tensor* a, Tensor* b) {
+    return tensor_cols(a) == tensor_rows(b);
+}
+
+bool tensor_rows_match(Tensor* a, Tensor* b) {
+    return tensor_rows(a) == tensor_rows(b);
+}
+
 /** @} */
 
 /**
