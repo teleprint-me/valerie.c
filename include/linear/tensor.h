@@ -49,7 +49,6 @@ typedef struct Shape {
  */
 typedef struct Tensor {
     void* data; /**< Pointer to storage buffer, type per @ref TypeId */
-    float* buffer; /**< Optional temporary buffer for (de)quantization */
     Shape shape; /**< Shape descriptor (vector or matrix) */
     TypeId id; /**< Numeric type identifier (e.g., TYPE_F32, TYPE_Q8) */
 } Tensor;
@@ -110,7 +109,7 @@ size_t tensor_rows(const Tensor* t);
  * @param b Second tensor.
  * @return true if both tensors have the same number of columns, false otherwise.
  */
-bool tensor_cols_match(Tensor* a, Tensor* b);
+bool tensor_cols_match(const Tensor* a, const Tensor* b);
 
 /**
  * Checks if the number of columns in tensor a matches the number of rows in tensor b.
@@ -118,7 +117,7 @@ bool tensor_cols_match(Tensor* a, Tensor* b);
  * @param b Second tensor.
  * @return true if the number of columns in a equals the number of rows in b, false otherwise.
  */
-bool tensor_cols_match_rows(Tensor* a, Tensor* b);
+bool tensor_cols_match_rows(const Tensor* a, const Tensor* b);
 
 /**
  * Checks if two tensors have the same number of rows.
@@ -126,7 +125,7 @@ bool tensor_cols_match_rows(Tensor* a, Tensor* b);
  * @param b Second tensor.
  * @return true if both tensors have the same number of rows, false otherwise.
  */
-bool tensor_rows_match(Tensor* a, Tensor* b);
+bool tensor_rows_match(const Tensor* a, const Tensor* b);
 
 /**
  * @brief Create a heap-allocated tensor of specified shape and type.
@@ -148,17 +147,22 @@ Tensor tensor_new(Shape shape, TypeId id);
 void tensor_free(Tensor* t);
 
 /**
- * Quantizes the data of a vector tensor.
- * @param t A pointer to the Tensor structure.
+ * Quantizes a vector from float data to the tensor's data type.
+ * @param dst Pointer to the destination Tensor structure.
+ * @param src Pointer to the source float data.
+ * @param len Number of elements in the vector.
+ * @note Assumes the tensor is a vector (SHAPE_VEC) and has the correct number of columns.
  */
-void tensor_vec_quant(Tensor* t);
+void tensor_quant_vec(Tensor* dst, float* src, size_t len);
 
 /**
- * Dequantizes the data of a vector tensor and returns the dequantized data.
- * @param t A pointer to the Tensor structure.
- * @return A pointer to the dequantized data (float*).
+ * Dequantizes a vector from the tensor's data type to float data.
+ * @param dst Pointer to the destination float data.
+ * @param src Pointer to the source Tensor structure.
+ * @param len Number of elements in the vector.
+ * @note Assumes the tensor is a vector (SHAPE_VEC) and has the correct number of columns.
  */
-float* tensor_vec_dequant(Tensor* t);
+void tensor_dequant_vec(float* dst, const Tensor* src, size_t len);
 
 /**
  * @brief Returns a pointer to the data of the specified row in a 2D tensor.

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "linear/lehmer.h"
 #include "linear/quant.h"
 #include "linear/tensor.h"
@@ -59,15 +60,15 @@ size_t tensor_rows(const Tensor* t) {
     return t->shape.dims[0];
 }
 
-bool tensor_cols_match(Tensor* a, Tensor* b) {
+bool tensor_cols_match(const Tensor* a, const Tensor* b) {
     return tensor_cols(a) == tensor_cols(b);
 }
 
-bool tensor_cols_match_rows(Tensor* a, Tensor* b) {
+bool tensor_cols_match_rows(const Tensor* a, const Tensor* b) {
     return tensor_cols(a) == tensor_rows(b);
 }
 
-bool tensor_rows_match(Tensor* a, Tensor* b) {
+bool tensor_rows_match(const Tensor* a, const Tensor* b) {
     return tensor_rows(a) == tensor_rows(b);
 }
 
@@ -150,24 +151,17 @@ Tensor tensor_new(Shape shape, TypeId id) {
     } else {
         tensor_new_data(&t);
     }
-    t.buffer = NULL;
     return t;
 }
 
 void tensor_free(Tensor* t) {
-    if (t) {
-        if (t->data) {
-            if (t->id == TYPE_Q8) {
-                tensor_free_q8(t);
-            } else {
-                free(t->data);
-            }
-            t->data = NULL;
+    if (t && t->data) {
+        if (t->id == TYPE_Q8) {
+            tensor_free_q8(t);
+        } else {
+            free(t->data);
         }
-        if (t->buffer) {
-            free(t->buffer);
-            t->buffer = NULL;
-        }
+        t->data = NULL;
     }
 }
 
@@ -177,23 +171,23 @@ void tensor_free(Tensor* t) {
  * Tensor quantization
  */
 
-void tensor_vec_quant(Tensor* t) {
-    assert(tensor_is_vec(t));
-    if (t->id == TYPE_F32) {
+void tensor_quant_vec(Tensor* dst, float* src, size_t len) {
+    assert(tensor_is_vec(dst));
+    assert(tensor_cols(dst) == len);
+    if (dst->id == TYPE_F32) {
         return;  // skip float
     }
-    assert(t->buffer);
-    quant_vec(t->data, t->buffer, tensor_cols(t), t->id);
+    quant_vec(dst->data, src, len, dst->id);
 }
 
-float* tensor_vec_dequant(Tensor* t) {
-    assert(tensor_is_vec(t));
-    if (t->id == TYPE_F32) {
-        return (float*) t->data;
+void tensor_dequant_vec(float* dst, const Tensor* src, size_t len) {
+    assert(tensor_is_vec(src));
+    assert(tensor_cols(src) == len);
+    if (src->id == TYPE_F32) {
+        memcpy(dst, src->data, len * sizeof(float));
+    } else {
+        dequant_vec(dst, src->data, len, src->id);
     }
-    assert(t->buffer);
-    dequant_vec(t->buffer, t->data, shape_count(&t->shape), t->id);
-    return t->buffer;
 }
 
 /** @} */
