@@ -26,6 +26,37 @@ void rmsnorm(float* y, float* w, float* x, size_t len) {
     }
 }
 
+void matmul(float* y, Tensor* W, Tensor* x, size_t len) {
+    assert(y && W && x);
+    assert(tensor_is_mat(W));
+    assert(tensor_is_vec(x));
+    assert(tensor_cols_match(W, x));
+
+    const size_t W_rows = tensor_rows(W);
+    assert(W_rows == len && "y (r,) != W (r, c) @ x (c,)");  // match out
+
+    // Convert input to float
+    const size_t x_cols = tensor_cols(x);  // in dim
+    float xf[x_cols];  // scratch buffer
+    dequant_vec(xf, x->data, x_cols, x->id);
+
+    const size_t W_cols = tensor_cols(W);
+    for (size_t r = 0; r < W_rows; r++) {
+        // Compute source row pointer
+        float wdst[W_cols];  // scratch buffer
+        const void* wsrc = tensor_mat_row(W, r);
+        dequant_vec(wdst, wsrc, W_cols, W->id);
+
+        // Compute dot product
+        float sum = 0.0f;
+        for (size_t c = 0; c < W_cols; c++) {
+            sum += wdst[c] * xf[c];
+        }
+
+        y[r] = sum;
+    }
+}
+
 // @ref https://arxiv.org/abs/2104.09864
 void rotary(float* x, Rotary* rope, size_t pos, size_t len) {
     // Pre-computed rope frequencies
@@ -80,37 +111,6 @@ void softmax(float* x, size_t len) {
 void residual(float* dst, float* src, size_t len) {
     for (size_t i = 0; i < len; i++) {
         dst[i] += src[i];
-    }
-}
-
-void matmul(float* y, Tensor* W, Tensor* x, size_t len) {
-    assert(y && W && x);
-    assert(tensor_is_mat(W));
-    assert(tensor_is_vec(x));
-    assert(tensor_cols_match(W, x));
-
-    const size_t W_rows = tensor_rows(W);
-    assert(W_rows == len && "y (r,) != W (r, c) @ x (c,)");  // match out
-
-    // Convert input to float
-    const size_t x_cols = tensor_cols(x);  // in dim
-    float xf[x_cols];  // scratch buffer
-    dequant_vec(xf, x->data, x_cols, x->id);
-
-    const size_t W_cols = tensor_cols(W);
-    for (size_t r = 0; r < W_rows; r++) {
-        // Compute source row pointer
-        float wdst[W_cols];  // scratch buffer
-        const void* wsrc = tensor_mat_row(W, r);
-        dequant_vec(wdst, wsrc, W_cols, W->id);
-
-        // Compute dot product
-        float sum = 0.0f;
-        for (size_t c = 0; c < W_cols; c++) {
-            sum += wdst[c] * xf[c];
-        }
-
-        y[r] = sum;
     }
 }
 
