@@ -161,7 +161,7 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
 
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
-        const void* wsrc = tensor_row(W, r);
+        const void* wsrc = tensor_mat_row(W, r);
         dequant_vec(wf, wsrc, W_cols, W->id);
 
         // Compute dot product
@@ -199,9 +199,9 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
 
     // Compute Q, K, V projections
-    mat_mul(s->q, L->attn.Wq, s->xq_dmodel, d->proj_dim, d->d_model, dtype);
-    mat_mul(s->k, L->attn.Wk, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
-    mat_mul(s->v, L->attn.Wv, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
+    matmul(s->q, L->attn.Wq, s->xq_dmodel, d->proj_dim, d->d_model, dtype);
+    matmul(s->k, L->attn.Wk, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
+    matmul(s->v, L->attn.Wv, s->xq_dmodel, d->kv_dim, d->d_model, dtype);
 
     // Apply rotary embeddings per head/group
     // @ref https://arxiv.org/pdf/2305.13245
@@ -250,7 +250,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     quant_vec(s->xq_dmodel, s->attn_out, d->d_model, dtype);
 
     // Project concatenated heads back to model dimension (Wo)
-    mat_mul(s->x_norm, L->attn.Wo, s->xq_dmodel, d->d_model, d->proj_dim, dtype);
+    matmul(s->x_norm, L->attn.Wo, s->xq_dmodel, d->d_model, d->proj_dim, dtype);
 
     // Attention residual connection
     residual(s->x, s->x_norm, d->d_model);
@@ -269,9 +269,9 @@ void v_forward_ffn(Valerie* v, Layer* L) {
     quant_vec(s->xq_dmodel, s->x_norm, d->d_model, dtype);
 
     // Up-projection (W1)
-    mat_mul(s->mlp_in, L->ffn.W1, s->xq_dmodel, d->hidden, d->d_model, dtype);
+    matmul(s->mlp_in, L->ffn.W1, s->xq_dmodel, d->hidden, d->d_model, dtype);
     // Gating path (W2)
-    mat_mul(s->mlp_gate, L->ffn.W3, s->xq_dmodel, d->hidden, d->d_model, dtype);
+    matmul(s->mlp_gate, L->ffn.W3, s->xq_dmodel, d->hidden, d->d_model, dtype);
 
     // SwiGLU (SiLU activation)
     for (int i = 0; i < d->hidden; i++) {
@@ -282,7 +282,7 @@ void v_forward_ffn(Valerie* v, Layer* L) {
     quant_vec(s->xq_hidden, s->mlp_in, d->hidden, dtype);
 
     // Down projection (W2)
-    mat_mul(s->x_norm, L->ffn.W2, s->xq_hidden, d->d_model, d->hidden, dtype);
+    matmul(s->x_norm, L->ffn.W2, s->xq_hidden, d->d_model, d->hidden, dtype);
 
     // FFN residual connection
     residual(s->x, s->x_norm, d->d_model);
@@ -298,7 +298,7 @@ float* v_forward(Valerie* v, int id, int pos) {
     Embedding* e = &v->embed;
 
     // Token embedding lookup
-    memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
+    memcpy(s->x, (float*) e->token.data + id * d->d_model, d->d_model * sizeof(float));
 
     // Iterate over model layers
     for (int l = 0; l < d->layers; l++) {
@@ -308,10 +308,10 @@ float* v_forward(Valerie* v, int id, int pos) {
     }
 
     // Final layer normalization
-    rmsnorm(s->x_norm, e->norm, s->x, d->d_model);
+    rmsnorm(s->x_norm, e->norm.data, s->x, d->d_model);
 
     // Output projection (is always F32)
-    mat_mul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, TYPE_F32);
+    matmul(s->logits, e->output, s->x_norm, d->vocab_size, d->d_model, TYPE_F32);
     return s->logits;
 }
 

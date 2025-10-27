@@ -12,6 +12,7 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "linear/type.h"
 
@@ -76,6 +77,34 @@ Shape shape_vec(size_t len);
 Shape shape_mat(size_t rows, size_t cols);
 
 /**
+ * Checks if a tensor is a vector (1D).
+ * @param t A pointer to the Tensor structure.
+ * @return true if the tensor is a vector, false otherwise.
+ */
+bool tensor_is_vec(const Tensor* t);
+
+/**
+ * Checks if a tensor is a matrix (2D).
+ * @param t A pointer to the Tensor structure.
+ * @return true if the tensor is a matrix, false otherwise.
+ */
+bool tensor_is_mat(const Tensor* t);
+
+/**
+ * Returns the number of columns in a tensor.
+ * @param t A pointer to the Tensor structure.
+ * @return The number of columns in the tensor.
+ */
+size_t tensor_cols(const Tensor* t);
+
+/**
+ * Returns the number of rows in a matrix tensor.
+ * @param t A pointer to the Tensor structure.
+ * @return The number of rows in the tensor.
+ */
+size_t tensor_rows(const Tensor* t);
+
+/**
  * @brief Create a heap-allocated tensor of specified shape and type.
  *
  * Data buffer is allocated and zero-initialized. Workspace is NULL.
@@ -95,12 +124,25 @@ Tensor tensor_new(Shape shape, TypeId id);
 void tensor_free(Tensor* t);
 
 /**
+ * Quantizes the data of a vector tensor.
+ * @param t A pointer to the Tensor structure.
+ */
+void tensor_vec_quant(Tensor* t);
+
+/**
+ * Dequantizes the data of a vector tensor and returns the dequantized data.
+ * @param t A pointer to the Tensor structure.
+ * @return A pointer to the dequantized data (float*).
+ */
+float* tensor_vec_dequant(Tensor* t);
+
+/**
  * @brief Returns a pointer to the data of the specified row in a 2D tensor.
  * @param t A pointer to the Tensor structure representing the 2D tensor.
  * @param row The index of the row to access.
  * @return A void pointer to the start of the row in the tensor's data.
  */
-void* tensor_row(const Tensor* t, size_t row);
+void* tensor_mat_row(const Tensor* t, size_t row);
 
 /**
  * @brief Fill tensor with a constant value.
