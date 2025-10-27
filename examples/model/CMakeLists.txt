@@ -4,7 +4,8 @@ set(EXAMPLES
     "embedding"
     "rotary"
     "cache"
-    "v"
+    "blocks"
+    # "v"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/model)
