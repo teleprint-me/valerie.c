@@ -141,13 +141,6 @@ void tensor_new_data(Tensor* t) {
  * public methods
  */
 
-/**
- * @brief Create a new tensor with shape (1D or 2D) and type id.
- *        Allocates data and sets workspace to NULL.
- * @param shape Shape object (dims/n must be set)
- * @param id TypeId for storage (e.g. TYPE_F32, TYPE_Q8)
- * @return Tensor struct, .data is allocated, .buffer=NULL.
- */
 Tensor tensor_new(Shape shape, TypeId id) {
     Tensor t = {0};
     t.shape = shape;
@@ -161,9 +154,6 @@ Tensor tensor_new(Shape shape, TypeId id) {
     return t;
 }
 
-/**
- * @brief Free tensor data and workspace.
- */
 void tensor_free(Tensor* t) {
     if (t) {
         if (t->data) {
