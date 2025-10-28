@@ -236,10 +236,26 @@ void softmax(float* x, size_t len) {
     }
 }
 
-// @ref https://arxiv.org/abs/1512.03385
-void residual(float* dst, float* src, size_t len) {
+/**
+ * @brief In-place residual connection: dst += src (elementwise).
+ *
+ * Both tensors must be 1D float vectors of size d-model.
+ * @ref https://arxiv.org/abs/1512.03385
+ */
+void residual(Tensor* dst, Tensor* src) {
+    assert(dst && src);
+    assert(dst->id == TYPE_F32);
+    assert(src->id == TYPE_F32);
+    assert(tensor_is_vec(dst));
+    assert(tensor_is_vec(src));
+    assert(tensor_cols_match(dst, src));
+
+    size_t len = tensor_cols(dst);
+    float* yf = (float*) dst->data;
+    const float* xf = (float*) src->data;
+
     for (size_t i = 0; i < len; i++) {
-        dst[i] += src[i];
+        yf[i] += xf[i];
     }
 }
 
@@ -307,7 +323,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     matmul(&s->x_norm, &L->attn.Wo, &s->attn_out);
 
     // Attention residual connection
-    residual(s->x, s->x_norm, d->d_model);
+    residual(&s->x, &s->x_norm);
 }
 
 // @ref https://deeplearningbook.org/contents/mlp.html#pf1
@@ -332,7 +348,7 @@ void v_forward_ffn(Valerie* v, Layer* L) {
     matmul(&s->x_norm, &L->ffn.W2, &s->mlp_in);
 
     // FFN residual connection
-    residual(s->x, s->x_norm, d->d_model);
+    residual(&s->x, &s->x_norm);
 }
 
 // Single-token forward pass (autoregressive)
