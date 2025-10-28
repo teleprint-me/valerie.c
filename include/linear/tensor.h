@@ -34,6 +34,10 @@ typedef enum ShapeId {
  * @brief Shape descriptor for 1D/2D tensors.
  *
  * Holds logical dimensions and shape type (vector or matrix).
+ *
+ * @note Always verify matrices:
+ *       first argument = number of output features
+ *       second argument = number of input features.
  */
 typedef struct Shape {
     size_t dims[2]; /**< Dimensions: [len, 0] for vector, [rows, cols] for matrix */
