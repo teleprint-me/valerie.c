@@ -173,6 +173,8 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
 
 // @ref https://arxiv.org/abs/2104.09864
 void rotary(float* x, Rotary* rope, size_t pos, size_t len) {
+    assert(x && rope);
+    assert(len % 2 == 0);
     // Pre-computed rope frequencies
     const Tensor* cos = &rope->cos;
     const Tensor* sin = &rope->sin;
