@@ -69,7 +69,7 @@
  * Model Blocks
  */
 
- /**
+/**
  * @brief Root-mean-square normalization (RMSNorm) for vectors.
  *
  * y = w * (x / sqrt(mean(x^2) + epsilon))
@@ -116,27 +116,47 @@ void rmsnorm(Tensor* y, Tensor* w, Tensor* x) {
     }
 }
 
-// https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
-void matmul(float* y, Tensor* W, Tensor* x, size_t len) {
+/**
+ * @brief Matrix-vector multiply with quantization-aware dequantization.
+ *
+ * y = W @ x
+ *
+ * W: (rows, cols) matrix (any type)
+ * x: (cols,) vector (any type)
+ * y: (rows,) output vector (float only)
+ * @ref https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
+ * @note The only way to sanely resolve the compute buffers is a graph.
+ */
+void matmul(Tensor* y, Tensor* W, Tensor* x) {
+    // Assert valid tensors
     assert(y && W && x);
+    // Assert output type (W and x may be any type)
+    assert(y->id == TYPE_F32);  // output must be float
+    // Assert shape types
+    assert(tensor_is_vec(y));
     assert(tensor_is_mat(W));
     assert(tensor_is_vec(x));
-    assert(tensor_cols_match(W, x));
-
+    // Assert dims match y (r,) = W (r, c) @ x (c,)
+    assert(tensor_cols_match(x, W));  // match input
+    assert(tensor_cols_match_rows(y, W));  // match output
+    // Extract input dimensions
     const size_t W_rows = tensor_rows(W);
-    assert(W_rows == len && "y (r,) != W (r, c) @ x (c,)");  // match out
+    const size_t W_cols = tensor_cols(W);
+    const size_t x_cols = tensor_cols(x);  // in dim
+
+    // Alias output buffer
+    float* yf = (float*) y->data;
 
     // Convert input to float
-    const size_t x_cols = tensor_cols(x);  // in dim
-    float xf[x_cols];  // scratch buffer
-    dequant_vec(xf, x->data, x_cols, x->id);
+    float* xf = calloc(x_cols, sizeof(float));  // scratch buffer
+    tensor_dequant_vec(xf, x, x_cols);
 
-    const size_t W_cols = tensor_cols(W);
+#pragma omp parallel for
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
-        float wdst[W_cols];  // scratch buffer
+        float* wdst = calloc(W_cols, sizeof(float));  // scratch buffer
         const void* wsrc = tensor_view_row(W, r);
-        dequant_vec(wdst, wsrc, W_cols, W->id);
+        tensor_dequant_vec(wdst, wsrc, W_cols);
 
         // Compute dot product
         float sum = 0.0f;
@@ -144,8 +164,11 @@ void matmul(float* y, Tensor* W, Tensor* x, size_t len) {
             sum += wdst[c] * xf[c];
         }
 
-        y[r] = sum;
+        yf[r] = sum;
+        free(wdst);
     }
+
+    free(xf);
 }
 
 // @ref https://arxiv.org/abs/2104.09864
@@ -217,13 +240,10 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     // Normalize input
     rmsnorm(&s->x_norm, &L->attn.norm, &s->x);
 
-    // Quantize normed input
-    tensor_quant_vec(&s->xq_dmodel, s->x_norm, d->d_model);
-
     // Compute Q, K, V projections
-    matmul(s->q, &L->attn.Wq, &s->xq_dmodel, d->proj_dim);
-    matmul(s->k, &L->attn.Wk, &s->xq_dmodel, d->kv_dim);
-    matmul(s->v, &L->attn.Wv, &s->xq_dmodel, d->kv_dim);
+    matmul(&s->q, &L->attn.Wq, &s->x_norm);  // (proj_dim,)
+    matmul(&s->k, &L->attn.Wk, &s->x_norm);  // (kv_dim,)
+    matmul(&s->v, &L->attn.Wv, &s->x_norm);  // (kv_dim,)
 
     // Apply rotary embeddings per head/group
     // @ref https://arxiv.org/pdf/2305.13245
@@ -268,11 +288,8 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
         }
     }
 
-    // Quantize attention output
-    tensor_quant_vec(&s->xq_dmodel, s->attn_out, d->d_model);
-
     // Project concatenated heads back to model dimension (Wo)
-    matmul(s->x_norm, &L->attn.Wo, &s->xq_dmodel, d->d_model);
+    matmul(&s->x_norm, &L->attn.Wo, &s->attn_out);
 
     // Attention residual connection
     residual(s->x, s->x_norm, d->d_model);
@@ -286,24 +303,18 @@ void v_forward_ffn(Valerie* v, Layer* L) {
     // Normalize input
     rmsnorm(&s->x_norm, &L->ffn.norm, &s->x);
 
-    // Quantize normed input
-    tensor_quant_vec(&s->xq_dmodel, s->x_norm, d->d_model);
-
     // Up-projection (W1)
-    matmul(s->mlp_in, &L->ffn.W1, &s->xq_dmodel, d->hidden);
+    matmul(&s->mlp_in, &L->ffn.W1, &s->x_norm);
     // Gating path (W2)
-    matmul(s->mlp_gate, &L->ffn.W3, &s->xq_dmodel, d->hidden);
+    matmul(&s->mlp_gate, &L->ffn.W3, &s->x_norm);
 
     // SwiGLU (SiLU activation)
     for (int i = 0; i < d->hidden; i++) {
         s->mlp_in[i] *= silu(s->mlp_gate[i]);
     }
 
-    // Quanitze up-projection (W1)
-    tensor_quant_vec(&s->xq_hidden, s->mlp_in, d->hidden);
-
     // Down projection (W2)
-    matmul(s->x_norm, &L->ffn.W2, &s->xq_hidden, d->d_model);
+    matmul(&s->x_norm, &L->ffn.W2, &s->mlp_in);
 
     // FFN residual connection
     residual(s->x, s->x_norm, d->d_model);
@@ -331,12 +342,9 @@ float* v_forward(Valerie* v, int id, int pos) {
     // Final layer normalization
     rmsnorm(&s->x_norm, &e->norm, &s->x);
 
-    // Quantize normed input
-    tensor_quant_vec(&s->xq_dmodel, s->x_norm, d->d_model);
-
     // Output projection (is always F32)
-    matmul(s->logits, &e->output, &s->xq_dmodel, d->vocab_size);
-    return s->logits;
+    matmul(&s->logits, &e->token, &s->x_norm);
+    return s->logits.data;
 }
 
 /** @} */
