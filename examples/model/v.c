@@ -171,7 +171,15 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
     free(xf);
 }
 
-// @ref https://arxiv.org/abs/2104.09864
+/**
+ * @brief Applies in-place rotary position embedding to a 2*half_dim vector.
+ *
+ * x: [real_0, ..., real_{half_dim-1}, imag_0, ..., imag_{half_dim-1}]
+ * rope: pointer to rotary embedding tensors (cos/sin), always F32.
+ * pos: position (row) to use in rope tensors.
+ * len: total length of x (must be even, half_dim = len / 2).
+ * @ref https://arxiv.org/abs/2104.09864
+ */
 void rotary(float* x, Rotary* rope, size_t pos, size_t len) {
     assert(x && rope);
     assert(len % 2 == 0);
@@ -203,7 +211,12 @@ void rotary(float* x, Rotary* rope, size_t pos, size_t len) {
     }
 }
 
-// @ref https://deeplearningbook.org/contents/mlp.html#pf11
+/**
+ * @brief In-place numerically stable softmax on a float buffer.
+ *
+ * x: vector of length `len`. Output overwrites input.
+ * @ref https://deeplearningbook.org/contents/mlp.html#pf11
+ */
 void softmax(float* x, size_t len) {
     float max_score = x[0];
     for (size_t i = 1; i < len; i++) {
