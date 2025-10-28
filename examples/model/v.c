@@ -74,10 +74,10 @@
  *
  * y = w * (x / sqrt(mean(x^2) + epsilon))
  *
- * All tensors must be TYPE_F32 and 1D, with identical length.
- * @param y Output vector (normalized and scaled)
- * @param w Weight vector (per-feature scaling)
- * @param x Input vector (features)
+ * @param y   Output vector (normalized and scaled)
+ * @param w   Weight vector (per-feature scaling)
+ * @param x   Input vector (features)
+ * @note All tensors must be of type TYPE_F32 and 1D, with shape (d-model,).
  * @ref https://arxiv.org/abs/1910.07467
  */
 void rmsnorm(Tensor* y, Tensor* w, Tensor* x) {
