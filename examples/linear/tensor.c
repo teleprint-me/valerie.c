@@ -15,56 +15,59 @@
 #include "linear/tensor.h"
 
 /**
- * Matrix multiplication
+ * @brief Matrix-vector multiply with quantization-aware dequantization.
+ *
+ * y = W @ x
+ *
+ * W: (rows, cols) matrix (any type)
+ * x: (cols,) vector (any type)
+ * y: (rows,) output vector (float only)
+ * @ref https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
+ * @note The only way to sanely resolve the compute buffers is a graph.
  */
-
 void matmul(Tensor* y, Tensor* W, Tensor* x) {
+    // Assert valid tensors
     assert(y && W && x);
-    assert(y->shape.id == SHAPE_VEC);
-    assert(W->shape.id == SHAPE_MAT);
-    assert(x->shape.id == SHAPE_VEC);
+    // Assert output type (W and x may be any type)
+    assert(y->id == TYPE_F32);  // output must be float
+    // Assert shape types
+    assert(tensor_is_vec(y));
+    assert(tensor_is_mat(W));
+    assert(tensor_is_vec(x));
+    // Assert dims match y (r,) = W (r, c) @ x (c,)
+    assert(tensor_cols_match(x, W));  // match input
+    assert(tensor_cols_match_rows(y, W));  // match output
+    // Extract input dimensions
+    const size_t W_rows = tensor_rows(W);
+    const size_t W_cols = tensor_cols(W);
+    const size_t x_cols = tensor_cols(x);  // in dim
 
-    size_t y_cols = y->shape.dims[0];  // out dim
-    size_t W_rows = W->shape.dims[0];
-    size_t W_cols = W->shape.dims[1];
-    size_t x_cols = x->shape.dims[0];  // in dim
-    size_t W_stride = type_size(W->id);
-    assert(W_rows == y_cols);  // match out
-    assert(W_cols == x_cols);  // match in
-    assert(W_stride > 0);  // at least 1 byte
+    // Alias output buffer
+    float* yf = (float*) y->data;
 
     // Convert input to float
-    float* xf = calloc(x_cols, type_size(x->id));
+    float* xf = calloc(x_cols, sizeof(float));  // scratch buffer
     dequant_vec(xf, x->data, x_cols, x->id);
 
-    // Temporary buffer for each row of W
-    float* wf = malloc(W_cols * sizeof(float));
-    float* yf = malloc(y_cols * sizeof(float));
-
+#pragma omp parallel for
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
+        float* wdst = calloc(W_cols, sizeof(float));  // scratch buffer
         const void* wsrc = tensor_view_row(W, r);
-        dequant_vec(wf, wsrc, W_cols, W->id);
+        dequant_vec(wdst, wsrc, W_cols, W->id);
 
         // Compute dot product
         float sum = 0.0f;
         for (size_t c = 0; c < W_cols; c++) {
-            sum += wf[c] * xf[c];
+            sum += wdst[c] * xf[c];
         }
 
         yf[r] = sum;
+        free(wdst);
     }
 
-    // Write result
-    quant_vec(y->data, yf, y_cols, y->id);
-
-    // Clean up
-    free(wf);
     free(xf);
-    free(yf);
 }
-
-/** @} */
 
 int main(void) {
     lehmer_init(42);
