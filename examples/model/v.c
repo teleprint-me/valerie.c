@@ -69,7 +69,17 @@
  * Model Blocks
  */
 
-// @ref https://arxiv.org/abs/1910.07467
+ /**
+ * @brief Root-mean-square normalization (RMSNorm) for vectors.
+ *
+ * y = w * (x / sqrt(mean(x^2) + epsilon))
+ *
+ * All tensors must be TYPE_F32 and 1D, with identical length.
+ * @param y Output vector (normalized and scaled)
+ * @param w Weight vector (per-feature scaling)
+ * @param x Input vector (features)
+ * @ref https://arxiv.org/abs/1910.07467
+ */
 void rmsnorm(Tensor* y, Tensor* w, Tensor* x) {
     // Assert valid tensors
     assert(y && w && x);
