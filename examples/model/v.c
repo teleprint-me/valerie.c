@@ -340,12 +340,14 @@ void v_forward_ffn(Valerie* v, Layer* L) {
 
     // Up-projection (W1)
     matmul(&s->mlp_in, &L->ffn.W1, &s->x_norm);
-    // Gating path (W2)
+    // Gating path (W3)
     matmul(&s->mlp_gate, &L->ffn.W3, &s->x_norm);
 
     // SwiGLU (SiLU activation)
+    float* mlp_in = (float*) s->mlp_in.data;
+    float* mlp_gate = (float*) s->mlp_gate.data;
     for (int i = 0; i < d->hidden; i++) {
-        s->mlp_in[i] *= silu(s->mlp_gate[i]);
+        mlp_in[i] *= silu(mlp_gate[i]);
     }
 
     // Down projection (W2)
