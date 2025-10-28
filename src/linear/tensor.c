@@ -183,9 +183,10 @@ void tensor_quant_vec(Tensor* dst, float* src, size_t len) {
     assert(tensor_is_vec(dst));
     assert(tensor_cols(dst) == len);
     if (dst->id == TYPE_F32) {
-        return;  // skip float
+        memcpy(dst->data, src, len * sizeof(float));
+    } else {
+        quant_vec(dst->data, src, len, dst->id);
     }
-    quant_vec(dst->data, src, len, dst->id);
 }
 
 void tensor_dequant_vec(float* dst, const Tensor* src, size_t len) {
