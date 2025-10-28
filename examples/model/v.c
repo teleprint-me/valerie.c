@@ -367,7 +367,9 @@ float* v_forward(Valerie* v, int id, int pos) {
     Embedding* e = &v->embed;
 
     // Token embedding lookup
-    memcpy(s->x, e->token + id * d->d_model, d->d_model * sizeof(float));
+    float* dst = (float*) s->x.data;  // (d_model,)
+    float* src = (float*) tensor_view_row(&e->token, id);  // (d_model,)
+    memcpy(dst, src, d->d_model * sizeof(float));
 
     // Iterate over model layers
     for (int l = 0; l < d->layers; l++) {
