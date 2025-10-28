@@ -265,8 +265,8 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     State* s = &v->state;
 
     // Tie current KV cache slot to state buffer (seq_len, kv_dim)
-    s->k = L->cache.K + pos * d->kv_dim;  // cache owned ref (kv_dim,)
-    s->v = L->cache.V + pos * d->kv_dim;  // cache owned ref (kv_dim,)
+    s->k.data = tensor_view(&L->cache.K, pos * d->kv_dim);  // cache owned ref (kv_dim,)
+    s->v.data = tensor_view(&L->cache.V, pos * d->kv_dim);  // cache owned ref (kv_dim,)
 
     // Normalize input
     rmsnorm(&s->x_norm, &L->attn.norm, &s->x);
@@ -280,20 +280,21 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     // @ref https://arxiv.org/pdf/2305.13245
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
-        float* qh = s->q + h * d->head_dim;
-        float* kh = s->k + group * d->head_dim;
+        float* qh = tensor_view(&s->q, h * d->head_dim);
+        float* kh = tensor_view(&s->k, group * d->head_dim);
         rotary(qh, &v->rope, pos, d->head_dim);
         rotary(kh, &v->rope, pos, d->head_dim);
     }
 
     // Compute attention scores (Q * K^T / sqrt(d_k))
     for (int h = 0; h < d->heads; h++) {
-        float* qh = s->q + h * d->head_dim;
-        float* scores = s->attn_scores + h * d->seq_len;
+        float* qh = tensor_view(&s->q, h * d->head_dim);
+        float* scores = tensor_view(&s->attn_scores, h * d->seq_len);
 
         for (int t = 0; t <= pos; t++) {
             // each K_t per head group
-            float* kt = L->cache.K + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+            size_t offset = t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+            float* kt = tensor_view(&L->cache.K, offset);
 
             float dot = 0.0f;
             for (int k = 0; k < d->head_dim; k++) {
@@ -307,12 +308,13 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
         softmax(scores, pos + 1);
 
         // Weighted sum of scores (context vector)
-        float* out_h = s->attn_out + h * d->head_dim;
+        float* out_h = tensor_view(&s->attn_out, h * d->head_dim);
         memset(out_h, 0, d->head_dim * sizeof(float));
 
         for (int t = 0; t <= pos; t++) {
             float w = scores[t];
-            float* vt = L->cache.V + t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+            size_t offset = t * d->kv_dim + (h / d->kv_mul) * d->head_dim;
+            float* vt = tensor_view(&L->cache.V, offset);
             for (int k = 0; k < d->head_dim; k++) {
                 out_h[k] += w * vt[k];
             }
