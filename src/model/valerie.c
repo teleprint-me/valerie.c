@@ -224,7 +224,7 @@ void v_rotary_free(Rotary* rope) {
     }
 }
 
-State v_state_new(const Dim* d, TypeId dtype) {
+State v_state_new(const Dim* d) {
     State s = {0};
     s.x = tensor_new(shape_vec(d->d_model), TYPE_F32);
     s.x_norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
@@ -236,8 +236,6 @@ State v_state_new(const Dim* d, TypeId dtype) {
     s.mlp_in = tensor_new(shape_vec(d->hidden), TYPE_F32);
     s.mlp_gate = tensor_new(shape_vec(d->hidden), TYPE_F32);
     s.logits = tensor_new(shape_vec(d->vocab_size), TYPE_F32);
-    s.q_dmodel = tensor_new(shape_vec(d->d_model), dtype);
-    s.q_hidden = tensor_new(shape_vec(d->hidden), dtype);
     return s;
 }
 
@@ -253,8 +251,6 @@ void v_state_free(State* s) {
         tensor_free(&s->mlp_in);
         tensor_free(&s->mlp_gate);
         tensor_free(&s->logits);
-        tensor_free(&s->q_dmodel);
-        tensor_free(&s->q_hidden);
     }
 }
 
@@ -267,7 +263,7 @@ Valerie v_model_new(Tokenizer t, Params p, TypeId dtype) {
     v.dim = v_dim_new(p);
     v.rope = v_rotary_new(&v.dim);
     v.embed = v_embed_new(&v.dim);
-    v.state = v_state_new(&v.dim, v.dtype);
+    v.state = v_state_new(&v.dim);
     v.layers = v_layers_new(&v.dim, v.dtype);
 
     return v;

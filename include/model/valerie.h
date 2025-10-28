@@ -158,10 +158,6 @@ typedef struct State {
 
     // Output
     Tensor logits;  // (vocab_size,)
-
-    // Quantization scratch
-    Tensor q_dmodel;  // Embedding column width (d_model,)
-    Tensor q_hidden;  // MLP hidden width (hidden,)
 } State;
 
 /**
@@ -215,7 +211,7 @@ void v_embed_free(Embedding* embed);
 Rotary v_rotary_new(const Dim* d);
 void v_rotary_free(Rotary* rope);
 
-State v_state_new(const Dim* d, TypeId dtype);
+State v_state_new(const Dim* d);
 void v_state_free(State* s);
 
 Valerie v_model_new(Tokenizer t, Params p, TypeId dtype);
