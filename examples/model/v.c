@@ -278,6 +278,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
 
     // Apply rotary embeddings per head/group
     // @ref https://arxiv.org/pdf/2305.13245
+#pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         float* qh = tensor_view(&s->q, h * d->head_dim);
@@ -287,6 +288,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     }
 
     // Compute attention scores (Q * K^T / sqrt(d_k))
+#pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         float* qh = tensor_view(&s->q, h * d->head_dim);
         float* scores = tensor_view(&s->attn_scores, h * d->seq_len);
