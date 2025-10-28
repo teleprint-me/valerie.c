@@ -149,14 +149,14 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
 
     // Convert input to float
     float* xf = calloc(x_cols, sizeof(float));  // scratch buffer
-    tensor_dequant_vec(xf, x, x_cols);
+    dequant_vec(xf, x->data, x_cols, x->id);
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
         float* wdst = calloc(W_cols, sizeof(float));  // scratch buffer
         const void* wsrc = tensor_view_row(W, r);
-        tensor_dequant_vec(wdst, wsrc, W_cols);
+        dequant_vec(wdst, wsrc, W_cols, W->id);
 
         // Compute dot product
         float sum = 0.0f;
@@ -368,7 +368,7 @@ float* v_forward(Valerie* v, int id, int pos) {
 
     // Token embedding lookup
     float* dst = (float*) s->x.data;  // (d_model,)
-    float* src = (float*) tensor_view_row(&e->token, id);  // (d_model,)
+    float* src = (float*) tensor_view_row(&e->token, id);  // id * d_model -> (d_model,)
     memcpy(dst, src, d->d_model * sizeof(float));
 
     // Iterate over model layers
@@ -393,7 +393,7 @@ int main(void) {
 
     Tokenizer t = tokenizer_load("models/tokenizer.model");
     Params p = v_params_new(t.vocab_size);
-    Valerie v = v_model_new(t, p, TYPE_Q8);
+    Valerie v = v_model_new(t, p, TYPE_F32);
 
     LOG_INFO("Model initialized.");
     v_dim_log(v.dim);
