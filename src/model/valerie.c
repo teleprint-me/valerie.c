@@ -70,11 +70,13 @@ Attention v_attn_new(const Dim* d, TypeId dtype) {
     attn.Wk = tensor_new(shape_mat(d->d_model, d->kv_heads * d->head_dim), dtype);
     attn.Wv = tensor_new(shape_mat(d->d_model, d->kv_heads * d->head_dim), dtype);
     attn.Wo = tensor_new(shape_mat(d->heads * d->head_dim, d->d_model), dtype);
+    attn.norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
 
     tensor_xavier(&attn.Wq);
     tensor_xavier(&attn.Wk);
     tensor_xavier(&attn.Wv);
     tensor_xavier(&attn.Wo);
+    tensor_ones(&attn.norm);
 
     return attn;
 }
@@ -85,6 +87,7 @@ void v_attn_free(Attention* attn) {
         tensor_free(&attn->Wk);
         tensor_free(&attn->Wv);
         tensor_free(&attn->Wo);
+        tensor_free(&attn->norm);
     }
 }
 
@@ -94,10 +97,12 @@ FeedForward v_ffn_new(const Dim* d, TypeId dtype) {
     ffn.W1 = tensor_new(shape_mat(d->hidden, d->d_model), dtype);
     ffn.W2 = tensor_new(shape_mat(d->d_model, d->hidden), dtype);
     ffn.W3 = tensor_new(shape_mat(d->hidden, d->d_model), dtype);
+    ffn.norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
 
     tensor_xavier(&ffn.W1);
     tensor_xavier(&ffn.W2);
     tensor_xavier(&ffn.W3);
+    tensor_ones(&ffn.norm);
 
     return ffn;
 }
@@ -107,20 +112,21 @@ void v_ffn_free(FeedForward* ffn) {
         tensor_free(&ffn->W1);
         tensor_free(&ffn->W2);
         tensor_free(&ffn->W3);
+        tensor_free(&ffn->norm);
     }
 }
 
 Cache v_cache_new(const Dim* d) {
     Cache cache = {0};
-    cache.k = tensor_new(shape_mat(d->seq_len, d->kv_dim), TYPE_F32);
-    cache.v = tensor_new(shape_mat(d->seq_len, d->kv_dim), TYPE_F32);
+    cache.K = tensor_new(shape_mat(d->seq_len, d->kv_dim), TYPE_F32);
+    cache.V = tensor_new(shape_mat(d->seq_len, d->kv_dim), TYPE_F32);
     return cache;
 }
 
 void v_cache_free(Cache* cache) {
     if (cache) {
-        tensor_free(&cache->k);
-        tensor_free(&cache->v);
+        tensor_free(&cache->K);
+        tensor_free(&cache->V);
     }
 }
 
@@ -140,14 +146,6 @@ Layer* v_layers_new(const Dim* d, TypeId dtype) {
         L[i].attn = v_attn_new(d, dtype);
         L[i].ffn = v_ffn_new(d, dtype);
         L[i].cache = v_cache_new(d);
-
-        // RMSNorm weights (γ parameters)
-        L[i].rms_attn = tensor_new(shape_vec(d->d_model), TYPE_F32);
-        L[i].rms_ffn = tensor_new(shape_vec(d->d_model), TYPE_F32);
-
-        // Initialize RMSNorm weights to identity scaling (γ = 1.0)
-        tensor_ones(&L[i].rms_attn);
-        tensor_ones(&L[i].rms_ffn);
     }
 
     return layers;
@@ -159,8 +157,6 @@ void v_layers_free(Layer* layers, size_t n) {
             v_attn_free(&layers[i].attn);
             v_ffn_free(&layers[i].ffn);
             v_cache_free(&layers[i].cache);
-            tensor_free(&layers[i].rms_attn);
-            tensor_free(&layers[i].rms_ffn);
         }
         free(layers);
     }
@@ -169,11 +165,9 @@ void v_layers_free(Layer* layers, size_t n) {
 Embedding v_embed_new(const Dim* d) {
     Embedding embed = {0};
 
+    // Input is tied to output
     embed.token = tensor_new(shape_mat(d->vocab_size, d->d_model), TYPE_F32);
     tensor_xavier(&embed.token);
-
-    // Tie input to output weights
-    embed.output = embed.token;
 
     // Final RMSNorm (same shape as d_model)
     embed.norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
@@ -185,7 +179,6 @@ Embedding v_embed_new(const Dim* d) {
 void v_embed_free(Embedding* embed) {
     if (embed) {
         tensor_free(&embed->token);
-        // output points to token, no need to free again
         tensor_free(&embed->norm);
     }
 }
@@ -233,35 +226,35 @@ void v_rotary_free(Rotary* rope) {
 
 State v_state_new(const Dim* d, TypeId dtype) {
     State s = {0};
-    s.x = calloc(d->d_model, sizeof(float));
-    s.x_norm = calloc(d->d_model, sizeof(float));
-    s.q = calloc(d->d_model, sizeof(float));
-    s.k = NULL;  // Alias for key cache
-    s.v = NULL;  // Alias for value cache
-    s.attn_scores = calloc(d->heads * d->seq_len, sizeof(float));
-    s.attn_out = calloc(d->d_model, sizeof(float));
-    s.mlp_in = calloc(d->hidden, sizeof(float));
-    s.mlp_gate = calloc(d->hidden, sizeof(float));
-    s.logits = calloc(d->vocab_size, sizeof(float));
-    s.xq_dmodel = tensor_new(shape_vec(d->d_model), dtype);
-    s.xq_hidden = tensor_new(shape_vec(d->hidden), dtype);
+    s.x = tensor_new(shape_vec(d->d_model), TYPE_F32);
+    s.x_norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
+    s.q = tensor_new(shape_vec(d->d_model), TYPE_F32);
+    s.k = tensor_empty(shape_vec(d->kv_dim), TYPE_F32);  // Alias for key cache
+    s.v = tensor_empty(shape_vec(d->kv_dim), TYPE_F32);  // Alias for value cache
+    s.attn_scores = tensor_new(shape_mat(d->heads, d->seq_len), TYPE_F32);
+    s.attn_out = tensor_new(shape_vec(d->d_model), TYPE_F32);
+    s.mlp_in = tensor_new(shape_vec(d->hidden), TYPE_F32);
+    s.mlp_gate = tensor_new(shape_vec(d->hidden), TYPE_F32);
+    s.logits = tensor_new(shape_vec(d->vocab_size), TYPE_F32);
+    s.q_dmodel = tensor_new(shape_vec(d->d_model), dtype);
+    s.q_hidden = tensor_new(shape_vec(d->hidden), dtype);
     return s;
 }
 
 void v_state_free(State* s) {
     if (s) {
-        free(s->x);
-        free(s->x_norm);
-        free(s->q);
+        tensor_free(&s->x);
+        tensor_free(&s->x_norm);
+        tensor_free(&s->q);
         // Do not free key alias
         // Do not free value alias
-        free(s->attn_scores);
-        free(s->attn_out);
-        free(s->mlp_in);
-        free(s->mlp_gate);
-        free(s->logits);
-        tensor_free(&s->xq_dmodel);
-        tensor_free(&s->xq_hidden);
+        tensor_free(&s->attn_scores);
+        tensor_free(&s->attn_out);
+        tensor_free(&s->mlp_in);
+        tensor_free(&s->mlp_gate);
+        tensor_free(&s->logits);
+        tensor_free(&s->q_dmodel);
+        tensor_free(&s->q_hidden);
     }
 }
 

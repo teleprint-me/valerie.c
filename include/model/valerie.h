@@ -67,24 +67,26 @@ typedef struct Dim {
 /**
  * @struct Attention
  * Trainable model-level parameters.
- * Tensor may be any data type.
+ * @note norm must always be TYPE_F32.
  */
 typedef struct Attention {
-    Tensor Wq;  // (d_model, heads * head_dim)
-    Tensor Wk;  // (d_model, kv_heads * head_dim)
-    Tensor Wv;  // (d_model, kv_heads * head_dim)
-    Tensor Wo;  // (heads * head_dim, d_model)
+    Tensor Wq;  // ANY (d_model, heads * head_dim)
+    Tensor Wk;  // ANY (d_model, kv_heads * head_dim)
+    Tensor Wv;  // ANY (d_model, kv_heads * head_dim)
+    Tensor Wo;  // ANY (heads * head_dim, d_model)
+    Tensor norm;  // F32 (d_model,) RMSNorm weights
 } Attention;
 
 /**
  * @struct FeedForward
  * Trainable model-level parameters.
- * Tensor may be any data type.
+ * @note norm must always be TYPE_F32.
  */
 typedef struct FeedForward {
-    Tensor W1;  // (hidden, d_model)
-    Tensor W2;  // (d_model, hidden)
-    Tensor W3;  // (hidden, d_model)
+    Tensor W1;  // ANY (hidden, d_model)
+    Tensor W2;  // ANY (d_model, hidden)
+    Tensor W3;  // ANY (hidden, d_model)
+    Tensor norm;  // F32 (d_model,) RMSNorm weights
 } FeedForward;
 
 /**
@@ -93,8 +95,8 @@ typedef struct FeedForward {
  * Tensor must be TYPE_F32.
  */
 typedef struct Cache {
-    Tensor k;  // key buffer (seq_len, kv_dim)
-    Tensor v;  // value buffer (seq_len, kv_dim)
+    Tensor K;  // key buffer (seq_len, kv_dim)
+    Tensor V;  // value buffer (seq_len, kv_dim)
 } Cache;
 
 /**
@@ -106,8 +108,6 @@ typedef struct Layer {
     Attention attn;  // multi-head self-attention
     FeedForward ffn;  // feed-forward network
     Cache cache;  // key/value cache
-    Tensor rms_attn;  // (d_model,) RMSNorm weights
-    Tensor rms_ffn;  // (d_model,) RMSNorm weights
 } Layer;
 
 /**
@@ -118,7 +118,6 @@ typedef struct Layer {
  */
 typedef struct Embedding {
     Tensor token;  // token embeddings (vocab_size, d_model)
-    Tensor output;  // tied output weights (vocab_size, d_model)
     Tensor norm;  // final norm weights (d_model,)
 } Embedding;
 
@@ -143,26 +142,26 @@ typedef struct Rotary {
  */
 typedef struct State {
     // Core stream
-    float* x;  // (d_model,) residual stream
-    float* x_norm;  // (d_model,) normalized stream
+    Tensor x;  // (d_model,) residual stream
+    Tensor x_norm;  // (d_model,) normalized stream
 
     // Attention intermediates
-    float* q;  // (proj_dim,)
-    float* k;  // view into cache (kv_dim,)
-    float* v;  // view into cache (kv_dim,)
-    float* attn_scores;  // (heads, seq_len) attention weights
-    float* attn_out;  // (d_model,) attention output accumulator
+    Tensor q;  // (proj_dim,)
+    Tensor k;  // view into cache (kv_dim,)
+    Tensor v;  // view into cache (kv_dim,)
+    Tensor attn_scores;  // (heads, seq_len) attention weights
+    Tensor attn_out;  // (d_model,) attention output accumulator
 
     // Feed-forward intermediates
-    float* mlp_in;  // (hidden,)
-    float* mlp_gate;  // (hidden,)
+    Tensor mlp_in;  // (hidden,)
+    Tensor mlp_gate;  // (hidden,)
 
     // Output
-    float* logits;  // (vocab_size,)
+    Tensor logits;  // (vocab_size,)
 
     // Quantization scratch
-    Tensor xq_dmodel;  // Embedding column width (d_model,)
-    Tensor xq_hidden;  // MLP hidden width (hidden,)
+    Tensor q_dmodel;  // Embedding column width (d_model,)
+    Tensor q_hidden;  // MLP hidden width (hidden,)
 } State;
 
 /**
