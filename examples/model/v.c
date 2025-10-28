@@ -70,17 +70,39 @@
  */
 
 // @ref https://arxiv.org/abs/1910.07467
-void rmsnorm(float* y, float* w, float* x, size_t len) {
-    // calculate sum of squares
+void rmsnorm(Tensor* y, Tensor* w, Tensor* x) {
+    // Assert valid tensors
+    assert(y && w && x);
+    // Assert tensors have single precision.
+    assert(y->id == TYPE_F32);
+    assert(w->id == TYPE_F32);
+    assert(x->id == TYPE_F32);
+    // Assert tensors are vectors
+    assert(tensor_is_vec(y));
+    assert(tensor_is_vec(w));
+    assert(tensor_is_vec(x));
+    // Assert shapes match
+    assert(tensor_cols_match(y, w));
+    assert(tensor_cols_match(w, x));  // chain matches
+    // Extract vector length
+    size_t len = tensor_cols(y);
+    // Cast void* to float*
+    float* yf = (float*) y->data;
+    const float* wf = (float*) w->data;
+    const float* xf = (float*) x->data;
+
+    // Compute sum of squares
     float sos = 0.0f;
     for (size_t i = 0; i < len; i++) {
-        sos += x[i] * x[i];
+        sos += xf[i] * xf[i];
     }
-    sos = 1.0f / sqrtf((sos / len) + 1e-6f);
 
-    // normalize and scale
+    // Compute scalar
+    float scale = 1.0f / sqrtf((sos / (float) len) + 1e-6f);
+
+    // Normalize and scale
     for (size_t i = 0; i < len; i++) {
-        y[i] = w[i] * (sos * x[i]);
+        yf[i] = wf[i] * (xf[i] * scale);
     }
 }
 
@@ -103,7 +125,7 @@ void matmul(float* y, Tensor* W, Tensor* x, size_t len) {
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
         float wdst[W_cols];  // scratch buffer
-        const void* wsrc = tensor_mat_row(W, r);
+        const void* wsrc = tensor_view_row(W, r);
         dequant_vec(wdst, wsrc, W_cols, W->id);
 
         // Compute dot product
@@ -183,7 +205,7 @@ void v_forward_attn(Valerie* v, Layer* L, int pos) {
     s->v = L->cache.V + pos * d->kv_dim;  // cache owned ref (kv_dim,)
 
     // Normalize input
-    rmsnorm(s->x_norm, L->attn.norm, s->x, d->d_model);
+    rmsnorm(&s->x_norm, &L->attn.norm, &s->x);
 
     // Quantize normed input
     tensor_quant_vec(&s->xq_dmodel, s->x_norm, d->d_model);
@@ -252,7 +274,7 @@ void v_forward_ffn(Valerie* v, Layer* L) {
     State* s = &v->state;
 
     // Normalize input
-    rmsnorm(s->x_norm, L->ffn.norm, s->x, d->d_model);
+    rmsnorm(&s->x_norm, &L->ffn.norm, &s->x);
 
     // Quantize normed input
     tensor_quant_vec(&s->xq_dmodel, s->x_norm, d->d_model);
@@ -297,7 +319,7 @@ float* v_forward(Valerie* v, int id, int pos) {
     }
 
     // Final layer normalization
-    rmsnorm(s->x_norm, e->norm, s->x, d->d_model);
+    rmsnorm(&s->x_norm, &e->norm, &s->x);
 
     // Quantize normed input
     tensor_quant_vec(&s->xq_dmodel, s->x_norm, d->d_model);
