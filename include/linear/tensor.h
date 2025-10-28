@@ -128,23 +128,43 @@ bool tensor_cols_match_rows(const Tensor* a, const Tensor* b);
 bool tensor_rows_match(const Tensor* a, const Tensor* b);
 
 /**
- * @brief Create a heap-allocated tensor of specified shape and type.
+ * @brief Creates a new tensor with the specified shape and type.
  *
- * Data buffer is allocated and zero-initialized. Workspace is NULL.
+ * This function creates a new tensor with the given shape and type. It allocates
+ * data for the tensor based on the type (e.g., `TYPE_Q8` or `TYPE_F32`).
+ * The tensor is initialized with default values (e.g., zero or uninitialized),
+ * and the user is responsible for managing the data lifetime.
  *
- * @param shape Logical shape (dims/id must be set)
- * @param id    Numeric type identifier (@ref TypeId)
- * @return Tensor struct with allocated data; must call @ref tensor_free
+ * @param shape The shape of the tensor.
+ * @param id The type ID of the tensor (e.g., TYPE_F32, TYPE_Q8).
+ * @return Tensor A new tensor with the specified shape and type.
  */
 Tensor tensor_new(Shape shape, TypeId id);
 
 /**
- * @brief Release all storage owned by a tensor.
+ * @brief Frees the memory allocated for a tensor.
  *
- * Frees data and workspace if allocated. Safe to call with NULL or zeroed tensor.
- * @param t Tensor pointer
+ * This function frees the memory allocated for a tensor's data, if any.
+ * It handles both `TYPE_Q8` and non-`TYPE_Q8` tensors appropriately.
+ * After calling this function, the tensor's `data` pointer is set to `NULL`.
+ *
+ * @param t Pointer to the Tensor structure to be freed.
  */
 void tensor_free(Tensor* t);
+
+/**
+ * @brief Creates an empty tensor with the specified shape and type.
+ *
+ * This function creates a new tensor with the given shape and type, but without any
+ * data allocated. It is useful for creating "view" tensors that refer to existing
+ * data (e.g., for non-owned cache views). The tensor will have a `NULL` data
+ * pointer, and the user is responsible for initializing or assigning the data later.
+ *
+ * @param shape The shape of the tensor.
+ * @param id The type ID of the tensor (e.g., TYPE_F32, TYPE_Q8).
+ * @return Tensor A new empty tensor with the specified shape and type.
+ */
+Tensor tensor_empty(Shape shape, TypeId id);
 
 /**
  * Quantizes a vector from float data to the tensor's data type.

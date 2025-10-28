@@ -165,6 +165,14 @@ void tensor_free(Tensor* t) {
     }
 }
 
+Tensor tensor_empty(Shape shape, TypeId id) {
+    Tensor t = {0};
+    t.data = NULL;
+    t.shape = shape;
+    t.id = id;
+    return t;
+}
+
 /** @} */
 
 /**
