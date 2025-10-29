@@ -1,17 +1,39 @@
 /**
  * @file      model/opt.c
  * @brief     Type-generic tensor operations (backward/SGD) for ML.
- * @copyright Copyright © 2023 Austin Berrio
+ * @copyright Copyright © 2025 Austin Berrio
  */
 
 #include <stdlib.h>
-
 #include <assert.h>
+#include <math.h>
 
 #include "linear/activation.h"
 #include "linear/type.h"
 #include "linear/quant.h"
 #include "model/opt.h"
+
+void one_hot(float* x, size_t label, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        if (label == i) {
+            x[i] = 1.0f;
+        } else {
+            x[i] = 0.0f;
+        }
+    }
+}
+
+// y_pred: predicted probabilities (softmax output), shape (n,)
+// y_true: target one-hot vector, shape (n,)
+// n: number of classes
+float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        if (y_true[i] == 1.0f) {
+            return -logf(fmaxf(y_pred[i], 1e-8f));
+        }
+    }
+    return 0.0f;  // fallback if not one-hot
+}
 
 /**
  * @section Backward/Gradient Ops

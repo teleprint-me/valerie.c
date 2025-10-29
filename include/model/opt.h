@@ -1,7 +1,7 @@
 /**
  * @file      model/opt.h
  * @brief     Type-generic tensor operations (backward/SGD) for ML.
- * @copyright Copyright © 2023 Austin Berrio
+ * @copyright Copyright © 2025 Austin Berrio
  *
  * - Supports float, bfloat16, Q8, and custom types for all key ops.
  * - Minimal dependencies. Consistent, idiomatic, and easy to extend.
@@ -17,6 +17,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void one_hot(float* x, size_t label, size_t n);
+
+// y_pred: predicted probabilities (softmax output), shape (n,)
+// y_true: target one-hot vector, shape (n,)
+// n: number of classes
+float cross_entropy(const float* y_pred, const float* y_true, size_t n);
 
 /**
  * @section Backward/Gradient Ops
