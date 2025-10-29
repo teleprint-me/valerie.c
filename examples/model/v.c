@@ -69,7 +69,7 @@ int main(void) {
 
     Tokenizer t = tokenizer_load("models/tokenizer.model");
     Params p = v_params_new(t.vocab_size);
-    Valerie v = v_model_new(t, p, TYPE_F32);
+    Valerie v = v_model_new(t, p, TYPE_Q8);
 
     LOG_INFO("Model initialized.");
     v_dim_log(v.dim);
