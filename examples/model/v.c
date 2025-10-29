@@ -151,7 +151,7 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
     float* xf = calloc(x_cols, sizeof(float));  // scratch buffer
     dequant_vec(xf, x->data, x_cols, x->id);
 
-// #pragma omp parallel for
+#pragma omp parallel for
     for (size_t r = 0; r < W_rows; r++) {
         // Compute source row pointer
         float* wdst = calloc(W_cols, sizeof(float));  // scratch buffer
