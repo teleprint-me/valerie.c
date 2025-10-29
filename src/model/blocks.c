@@ -16,6 +16,7 @@
 #include "model/blocks.h"
 
 /**
+ * Requires a backward pass.
  * @ref https://arxiv.org/abs/1910.07467
  */
 void rmsnorm(Tensor* y, Tensor* w, Tensor* x) {
@@ -55,6 +56,7 @@ void rmsnorm(Tensor* y, Tensor* w, Tensor* x) {
 }
 
 /**
+ * Requires a backward pass.
  * @ref https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
  * @note The only way to sanely resolve the compute buffers is a graph.
  */
@@ -103,6 +105,7 @@ void matmul(Tensor* y, Tensor* W, Tensor* x) {
 }
 
 /**
+ * This is fixed. Just propagate gradients through it.
  * @ref https://arxiv.org/abs/2104.09864
  */
 void rotary(float* x, Rotary* rope, size_t pos, size_t len) {
@@ -137,6 +140,7 @@ void rotary(float* x, Rotary* rope, size_t pos, size_t len) {
 }
 
 /**
+ * This is fixed. Just propagate gradients through it.
  * @ref https://deeplearningbook.org/contents/mlp.html#pf11
  */
 void softmax(float* x, size_t len) {
@@ -159,6 +163,7 @@ void softmax(float* x, size_t len) {
 }
 
 /**
+ * This is fixed. Just propagate gradients through it.
  * @ref https://arxiv.org/abs/1512.03385
  */
 void residual(Tensor* dst, Tensor* src) {
@@ -178,7 +183,10 @@ void residual(Tensor* dst, Tensor* src) {
     }
 }
 
-// @ref https://arxiv.org/abs/1706.03762
+/**
+ * Requires a backward pass.
+ * @ref https://arxiv.org/abs/1706.03762
+ */
 void forward_attn(Valerie* v, Layer* L, int pos) {
     Dim* d = &v->dim;
     State* s = &v->state;
@@ -249,7 +257,10 @@ void forward_attn(Valerie* v, Layer* L, int pos) {
     residual(&s->x, &s->x_norm);
 }
 
-// @ref https://deeplearningbook.org/contents/mlp.html#pf1
+/**
+ * Requires a backwards pass.
+ * @ref https://deeplearningbook.org/contents/mlp.html#pf1
+ */
 void forward_ffn(Valerie* v, Layer* L) {
     Dim* d = &v->dim;
     State* s = &v->state;
