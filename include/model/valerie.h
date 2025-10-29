@@ -68,12 +68,13 @@ typedef struct Dim {
  * @struct Attention
  * Trainable model-level parameters.
  * @note norm must always be TYPE_F32.
+ * @note mat -> (rows, cols) -> (out, in)
  */
 typedef struct Attention {
-    Tensor Wq;  // ANY (d_model, heads * head_dim)
-    Tensor Wk;  // ANY (d_model, kv_heads * head_dim)
-    Tensor Wv;  // ANY (d_model, kv_heads * head_dim)
-    Tensor Wo;  // ANY (heads * head_dim, d_model)
+    Tensor Wq;  // ANY (heads * head_dim, d_model)
+    Tensor Wk;  // ANY (kv_heads * head_dim, d_model)
+    Tensor Wv;  // ANY (kv_heads * head_dim, d_model)
+    Tensor Wo;  // ANY (d_model, heads * head_dim)
     Tensor norm;  // F32 (d_model,) RMSNorm weights
 } Attention;
 

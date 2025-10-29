@@ -64,12 +64,13 @@ void v_dim_log(Dim dim) {
 }
 
 Attention v_attn_new(const Dim* d, TypeId dtype) {
+    // mat -> (rows, cols) -> (out, in)
     Attention attn = {0};
 
-    attn.Wq = tensor_new(shape_mat(d->d_model, d->heads * d->head_dim), dtype);
-    attn.Wk = tensor_new(shape_mat(d->d_model, d->kv_heads * d->head_dim), dtype);
-    attn.Wv = tensor_new(shape_mat(d->d_model, d->kv_heads * d->head_dim), dtype);
-    attn.Wo = tensor_new(shape_mat(d->heads * d->head_dim, d->d_model), dtype);
+    attn.Wq = tensor_new(shape_mat(d->proj_dim, d->d_model), dtype);
+    attn.Wk = tensor_new(shape_mat(d->kv_dim, d->d_model), dtype);
+    attn.Wv = tensor_new(shape_mat(d->kv_dim, d->d_model), dtype);
+    attn.Wo = tensor_new(shape_mat(d->d_model, d->proj_dim), dtype);
     attn.norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
 
     tensor_xavier(&attn.Wq);
@@ -141,11 +142,9 @@ Layer* v_layers_new(const Dim* d, TypeId dtype) {
 
     for (int i = 0; i < d->layers; i++) {
         Layer* L = &layers[i];
-
-        // Core trainable submodules
-        L[i].attn = v_attn_new(d, dtype);
-        L[i].ffn = v_ffn_new(d, dtype);
-        L[i].cache = v_cache_new(d);
+        L->attn = v_attn_new(d, dtype);
+        L->ffn = v_ffn_new(d, dtype);
+        L->cache = v_cache_new(d);
     }
 
     return layers;
@@ -154,9 +153,10 @@ Layer* v_layers_new(const Dim* d, TypeId dtype) {
 void v_layers_free(Layer* layers, size_t n) {
     if (layers) {
         for (size_t i = 0; i < n; i++) {
-            v_attn_free(&layers[i].attn);
-            v_ffn_free(&layers[i].ffn);
-            v_cache_free(&layers[i].cache);
+            Layer* L = &layers[i];
+            v_attn_free(&L->attn);
+            v_ffn_free(&L->ffn);
+            v_cache_free(&L->cache);
         }
         free(layers);
     }
@@ -228,7 +228,7 @@ State v_state_new(const Dim* d) {
     State s = {0};
     s.x = tensor_new(shape_vec(d->d_model), TYPE_F32);
     s.x_norm = tensor_new(shape_vec(d->d_model), TYPE_F32);
-    s.q = tensor_new(shape_vec(d->d_model), TYPE_F32);
+    s.q = tensor_new(shape_vec(d->proj_dim), TYPE_F32);
     s.k = tensor_empty(shape_vec(d->kv_dim), TYPE_F32);  // Alias for key cache
     s.v = tensor_empty(shape_vec(d->kv_dim), TYPE_F32);  // Alias for value cache
     s.attn_scores = tensor_new(shape_mat(d->heads, d->seq_len), TYPE_F32);
