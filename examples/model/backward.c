@@ -49,6 +49,7 @@ void log_top_n(Tokenizer* t, float* logits, int n) {
     for (int i = 0; i < n && i < t->vocab_size; i++) {
         printf("  [%4d]: % .5f\n", i, (double) logits[i]);
     }
+    printf("\n");
 }
 
 void log_max_id(Tokenizer* t, float* logits) {
