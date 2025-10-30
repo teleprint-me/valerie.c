@@ -44,8 +44,8 @@ void log_token_ids(Tokenizer* t, int* ids, int len) {
     printf("\n");
 }
 
-void log_top_n(Tokenizer* t, float* logits, int n) {
-    printf("Logits (first %d values):\n", n);
+void log_top_n(char* label, Tokenizer* t, float* logits, int n) {
+    printf("%s (first %d values):\n", label, n);
     for (int i = 0; i < n && i < t->vocab_size; i++) {
         printf("  [%4d]: % .5f\n", i, (double) logits[i]);
     }
@@ -95,26 +95,37 @@ int main(void) {
     int pos = 0;  // increment for each input token id
     int token_id = src_ids[0];  // V : 44 -> "H"
     float* logits = forward(&v, token_id, pos);
-    log_top_n(&t, logits, 10);
+    log_top_n("Logits", &t, logits, 10);
     log_max_id(&t, logits);
 
     // calculate probabilities (consider an intemediary buffer if needed)
     softmax(logits, t.vocab_size);  // operates in-place
-    log_top_n(&t, logits, 10);
+    log_top_n("Softmax", &t, logits, 10);
     log_max_id(&t, logits);
 
+    // numerical stability sanity check
     float sum = 0.0f;
     for (int i = 0; i < t.vocab_size; i++) {
-        sum += logits[i];
+        sum += logits[i];  // should sum to 1.0f
     }
     printf("Sum of softmaxed values is %.5f\n", (double) sum);
 
+    // current output mask
     float* target = calloc(t.vocab_size, sizeof(float));
     one_hot(target, tgt_ids[pos + 1], t.vocab_size);
 
+    // current probable loss (model fit or confidence)
     float loss = cross_entropy(logits, target, t.vocab_size);
-    printf("Loss: %.6f\n", (double) loss);
+    printf("Loss: %.6f\n\n", (double) loss);
 
+    // derivative of the logistic activation (logits)
+    float* dlogits = calloc(t.vocab_size, sizeof(float));
+    for (int i = 0; i < t.vocab_size; i++) {
+        dlogits[i] = logits[i] - target[i];
+    }
+    log_top_n("Derivatives", &t, dlogits, 10);  // sample top derivatives
+
+    free(dlogits);
     free(target);
     free(src_ids);
     free(tgt_ids);
