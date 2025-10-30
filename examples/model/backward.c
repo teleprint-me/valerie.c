@@ -36,31 +36,32 @@ float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
     return 0.0f;  // fallback if not one-hot
 }
 
-void print_top_n(float* logits, int vocab_size, int n) {
+void log_token_ids(Tokenizer* t, int* ids, int len) {
+    printf("Token ids (%d):\n", len);
+    for (int i = 0; i < len; i++) {
+        printf("  [%4d] -> '%s'\n", ids[i], t->id_to_token[ids[i]]);
+    }
+    printf("\n");
+}
+
+void log_top_n(Tokenizer* t, float* logits, int n) {
     printf("Logits (first %d values):\n", n);
-    for (int i = 0; i < n && i < vocab_size; i++) {
+    for (int i = 0; i < n && i < t->vocab_size; i++) {
         printf("  [%4d]: % .5f\n", i, (double) logits[i]);
     }
 }
 
-void logit_max_id(float* logits, int vocab_size, float* max_val, int* max_id) {
-    *max_id = 0;
-    *max_val = logits[0];
-    for (int i = 1; i < vocab_size; i++) {
-        if (logits[i] > *max_val) {
-            *max_val = logits[i];
-            *max_id = i;
+void log_max_id(Tokenizer* t, float* logits) {
+    int max_id = 0;
+    float max_val = logits[0];
+    for (int i = 1; i < t->vocab_size; i++) {
+        if (logits[i] > max_val) {
+            max_val = logits[i];
+            max_id = i;
         }
     }
-    printf("Predicted next token: %d (logit=%.5f)\n", *max_id, (double) *max_val);
-}
-
-void print_token_ids(char** id_to_token, int* ids, int len) {
-    printf("Token ids (%d):\n", len);
-    for (int i = 0; i < len; i++) {
-        printf("  [%4d] -> '%s'\n", ids[i], id_to_token[ids[i]]);
-    }
-    printf("\n");
+    char* max_tok = t->id_to_token[max_id];
+    printf("Next token: '%s' -> %d (logit=%.5f)\n\n", max_tok, max_id, (double) max_val);
 }
 
 int main(void) {
@@ -79,7 +80,7 @@ int main(void) {
     char src[] = "Hello, ";
     // [44, 87, 106, 110, 16, 4]
     int* src_ids = tokenizer_encode(&v.t, src, &src_len, false, false);
-    print_token_ids(t.id_to_token, src_ids, src_len);
+    log_token_ids(&t, src_ids, src_len);
 
     // target ids
     int tgt_len;
@@ -87,20 +88,19 @@ int main(void) {
     char tgt[] = "Hello, world!";
     // [44, 87, 106, 110, 16, 4, 140, 107, 5]
     int* tgt_ids = tokenizer_encode(&v.t, tgt, &tgt_len, false, false);
-    print_token_ids(t.id_to_token, tgt_ids, tgt_len);
+    log_token_ids(&t, tgt_ids, tgt_len);
 
     // do a simple forward pass for now
     int pos = 0;  // increment for each input token id
     int token_id = src_ids[0];  // V : 44 -> "H"
     float* logits = forward(&v, token_id, pos);
-
-    int max_id;
-    float max_val;
-    print_top_n(logits, v.t.vocab_size, 10);
-    logit_max_id(logits, v.t.vocab_size, &max_val, &max_id);
+    log_top_n(&t, logits, 10);
+    log_max_id(&t, logits);
 
     // calculate probabilities (consider an intemediary buffer if needed)
     softmax(logits, v.t.vocab_size);  // operates in-place
+    log_top_n(&t, logits, 10);
+    log_max_id(&t, logits);
 
     free(src_ids);
     free(tgt_ids);
