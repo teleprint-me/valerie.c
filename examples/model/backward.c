@@ -55,6 +55,14 @@ void logit_max_id(float* logits, int vocab_size, float* max_val, int* max_id) {
     printf("Predicted next token: %d (logit=%.5f)\n", *max_id, (double) *max_val);
 }
 
+void print_token_ids(char** id_to_token, int* ids, int len) {
+    printf("Token ids (%d):\n", len);
+    for (int i = 0; i < len; i++) {
+        printf("  [%4d] -> '%s'\n", ids[i], id_to_token[ids[i]]);
+    }
+    printf("\n");
+}
+
 int main(void) {
     lehmer_init(1337);
 
@@ -71,6 +79,7 @@ int main(void) {
     char src[] = "Hello, ";
     // [44, 87, 106, 110, 16, 4]
     int* src_ids = tokenizer_encode(&v.t, src, &src_len, false, false);
+    print_token_ids(t.id_to_token, src_ids, src_len);
 
     // target ids
     int tgt_len;
@@ -78,6 +87,7 @@ int main(void) {
     char tgt[] = "Hello, world!";
     // [44, 87, 106, 110, 16, 4, 140, 107, 5]
     int* tgt_ids = tokenizer_encode(&v.t, tgt, &tgt_len, false, false);
+    print_token_ids(t.id_to_token, tgt_ids, tgt_len);
 
     // do a simple forward pass for now
     int pos = 0;  // increment for each input token id
