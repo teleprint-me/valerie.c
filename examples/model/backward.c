@@ -102,6 +102,13 @@ int main(void) {
     log_top_n(&t, logits, 10);
     log_max_id(&t, logits);
 
+    float* target = calloc(t.vocab_size, sizeof(float));
+    one_hot(target, tgt_ids[pos + 1], t.vocab_size);
+
+    float loss = cross_entropy(logits, target, t.vocab_size);
+    printf("Loss: %.6f\n", (double) loss);
+
+    free(target);
     free(src_ids);
     free(tgt_ids);
     v_model_free(&v);
