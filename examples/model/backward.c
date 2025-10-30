@@ -99,7 +99,7 @@ int main(void) {
     log_max_id(&t, logits);
 
     // calculate probabilities (consider an intemediary buffer if needed)
-    softmax(logits, v.t.vocab_size);  // operates in-place
+    softmax(logits, t.vocab_size);  // operates in-place
     log_top_n(&t, logits, 10);
     log_max_id(&t, logits);
 
