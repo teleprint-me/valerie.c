@@ -4,7 +4,7 @@ set(LLM
     "embedding"
     "rotary"
     "cache"
-    "v"
+    "forward"
     "backward"
 )
 
