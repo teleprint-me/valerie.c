@@ -125,6 +125,13 @@ int main(void) {
     }
     log_top_n("Derivatives", &t, dlogits, 10);  // sample top derivatives
 
+    // numerical stability sanity check
+    float grad_sum = 0.0f;
+    for (int i = 0; i < t.vocab_size; i++) {
+        grad_sum += dlogits[i];
+    }
+    printf("Sum of gradients: %.5f\n", (double) grad_sum);  // Should be near 0.0
+
     free(dlogits);
     free(target);
     free(src_ids);
