@@ -1,5 +1,5 @@
 /**
- * @file examples/model/train.c
+ * @file examples/model/backward.c
  * @brief Train Valerie as a decoder-only generative model.
  * @copyright Copyright © 2025 Austin Berrio
  * @ref https://arxiv.org/abs/1207.0580
