@@ -103,6 +103,12 @@ int main(void) {
     log_top_n(&t, logits, 10);
     log_max_id(&t, logits);
 
+    float sum = 0.0f;
+    for (int i = 0; i < t.vocab_size; i++) {
+        sum += logits[i];
+    }
+    printf("Sum of softmaxed values is %.5f\n", (double) sum);
+
     float* target = calloc(t.vocab_size, sizeof(float));
     one_hot(target, tgt_ids[pos + 1], t.vocab_size);
 
