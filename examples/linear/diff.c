@@ -25,10 +25,19 @@ double derivative(UnaryFn f, double a, double h) {
     return (f(a + h) - f(a)) / h;
 }
 
+double derivative_central(UnaryFn f, double a, double h) {
+    return (f(a + h) - f(a - h)) / (2 * h);
+}
+
 int main(void) {
     double a = 2.0;  // input
     double h = 0.01;  // step size
-    double dy = derivative(square, 2.0, 0.01);
-    printf("a = %.5f, h = %.5f, dy = %.5f\n", a, h, dy);
+
+    double dx = derivative(square, 2.0, 0.01);
+    printf("Derivative (dx): a = %.5f, h = %.5f, dy = %.5f\n", a, h, dx);
+
+    double dy = derivative_central(square, 2.0, 0.01);
+    printf("Derivative (dy): a = %.5f, h = %.5f, dy = %.5f\n", a, h, dy);
+
     return 0;
 }
