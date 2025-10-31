@@ -14,6 +14,14 @@ double square(double x) {
     return x * x;
 }
 
+double cube(double x) {
+    return x * x * x;
+}
+
+double sine(double x) {
+    return sin(x);
+}
+
 // Numerical derivative: df/dx at x = a, with step h
 double derivative(UnaryFn f, double a, double h) {
     // Guard: h must not be zero!
@@ -33,11 +41,21 @@ int main(void) {
     double a = 2.0;  // input
     double h = 0.01;  // step size
 
-    double dx = derivative(square, 2.0, 0.01);
-    printf("Derivative (dx): a = %.5f, h = %.5f, dy = %.5f\n", a, h, dx);
+    char* labels[] = {"square", "cube", "sine"};
+    UnaryFn callbacks[] = {square, cube, sine};
+    size_t count = sizeof(callbacks) / sizeof(UnaryFn);
+    for (size_t i = 0; i < count; i++) {
+        char* label = labels[i];
+        UnaryFn cb = callbacks[i];
 
-    double dy = derivative_central(square, 2.0, 0.01);
-    printf("Derivative (dy): a = %.5f, h = %.5f, dy = %.5f\n", a, h, dy);
+        // standard
+        double dy = derivative(cb, a, h);
+        printf("Standard (%s): dy = %.5f, dx = %.5f, step = %.5f\n", label, dy, a, h);
+
+        // central
+        dy = derivative_central(cb, a, h);
+        printf("Central (%s): dy = %.5f, dx = %.5f, step = %.5f\n", label, dy, a, h);
+    }
 
     return 0;
 }
