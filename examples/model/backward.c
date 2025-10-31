@@ -37,7 +37,7 @@ float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
 }
 
 void dmatmul(Tensor* dW, Tensor* dx, const Tensor* dy, const Tensor* W, const Tensor* x) {
-    assert(dy && dW && dx && W && x);
+    assert(dW && dx && dy && W && x);
     assert(tensor_cols_match_rows(dy, dW));
     assert(tensor_rows_match(dW, W));
     assert(tensor_cols_match(dW, W));
@@ -103,7 +103,7 @@ void log_max_id(Tokenizer* t, float* logits) {
 }
 
 int main(void) {
-    lehmer_init(1337);
+    lehmer_init(73);
 
     Tokenizer t = tokenizer_load("models/tokenizer.model");
     Params p = v_params_new(t.vocab_size);
