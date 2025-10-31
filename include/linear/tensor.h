@@ -53,6 +53,9 @@ typedef struct Shape {
  */
 typedef struct Tensor {
     void* data; /**< Pointer to storage buffer, type per @ref TypeId */
+    // derivative (change in output w.r.t. its input)
+    // activation (can be pre or post, but not both)
+    // velocity (momentum)
     Shape shape; /**< Shape descriptor (vector or matrix) */
     TypeId id; /**< Numeric type identifier (e.g., TYPE_F32, TYPE_Q8) */
 } Tensor;
