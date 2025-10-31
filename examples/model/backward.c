@@ -94,7 +94,7 @@ int main(void) {
     // do a simple forward pass for now
     int pos = 0;  // increment for each input token id
     int token_id = src_ids[0];  // V : 44 -> "H"
-    float* logits = forward(&v, token_id, pos);
+    float* logits = forward(&v, token_id, pos);  // maybe output a tensor instead?
     log_top_n("Logits", &t, logits, 10);
     log_max_id(&t, logits);
 
@@ -130,8 +130,40 @@ int main(void) {
     for (int i = 0; i < t.vocab_size; i++) {
         grad_sum += dlogits[i];
     }
-    printf("Sum of gradients: %.5f\n", (double) grad_sum);  // Should be near 0.0
+    printf("Sum of gradients: %.5f\n", (double) grad_sum);  // Should be near 0.0f
 
+    /**
+     * Still not sure how I want to handle this.
+     * Just sketching out some rough ideas at the moment.
+     */
+
+    // embed shape is (vocab_size, d_model)
+    size_t vocab_size = tensor_rows(&v.embed.token);  // (out features,)
+    size_t d_model = tensor_cols(&v.embed.token);  // (in features,)
+    // Tensor dtoken = tensor_new((Shape) {{vocab_size, d_model}, SHAPE_MAT})
+    float* dtoken = malloc(vocab_size * d_model * sizeof(float));  // (rows = out, cols = in)
+
+    // gradient w.r.t. embedding weights
+    for (size_t i = 0; i < vocab_size; i++) {
+        for (size_t j = 0; j < d_model; j++) {
+            // uint8_t* x_norm = (uint8_t*) v.state.x_norm + j * stride
+            float* x_norm = (float*) tensor_view(&v.state.x_norm, j);  // TYPE_F32
+            dtoken[i * v.dim.d_model + j] += dlogits[i] * (*x_norm);
+        }
+    }
+
+    // gradient w.r.t. hidden state
+    float* dx_norm = malloc(d_model * sizeof(float));
+    for (size_t j = 0; j < d_model; j++) {
+        dx_norm[j] = 0.0f;
+        for (size_t i = 0; i < vocab_size; i++) {
+            float* token = (float*) tensor_view(&v.embed.token, i * d_model + j);
+            dx_norm[j] = dlogits[i] * (*token);
+        }
+    }
+
+    free(dx_norm);
+    free(dtoken);
     free(dlogits);
     free(target);
     free(src_ids);
