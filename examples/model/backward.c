@@ -36,6 +36,30 @@ float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
     return 0.0f;  // fallback if not one-hot
 }
 
+void dmatmul(
+    const float* dy,  // [out]
+    float* dW,  // [out, in]
+    float* dx,  // [in]
+    const float* W,  // [out, in]
+    const float* x,  // [in]
+    size_t out,
+    size_t in
+) {
+    // dW: ∂L/∂W[i,j] = dy[i] * x[j]
+    for (size_t i = 0; i < out; ++i) {
+        for (size_t j = 0; j < in; ++j) {
+            dW[i * in + j] += dy[i] * x[j];
+        }
+    }
+    // dx: ∂L/∂x[j] = sum_i (dy[i] * W[i,j])
+    for (size_t j = 0; j < in; ++j) {
+        dx[j] = 0.0f;
+        for (size_t i = 0; i < out; ++i) {
+            dx[j] += dy[i] * W[i * in + j];
+        }
+    }
+}
+
 void log_token_ids(Tokenizer* t, int* ids, int len) {
     printf("Token ids (%d):\n", len);
     for (int i = 0; i < len; i++) {
