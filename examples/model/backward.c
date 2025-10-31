@@ -148,7 +148,7 @@ int main(void) {
         for (size_t j = 0; j < d_model; j++) {
             // uint8_t* x_norm = (uint8_t*) v.state.x_norm + j * stride
             float* x_norm = (float*) tensor_view(&v.state.x_norm, j);  // TYPE_F32
-            dtoken[i * v.dim.d_model + j] += dlogits[i] * (*x_norm);
+            dtoken[i * d_model + j] += dlogits[i] * (*x_norm);
         }
     }
 
@@ -157,7 +157,8 @@ int main(void) {
     for (size_t j = 0; j < d_model; j++) {
         dx_norm[j] = 0.0f;
         for (size_t i = 0; i < vocab_size; i++) {
-            float* token = (float*) tensor_view(&v.embed.token, i * d_model + j);
+            // float* token = (float*) tensor_view(&v.embed.token, i * d_model + j);
+            float* token = (float*) tensor_view_row(&v.embed.token, i);
             dx_norm[j] = dlogits[i] * (*token);
         }
     }
