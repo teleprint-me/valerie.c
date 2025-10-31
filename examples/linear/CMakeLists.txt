@@ -1,6 +1,7 @@
 # examples/linear/CMakeLists.txt
 
 set(EXAMPLES
+    "diff"
     "lehmer"
     "alias"
     "e4m3"
