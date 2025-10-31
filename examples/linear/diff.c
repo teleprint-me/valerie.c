@@ -22,6 +22,10 @@ double sine(double x) {
     return sin(x);
 }
 
+double sigmoid(double x) {
+    return 1.0 / (1.0 + exp(-x));
+}
+
 // Numerical derivative: df/dx at x = a, with step h
 double derivative(UnaryFn f, double a, double h) {
     // Guard: h must not be zero!
@@ -41,8 +45,9 @@ int main(void) {
     double a = 2.0;  // input
     double h = 0.01;  // step size
 
-    char* labels[] = {"square", "cube", "sine"};
-    UnaryFn callbacks[] = {square, cube, sine};
+    // note that this is just analytic differentiation. not automatic.
+    char* labels[] = {"square", "cube", "sine", "sigmoid"};
+    UnaryFn callbacks[] = {square, cube, sine, sigmoid};
     size_t count = sizeof(callbacks) / sizeof(UnaryFn);
     for (size_t i = 0; i < count; i++) {
         char* label = labels[i];
