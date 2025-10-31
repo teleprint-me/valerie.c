@@ -36,26 +36,39 @@ float cross_entropy(const float* y_pred, const float* y_true, size_t n) {
     return 0.0f;  // fallback if not one-hot
 }
 
-void dmatmul(
-    const float* dy,  // [out]
-    float* dW,  // [out, in]
-    float* dx,  // [in]
-    const float* W,  // [out, in]
-    const float* x,  // [in]
-    size_t out,
-    size_t in
-) {
+void dmatmul(Tensor* dW, Tensor* dx, const Tensor* dy, const Tensor* W, const Tensor* x) {
+    assert(dy && dW && dx && W && x);
+    assert(tensor_cols_match_rows(dy, dW));
+    assert(tensor_rows_match(dW, W));
+    assert(tensor_cols_match(dW, W));
+    assert(tensor_cols_match(dx, x));
+
+    size_t rows = tensor_rows(dW);
+    size_t cols = tensor_cols(dW);
+
+    /** Do this as float for now. Quant can be done later on. */
+
+    // matrices
+    float* dWf = (float*) dW->data;  // [out, in]
+    float* Wf = (float*) W->data;  // [out, in]
+
+    // vectors
+    float* dxf = (float*) dx->data;  // [in]
+    float* dyf = (float*) dy->data;  // [out]
+    float* xf = (float*) x->data;  // [in]
+
     // dW: ∂L/∂W[i,j] = dy[i] * x[j]
-    for (size_t i = 0; i < out; ++i) {
-        for (size_t j = 0; j < in; ++j) {
-            dW[i * in + j] += dy[i] * x[j];
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = 0; j < cols; ++j) {
+            dWf[i * cols + j] += dyf[i] * xf[j];
         }
     }
+
     // dx: ∂L/∂x[j] = sum_i (dy[i] * W[i,j])
-    for (size_t j = 0; j < in; ++j) {
-        dx[j] = 0.0f;
-        for (size_t i = 0; i < out; ++i) {
-            dx[j] += dy[i] * W[i * in + j];
+    for (size_t j = 0; j < cols; ++j) {
+        dxf[j] = 0.0f;
+        for (size_t i = 0; i < rows; ++i) {
+            dxf[j] += dyf[i] * Wf[i * cols + j];
         }
     }
 }
