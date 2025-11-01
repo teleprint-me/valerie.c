@@ -50,13 +50,29 @@ int main(void) {
     srand(73);  // the best number ever
 
     float h = 0.01;  // step size
-    // input
+
+    // initialize the input vector
     size_t x_len = 5;
     float* x = malloc(x_len * sizeof(float));
     for (size_t i = 0; i < 5; i++) {
         x[i] = prng();
     }
 
+    // forward pass (activate the inputs; ignore weights for simplicity)
+    float* a = malloc(x_len * sizeof(float));
+    for (size_t i = 0; i < x_len; i++) {
+        a[i] = sigmoid(x[i]);  // store the activation
+    }
+
+    /** backward passes are composed of 2 steps */
+
+    // compute derivatives (this is numerically unstable at scale)
+    float* dx = malloc(x_len * sizeof(float));
+    for (size_t i = 0; i < x_len; i++) {
+        dx[i] = derivative(sigmoid, x[i], h);
+    }
+
+    // update parameters
     for (size_t i = 0; i < x_len; i++) {
         float y = composite(x[i]);  // f(x) = f(g(x)) = sin(σ(x))
         float dy = derivative(composite, x[i], h);
@@ -69,6 +85,8 @@ int main(void) {
         );
     }
 
+    free(dx);
+    free(a);
     free(x);
     return 0;
 }
