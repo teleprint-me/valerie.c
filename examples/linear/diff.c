@@ -43,6 +43,53 @@ float derivative(UnaryFn f, float a, float h) {
     // return (f(a + h) - f(a - h)) / (2 * h);  // second order
 }
 
+void activate(float* a, float* x, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        a[i] = sigmoid(x[i]);
+    }
+}
+
+// Apply row-major matrix multiplication (y = Wx + b)
+void matmul(float* y, float* W, float* x, size_t rows, size_t cols) {
+    for (size_t i = 0; i < rows; i++) {
+        float sum = 0.0f;  // summed row
+        float* w = W + i * cols;  // current row
+        for (size_t j = 0; j < cols; j++) {
+            sum += w[j] * x[j];  // dot product
+        }
+        y[i] = sum;  // update output column
+    }
+}
+
+void dmatmul(
+    float* dW, float* dx, const float* dy, const float* W, const float* x, size_t rows, size_t cols
+) {
+    // dW: ∂L/∂W[i,j] = dy[i] * x[j]
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = 0; j < cols; ++j) {
+            dW[i * cols + j] += dy[i] * x[j];
+        }
+    }
+    // dx: ∂L/∂x[j] = sum_i (dy[i] * W[i,j])
+    for (size_t j = 0; j < cols; ++j) {
+        dx[j] = 0.0f;
+        for (size_t i = 0; i < rows; ++i) {
+            dx[j] += dy[i] * W[i * cols + j];
+        }
+    }
+}
+
+void log_vector(float* x, size_t len) {
+    (void) x;
+    (void) len;
+}
+
+void log_matrix(float* W, size_t rows, size_t cols) {
+    (void) W;
+    (void) rows;
+    (void) cols;
+}
+
 int main(void) {
     srand(73);  // the best number ever
 
