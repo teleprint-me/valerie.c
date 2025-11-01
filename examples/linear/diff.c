@@ -112,7 +112,7 @@ int main(void) {
     // model parameters
     float* x = malloc(cols * sizeof(float));  // inputs
     float* W = malloc(cols * rows * sizeof(float));  // weights
-    float* a = malloc(cols * sizeof(float));  // activations
+    float* a = malloc(rows * sizeof(float));  // activations
     float* y = malloc(rows * sizeof(float));  // outputs
     float* dx = malloc(cols * sizeof(float));  // d(sigma)/dx
     float* dW = malloc(cols * rows * sizeof(float));  // dL/dW
@@ -123,25 +123,25 @@ int main(void) {
     for (size_t i = 0; i < cols; i++) {
         x[i] = prng();
     }
+    log_vector("x", x, cols);
 
     // weights (i/o units)
     for (size_t i = 0; i < cols * rows; i++) {
         W[i] = prng();
     }
+    log_matrix("W", W, rows, cols);
 
     // targets
     for (size_t j = 0; j < rows; j++) {
         target[j] = prng();
     }
+    log_vector("target", target, rows);
 
     // forward pass (activate the inputs; ignore weights for simplicity)
-    for (size_t j = 0; j < rows; j++) {
-        y[j] = 0.0f;  // initialize output
-        for (size_t i = 0; i < cols; i++) {
-            a[i] = sigmoid(x[i]);  // store activation
-            y[j] += W[j * cols + i] * a[i];  // compute output
-        }
-    }
+    matmul(y, W, x, rows, cols);
+    activate(a, y, rows);
+    log_vector("y", y, rows);
+    log_vector("a", a, rows);
 
     // compute error
     float loss = mse(y, target, rows);
@@ -164,7 +164,7 @@ int main(void) {
     // Compute dL/dW (gradient w.r.t weights): dL/dW[j * cols + i] = dy[j] * a[i]
     for (size_t j = 0; j < rows; j++) {
         for (size_t i = 0; i < cols; i++) {
-            dW[j * cols + i] = dy[j] * a[i];
+            dW[j * cols + i] = dy[j] * a[j];
         }
     }
 
