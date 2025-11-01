@@ -32,6 +32,16 @@ float prng(void) {
     return (float) rand() / (float) RAND_MAX;
 }
 
+// mean squared error (loss fn)
+float mse(float* y_pred, float* y_true, size_t len) {
+    float loss = 0.0f;
+    for (size_t i = 0; i < len; i++) {
+        float diff = y_pred[i] - y_true[i];
+        loss += diff * diff;
+    }
+    return loss;
+}
+
 // Numerical derivative: df/dx at x = a, with step h
 float derivative(UnaryFn f, float a, float h) {
     // Guard: h must not be zero!
@@ -49,42 +59,54 @@ float derivative(UnaryFn f, float a, float h) {
 int main(void) {
     srand(73);  // the best number ever
 
+    // hyperparameters
     float h = 0.01;  // step size
+    float lr = 0.1f;  // learning rate
 
-    // initialize the input vector
-    size_t x_len = 5;
-    float* x = malloc(x_len * sizeof(float));
-    for (size_t i = 0; i < 5; i++) {
+    // dimensions
+    size_t cols = 5;  // inputs
+    size_t rows = 3;  // outputs
+
+    // model parameters
+    float* x = malloc(cols * sizeof(float));  // inputs
+    float* W = malloc(cols * rows * sizeof(float));  // weights
+    float* a = malloc(cols * sizeof(float));  // activations
+    float* y = malloc(rows * sizeof(float));  // outputs
+    float* dx = malloc(cols * sizeof(float));  // d(sigma)/dx
+    float* dW = malloc(cols * rows * sizeof(float));  // dL/dW
+    float* dy = malloc(rows * sizeof(float));  // dL/dy
+    float* target = malloc(rows * sizeof(float));  // pseudo targets
+
+    // feature vector
+    for (size_t i = 0; i < cols; i++) {
         x[i] = prng();
     }
 
+    // weights (i/o units)
+    for (size_t i = 0; i < cols * rows; i++) {
+        W[i] = prng();
+    }
+
     // forward pass (activate the inputs; ignore weights for simplicity)
-    float* a = malloc(x_len * sizeof(float));
-    for (size_t i = 0; i < x_len; i++) {
+    for (size_t i = 0; i < cols; i++) {
         a[i] = sigmoid(x[i]);  // store the activation
     }
 
     /** backward passes are composed of 2 steps */
 
     // compute derivatives (this is numerically unstable at scale)
-    float* dx = malloc(x_len * sizeof(float));
-    for (size_t i = 0; i < x_len; i++) {
+    for (size_t i = 0; i < cols; i++) {
         dx[i] = derivative(sigmoid, x[i], h);
     }
 
-    // update parameters
-    for (size_t i = 0; i < x_len; i++) {
-        float y = composite(x[i]);  // f(x) = f(g(x)) = sin(σ(x))
-        float dy = derivative(composite, x[i], h);
-        printf(
-            "x[%zu] = %.5f, sigmoid = %.5f, d/dx = %.5f\n",
-            i,
-            (double) x[i],
-            (double) y,
-            (double) dy
-        );
+    // Weight update: W[j * cols + i] -= lr * error * activation
+    for (size_t j = 0; j < rows; j++) {
+        for (size_t i = 0; i < cols; i++) {
+            W[j * cols + i] -= lr * e[j] * a[i];
+        }
     }
 
+    free(W);
     free(dx);
     free(a);
     free(x);
