@@ -59,14 +59,14 @@ int main(void) {
     }
 
     for (size_t i = 0; i < x_len; i++) {
-        // standard
+        float y = sigmoid(x[i]);
         float dy = derivative(sigmoid, x[i], h);
         printf(
-            "sigmoid (%zu): dy = %.5f, dx = %.5f, step = %.5f\n",
+            "x[%zu] = %.5f, sigmoid = %.5f, d/dx = %.5f\n",
             i,
-            (double) dy,
             (double) x[i],
-            (double) h
+            (double) y,
+            (double) dy
         );
     }
 
