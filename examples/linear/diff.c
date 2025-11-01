@@ -3,33 +3,39 @@
  * @brief driver for experimenting with automated differentiation.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
 // Function pointer type for a function R -> R
-typedef double (*UnaryFn)(double);
+typedef float (*UnaryFn)(float);
 
 // Example: our function f(x) = x^2
-double square(double x) {
+float square(float x) {
     return x * x;
 }
 
-double cube(double x) {
+float cube(float x) {
     return x * x * x;
 }
 
-double sine(double x) {
-    return sin(x);
+float sine(float x) {
+    return sinf(x);
 }
 
-double sigmoid(double x) {
-    return 1.0 / (1.0 + exp(-x));
+float sigmoid(float x) {
+    return 1.0f / (1.0f + expf(-x));
+}
+
+// normalized input [0, 1]
+float prng(void) {
+    return (float) rand() / (float) RAND_MAX;
 }
 
 // Numerical derivative: df/dx at x = a, with step h
-double derivative(UnaryFn f, double a, double h) {
+float derivative(UnaryFn f, float a, float h) {
     // Guard: h must not be zero!
-    if (h == 0.0) {
+    if (h == 0.0f) {
         // Handle error (simple print for now)
         fprintf(stderr, "Error: h must not be zero.\n");
         return NAN;
@@ -37,30 +43,33 @@ double derivative(UnaryFn f, double a, double h) {
     return (f(a + h) - f(a)) / h;
 }
 
-double derivative_central(UnaryFn f, double a, double h) {
+float derivative_central(UnaryFn f, float a, float h) {
     return (f(a + h) - f(a - h)) / (2 * h);
 }
 
 int main(void) {
-    double a = 2.0;  // input
-    double h = 0.01;  // step size
+    srand(73);  // the best number ever
 
-    // note that this is just analytic differentiation. not automatic.
-    char* labels[] = {"square", "cube", "sine", "sigmoid"};
-    UnaryFn callbacks[] = {square, cube, sine, sigmoid};
-    size_t count = sizeof(callbacks) / sizeof(UnaryFn);
-    for (size_t i = 0; i < count; i++) {
-        char* label = labels[i];
-        UnaryFn cb = callbacks[i];
-
-        // standard
-        double dy = derivative(cb, a, h);
-        printf("Standard (%s): dy = %.5f, dx = %.5f, step = %.5f\n", label, dy, a, h);
-
-        // central
-        dy = derivative_central(cb, a, h);
-        printf("Central (%s): dy = %.5f, dx = %.5f, step = %.5f\n", label, dy, a, h);
+    float h = 0.01;  // step size
+    // input
+    size_t x_len = 5;
+    float* x = malloc(x_len * sizeof(float));
+    for (size_t i = 0; i < 5; i++) {
+        x[i] = prng();
     }
 
+    for (size_t i = 0; i < x_len; i++) {
+        // standard
+        float dy = derivative(sigmoid, x[i], h);
+        printf(
+            "sigmoid (%zu): dy = %.5f, dx = %.5f, step = %.5f\n",
+            i,
+            (double) dy,
+            (double) x[i],
+            (double) h
+        );
+    }
+
+    free(x);
     return 0;
 }
