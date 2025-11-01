@@ -10,21 +10,8 @@
 // Function pointer type for a function R -> R
 typedef float (*UnaryFn)(float);
 
-float sine(float x) {
-    return sinf(x);
-}
-
-float cosine(float x) {
-    return cosf(x);
-}
-
 float sigmoid(float x) {
     return 1.0f / (1.0f + expf(-x));
-}
-
-// f(x) = f(g(x)) = sin(σ(x))
-float composite(float x) {
-    return sine(sigmoid(x));
 }
 
 // normalized input [0, 1]
