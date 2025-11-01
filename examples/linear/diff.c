@@ -22,6 +22,7 @@ float sigmoid(float x) {
     return 1.0f / (1.0f + expf(-x));
 }
 
+// f(x) = f(g(x)) = sin(σ(x))
 float composite(float x) {
     return sine(sigmoid(x));
 }
@@ -57,8 +58,7 @@ int main(void) {
     }
 
     for (size_t i = 0; i < x_len; i++) {
-        // f(x) = f(g(x)) = sin(σ(x))
-        float y = sine(sigmoid(x[i]));  // composite function f()
+        float y = composite(x[i]);  // f(x) = f(g(x)) = sin(σ(x))
         float dy = derivative(composite, x[i], h);
         printf(
             "x[%zu] = %.5f, sigmoid = %.5f, d/dx = %.5f\n",
