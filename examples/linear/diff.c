@@ -79,15 +79,23 @@ void dmatmul(
     }
 }
 
-void log_vector(float* x, size_t len) {
-    (void) x;
-    (void) len;
+void log_vector(const char* name, float* x, size_t len) {
+    printf("%s[%zu] = [", name, len);
+    for (size_t i = 0; i < len; i++) {
+        printf("%.4f%s", (double) x[i], (i < len - 1) ? ", " : "");
+    }
+    printf("]\n");
 }
 
-void log_matrix(float* W, size_t rows, size_t cols) {
-    (void) W;
-    (void) rows;
-    (void) cols;
+void log_matrix(const char* name, float* W, size_t rows, size_t cols) {
+    printf("%s[%zu][%zu] =\n", name, rows, cols);
+    for (size_t i = 0; i < rows; i++) {
+        printf("  [");
+        for (size_t j = 0; j < cols; j++) {
+            printf("%.4f%s", (double) W[i * cols + j], (j < cols - 1) ? ", " : "");
+        }
+        printf("]\n");
+    }
 }
 
 int main(void) {
