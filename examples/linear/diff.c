@@ -87,6 +87,11 @@ int main(void) {
         W[i] = prng();
     }
 
+    // targets
+    for (size_t i = 0; i < rows; i++) {
+        target[i] = prng();
+    }
+
     // forward pass (activate the inputs; ignore weights for simplicity)
     for (size_t i = 0; i < cols; i++) {
         a[i] = sigmoid(x[i]);  // store the activation
@@ -106,9 +111,16 @@ int main(void) {
         }
     }
 
-    free(W);
-    free(dx);
-    free(a);
+    // clean up
     free(x);
+    free(W);
+    free(a);
+    free(y);
+    free(dx);
+    free(dW);
+    free(dy);
+    free(target);
+
+    // exit
     return 0;
 }
