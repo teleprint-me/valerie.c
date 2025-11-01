@@ -10,21 +10,20 @@
 // Function pointer type for a function R -> R
 typedef float (*UnaryFn)(float);
 
-// Example: our function f(x) = x^2
-float square(float x) {
-    return x * x;
-}
-
-float cube(float x) {
-    return x * x * x;
-}
-
 float sine(float x) {
     return sinf(x);
 }
 
+float cosine(float x) {
+    return cosf(x);
+}
+
 float sigmoid(float x) {
     return 1.0f / (1.0f + expf(-x));
+}
+
+float composite(float x) {
+    return sine(sigmoid(x));
 }
 
 // normalized input [0, 1]
@@ -40,11 +39,10 @@ float derivative(UnaryFn f, float a, float h) {
         fprintf(stderr, "Error: h must not be zero.\n");
         return NAN;
     }
-    return (f(a + h) - f(a)) / h;
-}
+    return (f(a + h) - f(a)) / h;  // first order
 
-float derivative_central(UnaryFn f, float a, float h) {
-    return (f(a + h) - f(a - h)) / (2 * h);
+    // ignore this for now, but keep it around for reference.
+    // return (f(a + h) - f(a - h)) / (2 * h);  // second order
 }
 
 int main(void) {
@@ -59,8 +57,9 @@ int main(void) {
     }
 
     for (size_t i = 0; i < x_len; i++) {
-        float y = sigmoid(x[i]);
-        float dy = derivative(sigmoid, x[i], h);
+        // f(x) = f(g(x)) = sin(σ(x))
+        float y = sine(sigmoid(x[i]));  // composite function f()
+        float dy = derivative(composite, x[i], h);
         printf(
             "x[%zu] = %.5f, sigmoid = %.5f, d/dx = %.5f\n",
             i,
