@@ -88,8 +88,8 @@ int main(void) {
     }
 
     // targets
-    for (size_t i = 0; i < rows; i++) {
-        target[i] = prng();
+    for (size_t j = 0; j < rows; j++) {
+        target[j] = prng();
     }
 
     // forward pass (activate the inputs; ignore weights for simplicity)
@@ -101,19 +101,35 @@ int main(void) {
         }
     }
 
+    // compute error
     float loss = mse(y, target, rows);
+
+    // print for sanity
+    printf("Loss: %.5f\n", (double) loss);
 
     /** backward passes are composed of 2 steps */
 
-    // compute derivatives (this is numerically unstable at scale)
+    // Derivative of activation (per input)
     for (size_t i = 0; i < cols; i++) {
         dx[i] = derivative(sigmoid, x[i], h);
     }
 
-    // Weight update: W[j * cols + i] -= lr * error * activation
+    // Compute error (dy = dL/dy = y - target for MSE, dL/dy_j = 2*(y_j - t_j))
+    for (size_t j = 0; j < rows; j++) {
+        dy[j] = 2.0f * (y[j] - target[j]);
+    }
+
+    // Compute dL/dW (gradient w.r.t weights): dL/dW[j * cols + i] = dy[j] * a[i]
     for (size_t j = 0; j < rows; j++) {
         for (size_t i = 0; i < cols; i++) {
-            W[j * cols + i] -= lr * e[j] * a[i];
+            dW[j * cols + i] = dy[j] * a[i];
+        }
+    }
+
+    // Gradient step: W -= lr * dL/dW
+    for (size_t j = 0; j < rows; j++) {
+        for (size_t i = 0; i < cols; i++) {
+            W[j * cols + i] -= lr * dW[j * cols + i];
         }
     }
 
