@@ -93,9 +93,15 @@ int main(void) {
     }
 
     // forward pass (activate the inputs; ignore weights for simplicity)
-    for (size_t i = 0; i < cols; i++) {
-        a[i] = sigmoid(x[i]);  // store the activation
+    for (size_t j = 0; j < rows; j++) {
+        y[j] = 0.0f;  // initialize output
+        for (size_t i = 0; i < cols; i++) {
+            a[i] = sigmoid(x[i]);  // store activation
+            y[j] += W[j * cols + i] * a[i];  // compute output
+        }
     }
+
+    float loss = mse(y, target, rows);
 
     /** backward passes are composed of 2 steps */
 
