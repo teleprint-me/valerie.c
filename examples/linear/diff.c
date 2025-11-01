@@ -123,30 +123,30 @@ int main(void) {
     for (size_t i = 0; i < cols; i++) {
         x[i] = prng();
     }
-    log_vector("x", x, cols);
 
     // weights (i/o units)
     for (size_t i = 0; i < cols * rows; i++) {
         W[i] = prng();
     }
-    log_matrix("W", W, rows, cols);
 
     // targets
     for (size_t j = 0; j < rows; j++) {
         target[j] = prng();
     }
-    log_vector("target", target, rows);
 
     // forward pass (activate the inputs; ignore weights for simplicity)
     matmul(y, W, x, rows, cols);
     activate(a, y, rows);
-    log_vector("y", y, rows);
-    log_vector("a", a, rows);
 
     // compute error
     float loss = mse(y, target, rows);
 
     // print for sanity
+    log_vector("x", x, cols);  // Input
+    log_matrix("W", W, rows, cols);  // Weights
+    log_vector("y", y, rows);  // Linear output (pre-activation)
+    log_vector("a", a, rows);  // Activated output
+    log_vector("target", target, rows);  // Target
     printf("Loss: %.5f\n", (double) loss);
 
     /** backward passes are composed of 2 steps */
