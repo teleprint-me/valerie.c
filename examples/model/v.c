@@ -1,12 +1,14 @@
 /**
- * @file bin/model/transformer.c
- * @brief Driver for experimenting with model differentiation.
- * Valerie is a text-based decoder-only generative model based on Llama, Mistral, Qwen, and GPT.
- * Valerie is a dense transformer architecture that utilizes modern kernels.
- * This is a single file driver for mocking out Valerie from the ground up from scratch.
- * This driver has two objectives.
- *   - Primary goal: to implement the backward pass.
- *   - Secondary goal: to weed out points of contention to improve Valeries interface.
+ * @file examples/model/v.c
+ * @brief Minimal driver for Valerie's forward and backward passes.
+ * @copyright Copyright © 2025 Austin Berrio
+ *
+ * Valerie is a dense, decoder-only transformer inspired by Llama, Mistral, Qwen, and GPT.
+ * This file implements a from-scratch training loop with explicit forward and backward logic.
+ *
+ * Goals:
+ *   - Demonstrate and test the full backward pass for model differentiation.
+ *   - Identify pain points and refine Valerie's interface for real-world usage.
  */
 
 #include <stddef.h>
