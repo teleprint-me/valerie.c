@@ -119,10 +119,6 @@ bool tensor_cols_match(const Tensor* a, const Tensor* b) {
     return tensor_cols(a) == tensor_cols(b);
 }
 
-bool tensor_cols_match_rows(const Tensor* a, const Tensor* b) {
-    return tensor_cols(a) == tensor_rows(b);
-}
-
 bool tensor_rows_match(const Tensor* a, const Tensor* b) {
     return tensor_rows(a) == tensor_rows(b);
 }
