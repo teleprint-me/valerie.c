@@ -1,2 +1,4 @@
 CompileFlags:
-  Add: [-xc, -I./include, -ferror-limit=0]
+  Add: [-ferror-limit=0, -xc, -I./include]
+Completion:
+  HeaderInsertion: Never
