@@ -195,7 +195,8 @@ void shape_print(const Shape* s) {
     }
 }
 
-void tensor_print(const Tensor* t) {
+void tensor_print(const char* name, const Tensor* t) {
+    printf("%s ", name);
     shape_print(&t->shape);
 
     size_t cols = tensor_cols(t);
@@ -1160,13 +1161,19 @@ void sgd(Tensor* t, float lr) {
 
     size_t len = tensor_count(t);
     for (size_t i = 0; i < len; i++) {
-        t->d[i] -= lr * t->g[i];
-        t->g[i] = 0.0f;  // zero grad
+        // Sanity check
+        assert(!isnan(t->g[i]) && "Gradient is NAN");
+        assert(!isinf(t->g[i]) && "Gradient is INF");
+        assert(t->g[i] > 1e-6f && "Gradient vanished");
+        assert(t->g[i] < 1e+6f && "Gradient exploded");
+        t->d[i] -= lr * t->g[i];  // update the weight
+        t->g[i] = 0.0f;  // zero the gradient
     }
 }
 
 void update(Valerie* v, float lr) {
     for (int i = 0; i < v->d.layers; i++) {
+        printf("Updating layer %d\n", i);
         Layer* L = &v->l[i];
         sgd(&L->attn.Wq, lr);
         sgd(&L->attn.Wk, lr);
@@ -1182,6 +1189,7 @@ void update(Valerie* v, float lr) {
     sgd(&v->e.norm, lr);
 }
 
+// https://cs231n.github.io/linear-classify/#softmax
 void train(Valerie* v, int* src_ids, int* tgt_ids, int src_len, int epochs, float lr) {
     Tensor target = tensor_new(shape_vector(v->d.vocab_size), false);
     for (int step = 0; step < epochs; step++) {
@@ -1257,13 +1265,16 @@ int main(void) {
     int pos = 0;  // increment for each input token id
     int token_id = src_ids[0];  // V : 44 -> "H"
     Tensor logits = forward(&v, token_id, pos);  // compute log-odds
+    tensor_print("Forward", &logits);
 
     // compute probabilities (operates in-place)
     softmax_forward(logits.d, tensor_cols(&logits));
+    tensor_print("Softmax forward", &logits);
 
     // create next token prediction
     Tensor target = tensor_new(shape_vector(t.vocab_size), false);
     one_hot(&target, tgt_ids[pos + 1]);  // target class
+    tensor_print("One Hot", &target);
 
     // compute model confidence
     float loss = cross_entropy_forward(&logits, &target);
@@ -1271,8 +1282,10 @@ int main(void) {
 
     // initialize gradients
     cross_entropy_backward(&logits, &target);
+    tensor_print("Softmax backward", &logits);
 
     // compute gradients
+    softmax_backward(logits.g, logits.d, tensor_cols(&logits));
     backward(&v, token_id, pos);
 
     // update weights
