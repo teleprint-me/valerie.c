@@ -6,8 +6,6 @@ project(valerie VERSION 0.1.0 DESCRIPTION "ANSI C library for Language Modeling"
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
-
-# Required for clangd support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
@@ -17,7 +15,6 @@ set(EXTRA_WARN "-Wformat -Wnull-dereference -Wdouble-promotion")
 set(SANITIZE "-fsanitize=address,undefined -fno-omit-frame-pointer")
 set(ANALYSIS "-Wanalyzer-double-free -Wanalyzer-file-leak -Wanalyzer-malloc-leak -Wanalyzer-null-dereference -Wanalyzer-out-of-bounds -Wanalyzer-va-list-leak")
 set(COMMON "-D_FILE_OFFSET_BITS=64 ${OpenMP_C_FLAGS} ${WARN}")
-
 set(DEBUG "${COMMON} -fopenmp -g3 ${EXTRA_WARN} ${SANITIZE} ${ANALYSIS}")
 set(RELEASE "${COMMON} -fopenmp -O3 -march=native")
 
