@@ -6,6 +6,7 @@ set(LLM
     "cache"
     "forward"
     "backward"
+    "v"
 )
 
 set(INPUT_DIR ${PROJECT_SOURCE_DIR}/examples/model)

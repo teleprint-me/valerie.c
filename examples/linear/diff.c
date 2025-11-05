@@ -43,9 +43,9 @@ float derivative(UnaryFn f, float a, float h) {
     // return (f(a + h) - f(a - h)) / (2 * h);  // second order
 }
 
-void activate(float* a, float* x, size_t len) {
+void activate(float* a, float* y, size_t len) {
     for (size_t i = 0; i < len; i++) {
-        a[i] = sigmoid(x[i]);
+        a[i] = sigmoid(y[i]);
     }
 }
 
@@ -134,9 +134,9 @@ int main(void) {
         target[j] = prng();
     }
 
-    // forward pass (activate the inputs; ignore weights for simplicity)
-    matmul(y, W, x, rows, cols);
-    activate(a, y, rows);
+    // forward pass
+    matmul(y, W, x, rows, cols);  // y[r] = W[r, c] ⋅ x[c]
+    activate(a, y, rows);  // activate the outputs
 
     // compute error
     float loss = mse(y, target, rows);
@@ -160,6 +160,8 @@ int main(void) {
     for (size_t j = 0; j < rows; j++) {
         dy[j] = 2.0f * (y[j] - target[j]);
     }
+
+    dmatmul(dW, dx, dy, W, a, rows, cols);
 
     // Compute dL/dW (gradient w.r.t weights): dL/dW[j * cols + i] = dy[j] * a[i]
     for (size_t j = 0; j < rows; j++) {
