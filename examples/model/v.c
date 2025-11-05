@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <math.h>
 #include <string.h>
+#include "core/logger.h"
 #include "tokenizer/model.h"
 
 /** psuedo-random number generation */
@@ -1056,51 +1057,6 @@ void embed_backward(Tensor* y, Tensor* W, int id) {
     }
 }
 
-/** loss functions */
-
-// https://en.wikipedia.org/wiki/One-hot
-void one_hot(Tensor* x, size_t label) {
-    assert(tensor_is_vector(x));
-    assert(label < tensor_cols(x));
-
-    size_t len = tensor_cols(x);
-    for (size_t i = 0; i < len; i++) {
-        if (label == i) {
-            x->d[i] = 1.0f;
-        } else {
-            x->d[i] = 0.0f;
-        }
-    }
-}
-
-// https://en.wikipedia.org/wiki/Logistic_regression
-float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
-    assert(tensor_is_vector(y_pred));
-    assert(tensor_is_vector(y_true));
-    assert(tensor_cols_match(y_pred, y_true));
-
-    size_t len = tensor_cols(y_pred);
-    for (size_t i = 0; i < len; i++) {
-        if (y_true->d[i] == 1.0f) {
-            return -logf(fmaxf(y_pred->d[i], 1e-6f));
-        }
-    }
-    return 0.0f;  // fallback if not one-hot
-}
-
-// cross_entropy_backward: computes ∂L/∂y_pred (logits)
-void cross_entropy_backward(Tensor* y_pred, const Tensor* y_true) {
-    assert(tensor_is_vector(y_pred));
-    assert(tensor_is_vector(y_true));
-    assert(tensor_cols_match(y_pred, y_true));
-
-    size_t len = tensor_cols(y_pred);
-    for (size_t i = 0; i < len; i++) {
-        // ∂L/∂z_i = p_i - y_i
-        y_pred->g[i] = y_pred->d[i] - y_true->d[i];
-    }
-}
-
 /** forward pass */
 
 // Single-token forward pass (autoregressive)
@@ -1150,6 +1106,51 @@ void backward(Valerie* v, int id, int pos) {
 
     // Scatter gradient back into source embedding
     embed_backward(&s->x, &e->token, id);
+}
+
+/** loss functions */
+
+// https://en.wikipedia.org/wiki/One-hot
+void one_hot(Tensor* x, size_t label) {
+    assert(tensor_is_vector(x));
+    assert(label < tensor_cols(x));
+
+    size_t len = tensor_cols(x);
+    for (size_t i = 0; i < len; i++) {
+        if (label == i) {
+            x->d[i] = 1.0f;
+        } else {
+            x->d[i] = 0.0f;
+        }
+    }
+}
+
+// https://en.wikipedia.org/wiki/Logistic_regression
+float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
+    assert(tensor_is_vector(y_pred));
+    assert(tensor_is_vector(y_true));
+    assert(tensor_cols_match(y_pred, y_true));
+
+    size_t len = tensor_cols(y_pred);
+    for (size_t i = 0; i < len; i++) {
+        if (y_true->d[i] == 1.0f) {
+            return -logf(fmaxf(y_pred->d[i], 1e-6f));
+        }
+    }
+    return 0.0f;  // fallback if not one-hot
+}
+
+// cross_entropy_backward: computes ∂L/∂y_pred (logits)
+void cross_entropy_backward(Tensor* y_pred, const Tensor* y_true) {
+    assert(tensor_is_vector(y_pred));
+    assert(tensor_is_vector(y_true));
+    assert(tensor_cols_match(y_pred, y_true));
+
+    size_t len = tensor_cols(y_pred);
+    for (size_t i = 0; i < len; i++) {
+        // ∂L/∂z_i = p_i - y_i
+        y_pred->g[i] = y_pred->d[i] - y_true->d[i];
+    }
 }
 
 /** optimizer steps */
@@ -1212,18 +1213,33 @@ void log_tokens(Tokenizer* t, int* ids, int len) {
     printf("\n");
 }
 
+void log_dim(Dim dim) {
+    LOG_INFO("d_model: %d", dim.model);
+    LOG_INFO("hidden: %d", dim.hidden);
+    LOG_INFO("layers: %d", dim.layers);
+    LOG_INFO("heads: %d", dim.heads);
+    LOG_INFO("head_dim: %d", dim.head_dim);
+    LOG_INFO("proj_dim: %d", dim.proj_dim);
+    LOG_INFO("kv_dim: %d", dim.kv_dim);
+    LOG_INFO("kv_mul: %d", dim.kv_mul);
+    LOG_INFO("kv_heads: %d", dim.kv_heads);
+    LOG_INFO("vocab_size: %d", dim.vocab_size);
+    LOG_INFO("seq_len: %d", dim.seq_len);
+}
+
 // do a single pass until the model pipeline is operational and verified.
 int main(void) {
     srand(73);  // the best number ever
 
     // hyperparameters
     float lr = 0.1f;  // learning rate
-    (void) lr;
 
     // tokenizer model
     Tokenizer t = tokenizer_load("models/tokenizer.model");
     Param p = param_new(t.vocab_size);
     Valerie v = valerie_new(t, p);
+    LOG_INFO("Model initialized.");
+    log_dim(v.d);
 
     // source ids
     int src_len;
@@ -1271,6 +1287,7 @@ int main(void) {
     free(tgt_ids);
     tensor_free(&target);
     valerie_free(&v);
+    LOG_INFO("Model freed cleanly.");
 
     // exit
     return 0;
