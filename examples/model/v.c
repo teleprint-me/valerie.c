@@ -936,7 +936,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     // Output projection
     matmul_backward(&s->x_norm, &L->attn.Wo, &s->attn_out);
 
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         int kv_group = group * d->head_dim;
@@ -1281,16 +1281,19 @@ int main(void) {
     float loss = cross_entropy_forward(&logits, &target);
     printf("Cross Entropy Forward: %.6f\n\n", (double) loss);
 
-    // initialize gradients
-    cross_entropy_backward(&logits, &target);
-    tensor_print("Cross Entropy Backward", &logits, true);
-
     // not sure if this makes sense at the moment
     // note that this breaks the expected interval [0, 1] by
     // producing a negative logit of the true class which
     // means I did something very wrong somewhere
-    softmax_backward(logits.g, logits.d, tensor_cols(&logits));
-    tensor_print("Softmax Backward", &logits, true);
+    //
+    // initialize gradients
+    cross_entropy_backward(&logits, &target);
+    tensor_print("Cross Entropy Backward", &logits, true);
+
+    // @note do not call softmax backward
+    // just do backward immediately after this
+    // softmax_backward(logits.g, logits.d, tensor_cols(&logits));
+    // tensor_print("Softmax Backward", &logits, true);
 
     // compute gradients
     backward(&v, token_id, pos);
