@@ -624,6 +624,8 @@ void softmax_forward(float* x, size_t len) {
     }
 }
 
+// https://brandonrohrer.com/softmax
+// https://eli.thegreenplace.net/2016/the-softmax-function-and-its-derivative/
 void softmax_backward(float* dx, float* y, size_t len) {
     float dot = 0.0f;
     for (size_t t = 0; t < len; t++) {
@@ -875,7 +877,7 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
     gqa_forward(&s->q, &s->k, d, r, pos);
 
     // Compute attention scores (Q * K^T / sqrt(d_k))
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         int kv_group = group * d->head_dim;
