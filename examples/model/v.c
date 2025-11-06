@@ -917,6 +917,8 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
 }
 
 // https://incml.github.io/2023/03/05/Transformer-GPT.html
+// the bug is related to how Q, K, and V are computed.
+// the gradients are zeroed out for some unknown reason.
 void attn_backward(Valerie* v, Layer* L, int pos) {
     Dim* d = &v->d;
     Rotary* r = &v->r;
@@ -932,11 +934,13 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
 
     // Output residual
     residual_backward(&s->x, &s->x_norm);
+    // x and x_norm have both data and grad.
 
     // Output projection
     matmul_backward(&s->x_norm, &L->attn.Wo, &s->attn_out);
+    // x_norm, attn.Wo, and attn_out have data and grad.
 
-// #pragma omp parallel for
+    // #pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         int kv_group = group * d->head_dim;
@@ -950,12 +954,12 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         // Context vector: attn_out.g (incoming gradient), scores, vt, and their .g buffers
         for (int t = 0; t <= pos; t++) {
             float sum = 0.0f;
-            float* vtg = L->cache.Wv.g + t * d->kv_dim + kv_group;
-            float* vtd = L->cache.Wv.d + t * d->kv_dim + kv_group;
+            float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
+            float* wvd = L->cache.Wv.d + t * d->kv_dim + kv_group;
 
             for (int k = 0; k < d->head_dim; k++) {
-                vtg[k] += grad_attn_out[k] * scores[t];
-                sum += grad_attn_out[k] * vtd[k];
+                wvg[k] += grad_attn_out[k] * scores[t];
+                sum += grad_attn_out[k] * wvd[k];
             }
 
             grad_scores[t] += sum;  // accumulate gradient for scores[t]
@@ -966,18 +970,20 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
 
         // Dot product
         for (int t = 0; t <= pos; t++) {
-            float* ktd = L->cache.Wk.d + t * d->kv_dim + kv_group;
-            float* ktg = L->cache.Wk.g + t * d->kv_dim + kv_group;
+            float* wkd = L->cache.Wk.d + t * d->kv_dim + kv_group;
+            float* wkg = L->cache.Wk.g + t * d->kv_dim + kv_group;
 
             for (int k = 0; k < d->head_dim; k++) {
-                qhg[k] += grad_scores[t] * ktd[k] / sqrtf((float) d->head_dim);
-                ktg[k] += grad_scores[t] * qhd[k] / sqrtf((float) d->head_dim);
+                qhg[k] += grad_scores[t] * wkd[k] / sqrtf((float) d->head_dim);
+                wkg[k] += grad_scores[t] * qhd[k] / sqrtf((float) d->head_dim);
             }
         }
     }
 
     // Grouped query attention
     gqa_backward(&s->q, &s->k, d, r, pos);
+    // q and k do not have grads. grads are zero here.
+    // zero grads break the chain and cause Wq, Wk, Wv, and xnorm to become zero.
 
     // Projections
     matmul_backward(&s->q, &L->attn.Wq, &s->x_norm);
