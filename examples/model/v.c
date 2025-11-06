@@ -195,19 +195,20 @@ void shape_print(const Shape* s) {
     }
 }
 
-void tensor_print(const char* name, const Tensor* t) {
-    printf("%s ", name);
+void tensor_print(const char* name, const Tensor* t, bool use_grad) {
+    printf("%s (%s) ", name, use_grad ? "grad" : "data");
     shape_print(&t->shape);
 
     size_t cols = tensor_cols(t);
     for (size_t r = 0; r < tensor_rows(t); ++r) {
         printf("[");
-        float* row = t->d + r * cols;
+        float* row = ((use_grad) ? t->g : t->d) + r * cols;
         for (size_t c = 0; c < cols; ++c) {
             printf(" % .5f", (double) row[c]);
         }
         printf(" ]\n");
     }
+    printf("\n");
 }
 
 /** Model */
@@ -1265,27 +1266,33 @@ int main(void) {
     int pos = 0;  // increment for each input token id
     int token_id = src_ids[0];  // V : 44 -> "H"
     Tensor logits = forward(&v, token_id, pos);  // compute log-odds
-    tensor_print("Forward", &logits);
+    tensor_print("Forward", &logits, false);
 
     // compute probabilities (operates in-place)
     softmax_forward(logits.d, tensor_cols(&logits));
-    tensor_print("Softmax forward", &logits);
+    tensor_print("Softmax Forward", &logits, false);
 
     // create next token prediction
     Tensor target = tensor_new(shape_vector(t.vocab_size), false);
     one_hot(&target, tgt_ids[pos + 1]);  // target class
-    tensor_print("One Hot", &target);
+    tensor_print("One Hot", &target, false);
 
     // compute model confidence
     float loss = cross_entropy_forward(&logits, &target);
-    printf("Loss: %.6f\n\n", (double) loss);
+    printf("Cross Entropy Forward: %.6f\n\n", (double) loss);
 
     // initialize gradients
     cross_entropy_backward(&logits, &target);
-    tensor_print("Softmax backward", &logits);
+    tensor_print("Cross Entropy Backward", &logits, true);
+
+    // not sure if this makes sense at the moment
+    // note that this breaks the expected interval [0, 1] by
+    // producing a negative logit of the true class which
+    // means I did something very wrong somewhere
+    softmax_backward(logits.g, logits.d, tensor_cols(&logits));
+    tensor_print("Softmax Backward", &logits, true);
 
     // compute gradients
-    softmax_backward(logits.g, logits.d, tensor_cols(&logits));
     backward(&v, token_id, pos);
 
     // update weights
