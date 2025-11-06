@@ -885,11 +885,11 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
 
         // Dot product
         for (int t = 0; t <= pos; t++) {
-            float* kt = L->cache.Wk.d + t * d->kv_dim + kv_group;
+            float* wkd = L->cache.Wk.d + t * d->kv_dim + kv_group;
 
             float dot = 0.0f;
             for (int k = 0; k < d->head_dim; k++) {
-                dot += qh[k] * kt[k];
+                dot += qh[k] * wkd[k];
             }
 
             scores[t] = dot / sqrtf((float) d->head_dim);
@@ -901,10 +901,10 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
         // Context vector (weighted sum of scores)
         memset(attn_out, 0, d->head_dim * sizeof(float));
         for (int t = 0; t <= pos; t++) {
-            float* vt = L->cache.Wv.d + t * d->kv_dim + kv_group;
+            float* wvd = L->cache.Wv.d + t * d->kv_dim + kv_group;
 
             for (int k = 0; k < d->head_dim; k++) {
-                attn_out[k] += scores[t] * vt[k];
+                attn_out[k] += scores[t] * wvd[k];
             }
         }
     }
@@ -1252,65 +1252,45 @@ int main(void) {
     LOG_INFO("Model initialized.");
     log_dim(v.d);
 
-    // source ids
-    int src_len;
+    // prompt
     // ["H", "e", "l", "lo", ",", " "]
-    char src[] = "Hello, ";
     // [44, 87, 106, 110, 16, 4]
-    int* src_ids = tokenizer_encode(&t, src, &src_len, false, false);
-    log_tokens(&t, src_ids, src_len);
+    char source[] = "Hello, ";
+    int source_len = 0;
+    int* source_ids = tokenizer_encode(&t, source, &source_len, false, false);
+    log_tokens(&t, source_ids, source_len);
 
-    // target ids
-    int tgt_len;
+    // ground truth
     // ["H", "e", "l", "lo", ",", " ", "wor", "ld", "!"]
-    char tgt[] = "Hello, world!";
     // [44, 87, 106, 110, 16, 4, 140, 107, 5]
-    int* tgt_ids = tokenizer_encode(&t, tgt, &tgt_len, false, false);
-    log_tokens(&t, tgt_ids, tgt_len);
+    char target[] = "Hello, world!";
+    int target_len = 0;
+    int* target_ids = tokenizer_encode(&t, target, &target_len, false, false);
+    log_tokens(&t, target_ids, target_len);
 
     // do a simple forward pass for now
     int pos = 0;  // increment for each input token id
-    int token_id = src_ids[0];  // V : 44 -> "H"
-    Tensor logits = forward(&v, token_id, pos);  // compute log-odds
-    tensor_print("Forward", &logits, false);
+    int id = source_ids[0];  // V : 44 -> "H"
 
-    // compute probabilities (operates in-place)
-    softmax_forward(logits.d, tensor_cols(&logits));
-    tensor_print("Softmax Forward", &logits, false);
+    Tensor logits = forward(&v, id, pos);  // compute log-odds
+    softmax_forward(logits.d, tensor_cols(&logits));  // norm log-odds
 
     // create next token prediction
-    Tensor target = tensor_new(shape_vector(t.vocab_size), false);
-    one_hot(&target, tgt_ids[pos + 1]);  // target class
-    tensor_print("One Hot", &target, false);
+    Tensor target_class = tensor_new(shape_vector(t.vocab_size), false);
+    one_hot(&target_class, target_ids[pos + 1]);  // encode target label
 
     // compute model confidence
-    float loss = cross_entropy_forward(&logits, &target);
+    float loss = cross_entropy_forward(&logits, &target_class);
     printf("Cross Entropy Forward: %.6f\n\n", (double) loss);
 
-    // not sure if this makes sense at the moment
-    // note that this breaks the expected interval [0, 1] by
-    // producing a negative logit of the true class which
-    // means I did something very wrong somewhere
-    //
-    // initialize gradients
-    cross_entropy_backward(&logits, &target);
-    tensor_print("Cross Entropy Backward", &logits, true);
-
-    // @note do not call softmax backward
-    // just do backward immediately after this
-    // softmax_backward(logits.g, logits.d, tensor_cols(&logits));
-    // tensor_print("Softmax Backward", &logits, true);
-
-    // compute gradients
-    backward(&v, token_id, pos);
-
-    // update weights
-    update(&v, lr);
+    cross_entropy_backward(&logits, &target_class);
+    backward(&v, id, pos);  // compute gradients
+    update(&v, lr);  // update weights
 
     // clean up
-    free(src_ids);
-    free(tgt_ids);
-    tensor_free(&target);
+    free(source_ids);
+    free(target_ids);
+    tensor_free(&target_class);
     valerie_free(&v);
     LOG_INFO("Model freed cleanly.");
 
