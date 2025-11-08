@@ -1141,7 +1141,7 @@ float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     size_t len = tensor_cols(y_pred);
     for (size_t j = 0; j < len; ++j) {
         // Only nonzero at true class if one-hot
-        loss -= y_true->d[j] * logf(y_pred->d[j]);
+        loss -= y_true->d[j] * logf(fmaxf(y_pred->d[j], 1e-6f));
     }
     return loss;
 }
