@@ -50,6 +50,7 @@ typedef struct Tensor {
     float* g;  // derivative (gradient)
     float* v;  // velocity (momentum)
     Shape shape;
+    const char* name;
 } Tensor;
 
 Shape shape_scalar(void) {
@@ -123,24 +124,29 @@ bool tensor_rows_match(const Tensor* a, const Tensor* b) {
     return tensor_rows(a) == tensor_rows(b);
 }
 
-Tensor tensor_null(Shape shape) {
+Tensor tensor_null(const char* name, Shape shape) {
     Tensor t = {0};
     t.d = NULL;
     t.g = NULL;
     t.v = NULL;
     t.shape = shape;
+    t.name = name;
     return t;
 }
 
-Tensor tensor_new(Shape shape, bool use_grad) {
+Tensor tensor_new(const char* name, Shape shape, bool use_grad) {
     Tensor t = {0};
+
+    t.name = name;
     t.shape = shape;
     size_t len = tensor_count(&t);
+
     t.d = malloc(len * sizeof(float));
     if (use_grad) {
         t.g = calloc(len, sizeof(float));
         t.v = calloc(len, sizeof(float));
     }
+
     return t;
 }
 
@@ -158,6 +164,8 @@ void tensor_free(Tensor* t) {
             free(t->v);
             t->v = NULL;
         }
+        // Do not free tensor shapes
+        // Do not free tensor names
     }
 }
 
@@ -183,22 +191,22 @@ void tensor_random(Tensor* t) {
     }
 }
 
-void shape_print(const Shape* s) {
-    switch (s->rank) {
+void tensor_print(const Tensor* t, bool use_grad) {
+    // print name and type
+    printf("%s (%s) ", t->name, use_grad ? "grad" : "data");
+
+    // print shape
+    switch (t->shape.rank) {
         case RANK_SCALAR:
         case RANK_VECTOR:
-            printf("(%zu)\n", s->dims[0]);
+            printf("(%zu)\n", t->shape.dims[0]);
             break;
         case RANK_MATRIX:
-            printf("(%zu, %zu)\n", s->dims[0], s->dims[1]);
+            printf("(%zu, %zu)\n", t->shape.dims[0], t->shape.dims[1]);
             break;
     }
-}
 
-void tensor_print(const char* name, const Tensor* t, bool use_grad) {
-    printf("%s (%s) ", name, use_grad ? "grad" : "data");
-    shape_print(&t->shape);
-
+    // print elements
     size_t cols = tensor_cols(t);
     for (size_t r = 0; r < tensor_rows(t); ++r) {
         printf("[");
@@ -371,8 +379,8 @@ Rotary rotary_new(const Dim* d) {
     }
 
     // outer product
-    rope.cos = tensor_new(shape_matrix(d->seq_len, d->half_dim), false);
-    rope.sin = tensor_new(shape_matrix(d->seq_len, d->half_dim), false);
+    rope.cos = tensor_new("rope.cos", shape_matrix(d->seq_len, d->half_dim), false);
+    rope.sin = tensor_new("rope.sin", shape_matrix(d->seq_len, d->half_dim), false);
 
     // pre-compute frequencies
     for (int i = 0; i < d->seq_len; i++) {
@@ -398,8 +406,8 @@ Embedding embed_new(const Dim* d) {
     Embedding embed = {0};
 
     // Input is tied to output
-    embed.token = tensor_new(shape_matrix(d->vocab_size, d->model), true);
-    embed.norm = tensor_new(shape_vector(d->model), true);
+    embed.token = tensor_new("embed.token", shape_matrix(d->vocab_size, d->model), true);
+    embed.norm = tensor_new("embed.norm", shape_vector(d->model), true);
 
     tensor_random(&embed.token);
     tensor_ones(&embed.norm);
@@ -418,11 +426,11 @@ void embed_free(Embedding* embed) {
 Attention attn_new(const Dim* d) {
     Attention attn = {0};
 
-    attn.Wq = tensor_new(shape_matrix(d->proj_dim, d->model), true);
-    attn.Wk = tensor_new(shape_matrix(d->kv_dim, d->model), true);
-    attn.Wv = tensor_new(shape_matrix(d->kv_dim, d->model), true);
-    attn.Wo = tensor_new(shape_matrix(d->model, d->proj_dim), true);
-    attn.norm = tensor_new(shape_vector(d->model), true);
+    attn.Wq = tensor_new("attn.Wq", shape_matrix(d->proj_dim, d->model), true);
+    attn.Wk = tensor_new("attn.Wk", shape_matrix(d->kv_dim, d->model), true);
+    attn.Wv = tensor_new("attn.Wv", shape_matrix(d->kv_dim, d->model), true);
+    attn.Wo = tensor_new("attn.Wo", shape_matrix(d->model, d->proj_dim), true);
+    attn.norm = tensor_new("attn.norm", shape_vector(d->model), true);
 
     tensor_random(&attn.Wq);
     tensor_random(&attn.Wk);
@@ -446,10 +454,10 @@ void attn_free(Attention* attn) {
 FeedForward ffn_new(const Dim* d) {
     FeedForward ffn = {0};
 
-    ffn.W1 = tensor_new(shape_matrix(d->hidden, d->model), true);
-    ffn.W2 = tensor_new(shape_matrix(d->model, d->hidden), true);
-    ffn.W3 = tensor_new(shape_matrix(d->hidden, d->model), true);
-    ffn.norm = tensor_new(shape_vector(d->model), true);
+    ffn.W1 = tensor_new("ffn.W1", shape_matrix(d->hidden, d->model), true);
+    ffn.W2 = tensor_new("ffn.W2", shape_matrix(d->model, d->hidden), true);
+    ffn.W3 = tensor_new("ffn.W3", shape_matrix(d->hidden, d->model), true);
+    ffn.norm = tensor_new("ffn.norm", shape_vector(d->model), true);
 
     tensor_random(&ffn.W1);
     tensor_random(&ffn.W2);
@@ -470,8 +478,8 @@ void ffn_free(FeedForward* ffn) {
 
 Cache cache_new(const Dim* d) {
     Cache cache = {0};
-    cache.Wk = tensor_new(shape_matrix(d->seq_len, d->kv_dim), true);
-    cache.Wv = tensor_new(shape_matrix(d->seq_len, d->kv_dim), true);
+    cache.Wk = tensor_new("cache.Wk", shape_matrix(d->seq_len, d->kv_dim), true);
+    cache.Wv = tensor_new("cache.Wv", shape_matrix(d->seq_len, d->kv_dim), true);
     return cache;
 }
 
@@ -510,16 +518,16 @@ void layers_free(Layer* layers, size_t len) {
 
 State state_new(const Dim* d) {
     State s = {0};
-    s.x = tensor_new(shape_vector(d->model), true);
-    s.x_norm = tensor_new(shape_vector(d->model), true);
-    s.q = tensor_new(shape_vector(d->proj_dim), true);
-    s.k = tensor_null(shape_vector(d->kv_dim));  // Alias for key cache
-    s.v = tensor_null(shape_vector(d->kv_dim));  // Alias for value cache
-    s.attn_scores = tensor_new(shape_matrix(d->heads, d->seq_len), true);
-    s.attn_out = tensor_new(shape_vector(d->model), true);
-    s.mlp_in = tensor_new(shape_vector(d->hidden), true);
-    s.mlp_gate = tensor_new(shape_vector(d->hidden), true);
-    s.logits = tensor_new(shape_vector(d->vocab_size), true);
+    s.x = tensor_new("state.x", shape_vector(d->model), true);
+    s.x_norm = tensor_new("state.x_norm", shape_vector(d->model), true);
+    s.q = tensor_new("state.q", shape_vector(d->proj_dim), true);
+    s.k = tensor_null("state.k", shape_vector(d->kv_dim));  // Alias for key cache
+    s.v = tensor_null("state.v", shape_vector(d->kv_dim));  // Alias for value cache
+    s.attn_scores = tensor_new("state.attn_scores", shape_matrix(d->heads, d->seq_len), true);
+    s.attn_out = tensor_new("state.attn_out", shape_vector(d->model), true);
+    s.mlp_in = tensor_new("state.mlp_in", shape_vector(d->hidden), true);
+    s.mlp_gate = tensor_new("state.mlp_gate", shape_vector(d->hidden), true);
+    s.logits = tensor_new("state.logits", shape_vector(d->vocab_size), true);
     return s;
 }
 
@@ -1261,12 +1269,14 @@ int main(void) {
     // do a single epoch for now
     float lr = 1e-3f;  // learning rate
     int id = source_ids[0];  // V : 44 -> "H"
-    Tensor target_class = tensor_new(shape_vector(t.vocab_size), false);
+    Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int pos = 0; pos < target_len && pos < v.d.seq_len; pos++) {
         forward(&v, id, pos);  // compute log-odds
+        tensor_print(&v.s.logits, /** use_grad */ false);
 
         // create next token prediction
         one_hot(&target_class, target_ids[pos + 1]);  // encode target label
+        tensor_print(&target_class, /** use_grad */ false);
 
         // compute loss and log-odds derivatives
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
