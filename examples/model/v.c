@@ -208,15 +208,18 @@ void tensor_print(const Tensor* t, bool use_grad) {
 
     // print elements
     size_t cols = tensor_cols(t);
+    size_t rows = tensor_rows(t);
+
+    printf("%s", rows > 1 ? "[" : "");
     for (size_t r = 0; r < tensor_rows(t); ++r) {
         printf("[");
         float* row = ((use_grad) ? t->g : t->d) + r * cols;
         for (size_t c = 0; c < cols; ++c) {
             printf(" % .5f", (double) row[c]);
         }
-        printf(" ]\n");
+        printf("]\n");
     }
-    printf("\n");
+    printf("%s", rows > 1 ? "]\n" : "\n");
 }
 
 /** Model */
@@ -1192,6 +1195,7 @@ void sgd(Tensor* t, float lr) {
         assert(!isinf(t->g[i]) && "Gradient is INF");
         assert(t->g[i] > 1e-6f && "Gradient vanished");
         assert(t->g[i] < 1e+6f && "Gradient exploded");
+        tensor_print(t, true);
         t->d[i] -= lr * t->g[i];  // update the weight
         t->g[i] = 0.0f;  // zero the gradient
     }
