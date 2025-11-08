@@ -625,7 +625,6 @@ void softmax_forward(float* x, size_t len) {
 }
 
 // https://brandonrohrer.com/softmax
-// https://eli.thegreenplace.net/2016/the-softmax-function-and-its-derivative/
 void softmax_backward(float* dx, float* y, size_t len) {
     float dot = 0.0f;
     for (size_t t = 0; t < len; t++) {
@@ -1132,6 +1131,7 @@ void one_hot(Tensor* x, size_t label) {
 }
 
 // https://en.wikipedia.org/wiki/Logistic_regression
+// https://eli.thegreenplace.net/2016/the-softmax-function-and-its-derivative/
 float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     assert(tensor_is_vector(y_pred));
     assert(tensor_is_vector(y_true));
