@@ -1282,6 +1282,7 @@ int main(void) {
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
         printf("Loss: %.6f\n\n", (double) loss);
         cross_entropy_backward(&v.s.logits, &target_class);
+        tensor_print(&v.s.logits, /** use_grad */ true);
 
         backward(&v, id, pos);  // compute derivatives
         update(&v, lr);  // apply derivatives
