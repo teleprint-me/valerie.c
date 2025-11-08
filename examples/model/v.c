@@ -1211,8 +1211,10 @@ void sgd(Tensor* t, float lr) {
 
     size_t len = tensor_count(t);
     for (size_t i = 0; i < len; i++) {
-        t->g[i] = (t->g[i] > 1e-6f) ? t->g[i] : 0.0f;
-        t->g[i] = (t->g[i] < 1e+6f) ? t->g[i] : 0.0f;
+        // temporarily clip gradients
+        if (fabsf(t->g[i]) > 1e+6f) {
+            t->g[i] = copysignf(1e+6f, t->g[i]);
+        }
 
         // Sanity check
         assert(!isnan(t->g[i]) && "Gradient is NAN");
