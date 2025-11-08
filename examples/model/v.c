@@ -605,34 +605,35 @@ void silu_backward(Tensor* y, const Tensor* x) {
 
 // Softmax: in-place and does not require a backward pass
 // https://www.deeplearningbook.org/contents/mlp.html#pf11
-void softmax_forward(float* x, size_t len) {
-    float max_score = x[0];
-    for (size_t i = 1; i < len; i++) {
-        if (x[i] > max_score) {
-            max_score = x[i];
+void softmax_forward(float* y, const float* x, size_t len) {
+    float max = x[0];
+    for (size_t i = 1; i < len; ++i) {
+        if (x[i] > max) {
+            max = x[i];
         }
     }
 
     float sum = 0.0f;
-    for (size_t i = 0; i < len; i++) {
-        x[i] = expf(x[i] - max_score);
-        sum += x[i];
+    for (size_t i = 0; i < len; ++i) {
+        y[i] = expf(x[i] - max);
+        sum += y[i];
     }
 
-    for (size_t i = 0; i < len; i++) {
-        x[i] /= sum + 1e-6f;  // guard against div by 0
+    float denom = sum + 1e-6f;  // epsilon for stability
+    for (size_t i = 0; i < len; ++i) {
+        y[i] /= denom;
     }
 }
 
 // https://brandonrohrer.com/softmax
-void softmax_backward(float* dx, float* y, size_t len) {
+void softmax_backward(float* dx, const float* dy, const float* y, size_t len) {
     float dot = 0.0f;
-    for (size_t t = 0; t < len; t++) {
-        dot += dx[t] * y[t];  // S = sum_j dx[j] * y[j]
+    for (size_t i = 0; i < len; ++i) {
+        dot += dy[i] * y[i];
     }
 
-    for (size_t t = 0; t < len; t++) {
-        dx[t] = (dx[t] - dot) * y[t];  // dx[i] = (dx[i] - S) * y[i]
+    for (size_t i = 0; i < len; ++i) {
+        dx[i] = (dy[i] - dot) * fmaxf(y[i], 1e-6f);
     }
 }
 
@@ -896,8 +897,9 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
             scores[t] = dot / sqrtf((float) d->head_dim);
         }
 
-        // Logarithmic probability
-        softmax_forward(scores, pos + 1);
+        size_t len = pos + 1;
+        float softmax[len];
+        softmax_forward(softmax, scores, len);
 
         // Context vector (weighted sum of scores)
         memset(attn_out, 0, d->head_dim * sizeof(float));
@@ -954,20 +956,21 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
 
         // Context vector: attn_out.g (incoming gradient), scores, vt, and their .g buffers
         for (int t = 0; t <= pos; t++) {
-            float sum = 0.0f;
             float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
             float* wvd = L->cache.Wv.d + t * d->kv_dim + kv_group;
 
+            float sum = 0.0f;
             for (int k = 0; k < d->head_dim; k++) {
                 wvg[k] += grad_attn_out[k] * scores[t];
                 sum += grad_attn_out[k] * wvd[k];
             }
-
             grad_scores[t] += sum;  // accumulate gradient for scores[t]
         }
 
         // Softmax (in-place)
-        softmax_backward(grad_scores, scores, pos + 1);
+        size_t len = pos + 1;
+        float grad_softmax[len];
+        softmax_backward(grad_softmax, grad_scores, scores, len);
 
         // Dot product
         for (int t = 0; t <= pos; t++) {
@@ -975,8 +978,8 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
             float* wkg = L->cache.Wk.g + t * d->kv_dim + kv_group;
 
             for (int k = 0; k < d->head_dim; k++) {
-                qhg[k] += grad_scores[t] * wkd[k] / sqrtf((float) d->head_dim);
-                wkg[k] += grad_scores[t] * qhd[k] / sqrtf((float) d->head_dim);
+                qhg[k] += grad_softmax[t] * wkd[k] / sqrtf((float) d->head_dim);
+                wkg[k] += grad_softmax[t] * qhd[k] / sqrtf((float) d->head_dim);
             }
         }
     }
@@ -1065,10 +1068,10 @@ void embed_backward(Tensor* y, Tensor* W, int id) {
 /** forward pass */
 
 // Single-token forward pass (autoregressive)
+// computes updated logit stream
 // @param id  current token id
 // @param pos current position (0..seq_len)
-// @returns updated logit stream
-Tensor forward(Valerie* v, int id, int pos) {
+void forward(Valerie* v, int id, int pos) {
     Dim* d = &v->d;
     State* s = &v->s;
     Embedding* e = &v->e;
@@ -1087,9 +1090,6 @@ Tensor forward(Valerie* v, int id, int pos) {
 
     // Output projection (is always F32)
     matmul_forward(&s->logits, &e->token, &s->x_norm);
-
-    // Output logarithmic probability
-    return s->logits;
 }
 
 /** backward pass */
@@ -1137,11 +1137,16 @@ float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     assert(tensor_is_vector(y_true));
     assert(tensor_cols_match(y_pred, y_true));
 
-    float loss = 0.0f;
     size_t len = tensor_cols(y_pred);
-    for (size_t j = 0; j < len; ++j) {
-        // Only nonzero at true class if one-hot
-        loss -= y_true->d[j] * logf(fmaxf(y_pred->d[j], 1e-6f));
+
+    float softmax[len];
+    softmax_forward(softmax, y_pred->d, len);
+
+    float loss = 0.0f;
+    for (size_t i = 0; i < len; ++i) {
+        if (y_true->d[i] > 0.0f) {
+            loss -= y_true->d[i] * logf(fmaxf(softmax[i], 1e-6f));
+        }
     }
     return loss;
 }
@@ -1153,9 +1158,13 @@ void cross_entropy_backward(Tensor* y_pred, const Tensor* y_true) {
     assert(tensor_cols_match(y_pred, y_true));
 
     size_t len = tensor_cols(y_pred);
+
+    float softmax[len];
+    softmax_forward(softmax, y_pred->d, len);
+
     for (size_t i = 0; i < len; i++) {
         // ∂L/∂z_i = p_i - y_i
-        y_pred->g[i] = y_pred->d[i] - y_true->d[i];
+        y_pred->g[i] = softmax[i] - y_true->d[i];
     }
 }
 
@@ -1254,21 +1263,18 @@ int main(void) {
     int id = source_ids[0];  // V : 44 -> "H"
     Tensor target_class = tensor_new(shape_vector(t.vocab_size), false);
     for (int pos = 0; pos < target_len && pos < v.d.seq_len; pos++) {
-        Tensor logits = forward(&v, id, pos);  // compute log-odds
-        softmax_forward(logits.d, tensor_cols(&logits));  // norm log-odds
+        forward(&v, id, pos);  // compute log-odds
 
         // create next token prediction
         one_hot(&target_class, target_ids[pos + 1]);  // encode target label
 
-        // compute model confidence
-        float loss = cross_entropy_forward(&logits, &target_class);
+        // compute loss and log-odds derivatives
+        float loss = cross_entropy_forward(&v.s.logits, &target_class);
         printf("Loss: %.6f\n\n", (double) loss);
+        cross_entropy_backward(&v.s.logits, &target_class);
 
-        // compute initial derivatives
-        cross_entropy_backward(&logits, &target_class);
-
-        backward(&v, id, pos);  // compute gradients
-        update(&v, lr);  // apply gradients
+        backward(&v, id, pos);  // compute derivatives
+        update(&v, lr);  // apply derivatives
 
         if (pos + 1 < source_len) {
             id = source_ids[pos];
