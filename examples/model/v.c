@@ -1259,7 +1259,7 @@ int main(void) {
     log_tokens(&t, target_ids, target_len);
 
     // do a single epoch for now
-    float lr = 0.1f;  // learning rate
+    float lr = 1e-3f;  // learning rate
     int id = source_ids[0];  // V : 44 -> "H"
     Tensor target_class = tensor_new(shape_vector(t.vocab_size), false);
     for (int pos = 0; pos < target_len && pos < v.d.seq_len; pos++) {
