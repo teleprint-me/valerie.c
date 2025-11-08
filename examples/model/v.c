@@ -1188,6 +1188,8 @@ void sgd(Tensor* t, float lr) {
         abort();
     }
 
+    tensor_print(t, true);
+
     size_t len = tensor_count(t);
     for (size_t i = 0; i < len; i++) {
         // Sanity check
@@ -1195,7 +1197,6 @@ void sgd(Tensor* t, float lr) {
         assert(!isinf(t->g[i]) && "Gradient is INF");
         assert(t->g[i] > 1e-6f && "Gradient vanished");
         assert(t->g[i] < 1e+6f && "Gradient exploded");
-        tensor_print(t, true);
         t->d[i] -= lr * t->g[i];  // update the weight
         t->g[i] = 0.0f;  // zero the gradient
     }
