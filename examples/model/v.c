@@ -192,34 +192,47 @@ void tensor_random(Tensor* t) {
 }
 
 void tensor_print(const Tensor* t, bool use_grad) {
-    // print name and type
-    printf("%s (%s) ", t->name, use_grad ? "grad" : "data");
+    if (!t) {
+        printf("Invalid tensor input\n");
+        return;
+    }
 
-    // print shape
+    const float* data = use_grad ? t->g : t->d;
+    if (!data) {
+        printf("%s (%s) (null)\n", t->name, use_grad ? "grad" : "data");
+        return;
+    }
+
+    size_t rows = tensor_rows(t);
+    size_t cols = tensor_cols(t);
+
+    printf("%s (%s) ", t->name, use_grad ? "grad" : "data");
     switch (t->shape.rank) {
         case RANK_SCALAR:
+            printf("(scalar)\n");
+            printf("  %.5f\n", (double) data[0]);
+            break;
         case RANK_VECTOR:
-            printf("(%zu)\n", t->shape.dims[0]);
+            printf("(cols = %zu)\n", cols);
+            printf("  [");
+            for (size_t i = 0; i < cols; ++i) {
+                printf(" % .5f", (double) data[i]);
+            }
+            printf(" ]\n");
             break;
         case RANK_MATRIX:
-            printf("(%zu, %zu)\n", t->shape.dims[0], t->shape.dims[1]);
+            printf("(rows = %zu, cols = %zu)\n", rows, cols);
+            printf("  [\n");
+            for (size_t r = 0; r < rows; ++r) {
+                printf("    [");
+                for (size_t c = 0; c < cols; ++c) {
+                    printf(" % .5f", (double) data[r * cols + c]);
+                }
+                printf(" ]\n");
+            }
+            printf("  ]\n");
             break;
     }
-
-    // print elements
-    size_t cols = tensor_cols(t);
-    size_t rows = tensor_rows(t);
-
-    printf("%s", rows > 1 ? "[" : "");
-    for (size_t r = 0; r < tensor_rows(t); ++r) {
-        printf("[");
-        float* row = ((use_grad) ? t->g : t->d) + r * cols;
-        for (size_t c = 0; c < cols; ++c) {
-            printf(" % .5f", (double) row[c]);
-        }
-        printf("]\n");
-    }
-    printf("%s", rows > 1 ? "]\n" : "\n");
 }
 
 /** Model */
