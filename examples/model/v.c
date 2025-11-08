@@ -1137,13 +1137,13 @@ float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     assert(tensor_is_vector(y_true));
     assert(tensor_cols_match(y_pred, y_true));
 
+    float loss = 0.0f;
     size_t len = tensor_cols(y_pred);
-    for (size_t i = 0; i < len; i++) {
-        if (y_true->d[i] == 1.0f) {
-            return -logf(fmaxf(y_pred->d[i], 1e-6f));
-        }
+    for (size_t j = 0; j < len; ++j) {
+        // Only nonzero at true class if one-hot
+        loss -= y_true->d[j] * logf(y_pred->d[j]);
     }
-    return 0.0f;  // fallback if not one-hot
+    return loss;
 }
 
 // cross_entropy_backward: computes ∂L/∂y_pred (logits)
