@@ -1281,6 +1281,13 @@ int main(void) {
         // compute loss and log-odds derivatives
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
         printf("Loss: %.6f\n\n", (double) loss);
+
+        // Stop loss
+        if (loss < 1e-3f) {  // stop loss (tolerance)
+            printf("pos[%d] (loss < %f)\n", pos, (double) 1e-3f);
+            break;
+        }
+
         cross_entropy_backward(&v.s.logits, &target_class);
         tensor_print(&v.s.logits, /** use_grad */ true);
 
