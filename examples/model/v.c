@@ -620,7 +620,7 @@ void softmax_forward(float* x, size_t len) {
     }
 
     for (size_t i = 0; i < len; i++) {
-        x[i] /= sum;
+        x[i] /= sum + 1e-6f;  // guard against div by 0
     }
 }
 
