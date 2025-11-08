@@ -1198,24 +1198,6 @@ void update(Valerie* v, float lr) {
     sgd(&v->e.norm, lr);
 }
 
-// https://cs231n.github.io/linear-classify/#softmax
-void train(Valerie* v, int* src_ids, int* tgt_ids, int src_len, int epochs, float lr) {
-    Tensor target = tensor_new(shape_vector(v->d.vocab_size), false);
-    for (int step = 0; step < epochs; step++) {
-        for (int pos = 0; pos < src_len - 1; pos++) {
-            Tensor logits = forward(v, src_ids[pos], pos);
-            softmax_forward(logits.d, tensor_cols(&logits));  // compute probabilities
-            one_hot(&target, tgt_ids[pos + 1]);  // next token prediction
-            float loss = cross_entropy_forward(&logits, &target);  // compute current loss
-            cross_entropy_backward(&logits, &target);  // initialize gradients
-            printf("Loss: %.6f\n\n", (double) loss);
-            backward(v, src_ids[pos], pos);
-            update(v, lr);
-        }
-    }
-    tensor_free(&target);
-}
-
 /** logging */
 
 void log_tokens(Tokenizer* t, int* ids, int len) {
@@ -1240,12 +1222,9 @@ void log_dim(Dim dim) {
     LOG_INFO("seq_len: %d", dim.seq_len);
 }
 
-// do a single pass until the model pipeline is operational and verified.
+// https://cs231n.github.io/linear-classify/#softmax
 int main(void) {
     srand(73);  // the best number ever
-
-    // hyperparameters
-    float lr = 0.1f;  // learning rate
 
     // tokenizer model
     Tokenizer t = tokenizer_load("models/tokenizer.model");
@@ -1270,29 +1249,38 @@ int main(void) {
     int* target_ids = tokenizer_encode(&t, target, &target_len, false, false);
     log_tokens(&t, target_ids, target_len);
 
-    // do a simple forward pass for now
-    int pos = 0;  // increment for each input token id
+    // do a single epoch for now
+    float lr = 0.1f;  // learning rate
     int id = source_ids[0];  // V : 44 -> "H"
-
-    Tensor logits = forward(&v, id, pos);  // compute log-odds
-    softmax_forward(logits.d, tensor_cols(&logits));  // norm log-odds
-
-    // create next token prediction
     Tensor target_class = tensor_new(shape_vector(t.vocab_size), false);
-    one_hot(&target_class, target_ids[pos + 1]);  // encode target label
+    for (int pos = 0; pos < target_len && pos < v.d.seq_len; pos++) {
+        Tensor logits = forward(&v, id, pos);  // compute log-odds
+        softmax_forward(logits.d, tensor_cols(&logits));  // norm log-odds
 
-    // compute model confidence
-    float loss = cross_entropy_forward(&logits, &target_class);
-    printf("Cross Entropy Forward: %.6f\n\n", (double) loss);
+        // create next token prediction
+        one_hot(&target_class, target_ids[pos + 1]);  // encode target label
 
-    cross_entropy_backward(&logits, &target_class);
-    backward(&v, id, pos);  // compute gradients
-    update(&v, lr);  // update weights
+        // compute model confidence
+        float loss = cross_entropy_forward(&logits, &target_class);
+        printf("Loss: %.6f\n\n", (double) loss);
+
+        // compute initial derivatives
+        cross_entropy_backward(&logits, &target_class);
+
+        backward(&v, id, pos);  // compute gradients
+        update(&v, lr);  // apply gradients
+
+        if (pos + 1 < source_len) {
+            id = source_ids[pos];
+        } else {
+            id = target_ids[pos];
+        }
+    }
 
     // clean up
+    tensor_free(&target_class);
     free(source_ids);
     free(target_ids);
-    tensor_free(&target_class);
     valerie_free(&v);
     LOG_INFO("Model freed cleanly.");
 
