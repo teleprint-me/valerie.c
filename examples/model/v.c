@@ -223,9 +223,9 @@ void tensor_print(const Tensor* t, bool use_grad) {
         case RANK_MATRIX:
             printf("(rows = %zu, cols = %zu)\n", rows, cols);
             printf("  [\n");
-            for (size_t r = 0; r < rows; ++r) {
+            for (size_t r = 0; r < rows; r++) {
                 printf("    [");
-                for (size_t c = 0; c < cols; ++c) {
+                for (size_t c = 0; c < cols; c++) {
                     printf(" % .5f", (double) data[r * cols + c]);
                 }
                 printf(" ]\n");
