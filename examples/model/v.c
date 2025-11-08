@@ -215,7 +215,7 @@ void tensor_print(const Tensor* t, bool use_grad) {
         case RANK_VECTOR:
             printf("(cols = %zu)\n", cols);
             printf("  [");
-            for (size_t i = 0; i < cols; ++i) {
+            for (size_t i = 0; i < cols; i++) {
                 printf(" % .5f", (double) data[i]);
             }
             printf(" ]\n");
@@ -978,6 +978,13 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         float* qhd = s->q.d + h * d->head_dim;
         float* qhg = s->q.g + h * d->head_dim;
 
+        // Softmax (in-place)
+        size_t len = pos + 1;
+
+        // Recompute softmax
+        float softmax[len];
+        softmax_forward(softmax, scores, len);
+
         // Context vector: attn_out.g (incoming gradient), scores, vt, and their .g buffers
         for (int t = 0; t <= pos; t++) {
             float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
@@ -985,16 +992,15 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
 
             float sum = 0.0f;
             for (int k = 0; k < d->head_dim; k++) {
-                wvg[k] += grad_attn_out[k] * scores[t];
+                wvg[k] += grad_attn_out[k] * softmax[t];
                 sum += grad_attn_out[k] * wvd[k];
             }
             grad_scores[t] += sum;  // accumulate gradient for scores[t]
         }
 
-        // Softmax (in-place)
-        size_t len = pos + 1;
+        // Compute softmax jacobian
         float grad_softmax[len];
-        softmax_backward(grad_softmax, grad_scores, scores, len);
+        softmax_backward(grad_softmax, grad_scores, softmax, len);
 
         // Dot product
         for (int t = 0; t <= pos; t++) {
