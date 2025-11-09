@@ -183,6 +183,12 @@ void tensor_ones(Tensor* t) {
     tensor_fill(t, 1.0f);
 }
 
+void tensor_zero_grad(Tensor* t) {
+    for (size_t i = 0; i < tensor_count(t); i++) {
+        t->g[i] = 0.0f;
+    }
+}
+
 void tensor_random(Tensor* t) {
     size_t rows = tensor_rows(t);
     size_t cols = tensor_cols(t);
@@ -1208,24 +1214,19 @@ void sgd(Tensor* t, float lr) {
         abort();
     }
 
-    // tensor_print(t, /** use grad */ true);
-
     size_t len = tensor_count(t);
     for (size_t i = 0; i < len; i++) {
-        // Sanity check
         assert(!isnan(t->g[i]) && "Gradient is NAN");
         assert(!isinf(t->g[i]) && "Gradient is INF");
         // assert(t->g[i] > 1e-6f && "Gradient vanished");
         // assert(t->g[i] < 1e+6f && "Gradient exploded");
 
         t->d[i] -= lr * t->g[i];  // update the weight
-        t->g[i] = 0.0f;  // zero the gradient
     }
 }
 
 void update(Valerie* v, float lr) {
     for (int i = 0; i < v->d.layers; i++) {
-        printf("Updating layer %d\n", i);
         Layer* L = &v->l[i];
         sgd(&L->attn.Wq, lr);
         sgd(&L->attn.Wk, lr);
@@ -1239,6 +1240,33 @@ void update(Valerie* v, float lr) {
     }
     sgd(&v->e.token, lr);
     sgd(&v->e.norm, lr);
+}
+
+void zero(Valerie* v) {
+    for (int i = 0; i < v->d.layers; i++) {
+        Layer* L = &v->l[i];
+        tensor_zero_grad(&L->attn.Wq);
+        tensor_zero_grad(&L->attn.Wk);
+        tensor_zero_grad(&L->attn.Wv);
+        tensor_zero_grad(&L->attn.Wo);
+        tensor_zero_grad(&L->attn.norm);
+        tensor_zero_grad(&L->ffn.W1);
+        tensor_zero_grad(&L->ffn.W2);
+        tensor_zero_grad(&L->ffn.W3);
+        tensor_zero_grad(&L->ffn.norm);
+        tensor_zero_grad(&L->cache.Wk);
+        tensor_zero_grad(&L->cache.Wv);
+    }
+    tensor_zero_grad(&v->e.token);
+    tensor_zero_grad(&v->e.norm);
+    tensor_zero_grad(&v->s.x);
+    tensor_zero_grad(&v->s.x_norm);
+    tensor_zero_grad(&v->s.q);
+    tensor_zero_grad(&v->s.attn_scores);
+    tensor_zero_grad(&v->s.attn_out);
+    tensor_zero_grad(&v->s.mlp_in);
+    tensor_zero_grad(&v->s.mlp_gate);
+    tensor_zero_grad(&v->s.logits);
 }
 
 /** logging */
@@ -1317,7 +1345,9 @@ int main(void) {
         cross_entropy_backward(&v.s.logits, &target_class);
         // tensor_print(&v.s.logits, /** use_grad */ true);
 
-        backward(&v, id, pos);  // compute derivatives
+        backward(&v, id, pos);  // compute gradients
+        update(&v, lr);  // apply gradients
+        zero(&v);  // zero gradients
 
         if (pos + 1 < source_len) {
             id = source_ids[pos];
@@ -1325,10 +1355,6 @@ int main(void) {
             id = target_ids[pos];
         }
     }
-
-    // compute **after** the epoch has completed
-    update(&v, lr);  // apply derivatives
-    // @note The model must be reset every epoch
 
     // clean up
     tensor_free(&target_class);
