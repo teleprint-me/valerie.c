@@ -943,6 +943,7 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
     residual_forward(&s->x, &s->x_norm);  // (d_model,)
 }
 
+// https://arxiv.org/abs/2412.17019
 // https://incml.github.io/2023/03/05/Transformer-GPT.html
 // the bug is related to how Q, K, and V are computed.
 // the gradients are zeroed out for some unknown reason.
@@ -1207,7 +1208,7 @@ void sgd(Tensor* t, float lr) {
         abort();
     }
 
-    tensor_print(t, true);
+    // tensor_print(t, /** use grad */ true);
 
     size_t len = tensor_count(t);
     for (size_t i = 0; i < len; i++) {
@@ -1302,11 +1303,11 @@ int main(void) {
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int pos = 0; pos + 1 < target_len && pos < v.d.seq_len; pos++) {
         forward(&v, id, pos);  // compute log-odds
-        tensor_print(&v.s.logits, /** use_grad */ false);
+        // tensor_print(&v.s.logits, /** use_grad */ false);
 
         // create next token prediction
         one_hot(&target_class, target_ids[pos + 1]);  // encode target label
-        tensor_print(&target_class, /** use_grad */ false);
+        // tensor_print(&target_class, /** use_grad */ false);
 
         // compute loss and log-odds derivatives
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
@@ -1319,10 +1320,9 @@ int main(void) {
         }
 
         cross_entropy_backward(&v.s.logits, &target_class);
-        tensor_print(&v.s.logits, /** use_grad */ true);
+        // tensor_print(&v.s.logits, /** use_grad */ true);
 
         backward(&v, id, pos);  // compute derivatives
-        update(&v, lr);  // apply derivatives
 
         if (pos + 1 < source_len) {
             id = source_ids[pos];
@@ -1330,6 +1330,9 @@ int main(void) {
             id = target_ids[pos];
         }
     }
+
+    // compute **after** the epoch has completed
+    update(&v, lr);  // apply derivatives
 
     // clean up
     tensor_free(&target_class);
