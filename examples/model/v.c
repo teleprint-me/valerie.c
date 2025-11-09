@@ -1340,11 +1340,11 @@ int main(void) {
         // compute loss and log-odds derivatives
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
         total_loss += loss;
-        printf("Loss: %.6f\n", (double) loss);
+        printf("Loss: %.5f\n", (double) loss);
 
         // Stop loss
         if (loss < 1e-3f) {  // stop loss (tolerance)
-            printf("pos[%d] (loss < %f)\n", pos, (double) 1e-3f);
+            printf("pos[%d] (loss < %.5f)\n", pos, (double) 1e-3f);
             break;
         }
 
@@ -1360,9 +1360,10 @@ int main(void) {
         }
     }
     // note that this is for a single epoch.
-    float average_loss = total_loss / target_len - 1;
-    printf("Total Loss: %.6f\n", (double) total_loss);
-    printf("Average Loss: %.6f\n", (double) average_loss);
+    int steps = target_len - 1;
+    float average_loss = total_loss / steps;
+    printf("Total loss of %.5f over %d steps\n", (double) total_loss, steps);
+    printf("Average Loss: %.5f\n", (double) average_loss);
 
     // clean up
     tensor_free(&target_class);
