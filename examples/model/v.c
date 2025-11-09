@@ -736,10 +736,10 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
 
 /**
  * row-major matrix multiplication
- * https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
  */
 
 // forward
+// https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
 void matmul_forward(Tensor* y, Tensor* W, Tensor* x) {
     assert(tensor_is_matrix(W));
     assert(tensor_is_vector(x));
@@ -764,6 +764,8 @@ void matmul_forward(Tensor* y, Tensor* W, Tensor* x) {
 }
 
 // backward
+// https://people.math.wisc.edu/~hkeisler/keislercalc-03-01-24.pdf
+// https://www.whitman.edu/mathematics/multivariable/multivariable.pdf
 void matmul_backward(Tensor* y, Tensor* W, Tensor* x) {
     assert(tensor_is_matrix(W));
     assert(tensor_is_vector(x));
@@ -951,8 +953,7 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
 
 // https://arxiv.org/abs/2412.17019
 // https://incml.github.io/2023/03/05/Transformer-GPT.html
-// the bug is related to how Q, K, and V are computed.
-// the gradients are zeroed out for some unknown reason.
+// @note There is a bug that is related to how Q, K, and V are computed.
 void attn_backward(Valerie* v, Layer* L, int pos) {
     Dim* d = &v->d;
     Rotary* r = &v->r;
@@ -1023,8 +1024,6 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
 
     // Grouped query attention
     gqa_backward(&s->q, &s->k, d, r, pos);
-    // q and k do not have grads. grads are zero here.
-    // zero grads break the chain and cause Wq, Wk, Wv, and xnorm to become zero.
 
     // Projections
     matmul_backward(&s->q, &L->attn.Wq, &s->x_norm);
@@ -1262,6 +1261,8 @@ void zero(Valerie* v) {
     tensor_zero_grad(&v->s.x);
     tensor_zero_grad(&v->s.x_norm);
     tensor_zero_grad(&v->s.q);
+    // key cache is already cleared
+    // value cache is already cleared
     tensor_zero_grad(&v->s.attn_scores);
     tensor_zero_grad(&v->s.attn_out);
     tensor_zero_grad(&v->s.mlp_in);
