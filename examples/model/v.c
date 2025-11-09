@@ -910,7 +910,7 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
     gqa_forward(&s->q, &s->k, d, r, pos);
 
     // Compute attention scores (Q * K^T / sqrt(d_k))
-    // #pragma omp parallel for
+#pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         int kv_group = group * d->head_dim;
@@ -954,7 +954,6 @@ void attn_forward(Valerie* v, Layer* L, int pos) {
 
 // https://arxiv.org/abs/2412.17019
 // https://incml.github.io/2023/03/05/Transformer-GPT.html
-// @note There is a bug that is related to how Q, K, and V are computed.
 void attn_backward(Valerie* v, Layer* L, int pos) {
     Dim* d = &v->d;
     Rotary* r = &v->r;
@@ -976,7 +975,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     matmul_backward(&s->x_norm, &L->attn.Wo, &s->attn_out);
     // x_norm, attn.Wo, and attn_out have data and grad.
 
-    // #pragma omp parallel for
+#pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         int kv_group = group * d->head_dim;
@@ -994,7 +993,8 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         float softmax[len];
         softmax_forward(softmax, scores, len);
 
-        // Context vector: attn_out.g (incoming gradient), scores, vt, and their .g buffers
+        // Context vector
+        // attn_out.g (incoming gradient), scores, vt, and their .g buffers
         for (int t = 0; t <= pos; t++) {
             float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
             float* wvd = L->cache.Wv.d + t * d->kv_dim + kv_group;
@@ -1226,6 +1226,8 @@ void sgd(Tensor* t, float lr) {
 }
 
 void update(Valerie* v, float lr) {
+    // update layers
+#pragma omp parallel for
     for (int i = 0; i < v->d.layers; i++) {
         Layer* L = &v->l[i];
         sgd(&L->attn.Wq, lr);
@@ -1238,12 +1240,15 @@ void update(Valerie* v, float lr) {
         sgd(&L->ffn.W3, lr);
         sgd(&L->ffn.norm, lr);
     }
+
+    // update embeddings
     sgd(&v->e.token, lr);
     sgd(&v->e.norm, lr);
 }
 
 void zero(Valerie* v) {
     // clear layers
+#pragma omp parallel for
     for (int i = 0; i < v->d.layers; i++) {
         Layer* L = &v->l[i];
         tensor_zero_grad(&L->attn.Wq);
@@ -1277,6 +1282,7 @@ void zero(Valerie* v) {
 
 void zero_cache(Valerie* v) {
     // clear the cache every epoch
+#pragma omp parallel for
     for (int i = 0; i < v->d.layers; i++) {
         Layer* L = &v->l[i];
         tensor_zero_grad(&L->cache.Wk);
