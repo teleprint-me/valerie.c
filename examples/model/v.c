@@ -1325,6 +1325,7 @@ int main(void) {
     log_tokens(&t, target_ids, target_len);
 
     // do a single epoch for now
+    float total_loss = 0.0f;
     float lr = 1e-3f;  // learning rate
     int id = source_ids[0];  // V : 44 -> "H"
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
@@ -1338,6 +1339,7 @@ int main(void) {
 
         // compute loss and log-odds derivatives
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
+        total_loss += loss;
         printf("Loss: %.6f\n", (double) loss);
 
         // Stop loss
@@ -1357,6 +1359,10 @@ int main(void) {
             id = target_ids[pos];
         }
     }
+    // note that this is for a single epoch.
+    float average_loss = total_loss / target_len - 1;
+    printf("Total Loss: %.6f\n", (double) total_loss);
+    printf("Average Loss: %.6f\n", (double) average_loss);
 
     // clean up
     tensor_free(&target_class);
