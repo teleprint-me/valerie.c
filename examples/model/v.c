@@ -1346,12 +1346,10 @@ int main(void) {
             break;
         }
 
+        zero(&v);  // zero gradients
         cross_entropy_backward(&v.s.logits, &target_class);
-        // tensor_print(&v.s.logits, /** use_grad */ true);
-
         backward(&v, id, pos);  // compute gradients
         update(&v, lr);  // apply gradients
-        zero(&v);  // zero gradients
 
         if (pos + 1 < source_len) {
             id = source_ids[pos];
