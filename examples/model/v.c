@@ -1212,11 +1212,6 @@ void sgd(Tensor* t, float lr) {
 
     size_t len = tensor_count(t);
     for (size_t i = 0; i < len; i++) {
-        // temporarily clip gradients
-        if (fabsf(t->g[i]) > 1e+6f) {
-            t->g[i] = copysignf(1e+6f, t->g[i]);
-        }
-
         // Sanity check
         assert(!isnan(t->g[i]) && "Gradient is NAN");
         assert(!isinf(t->g[i]) && "Gradient is INF");
@@ -1311,7 +1306,7 @@ int main(void) {
 
         // compute loss and log-odds derivatives
         float loss = cross_entropy_forward(&v.s.logits, &target_class);
-        printf("Loss: %.6f\n\n", (double) loss);
+        printf("Loss: %.6f\n", (double) loss);
 
         // Stop loss
         if (loss < 1e-3f) {  // stop loss (tolerance)
@@ -1333,6 +1328,7 @@ int main(void) {
 
     // compute **after** the epoch has completed
     update(&v, lr);  // apply derivatives
+    // @note The model must be reset every epoch
 
     // clean up
     tensor_free(&target_class);
