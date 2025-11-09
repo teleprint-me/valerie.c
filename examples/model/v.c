@@ -740,6 +740,7 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
 
 // forward
 // https://understandinglinearalgebra.org/sec-matrices-lin-combs.html
+// https://link.springer.com/book/10.1007/978-3-031-41026-0
 void matmul_forward(Tensor* y, Tensor* W, Tensor* x) {
     assert(tensor_is_matrix(W));
     assert(tensor_is_vector(x));
