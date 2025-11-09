@@ -1243,6 +1243,7 @@ void update(Valerie* v, float lr) {
 }
 
 void zero(Valerie* v) {
+    // clear layers
     for (int i = 0; i < v->d.layers; i++) {
         Layer* L = &v->l[i];
         tensor_zero_grad(&L->attn.Wq);
@@ -1255,15 +1256,16 @@ void zero(Valerie* v) {
         tensor_zero_grad(&L->ffn.W3);
         tensor_zero_grad(&L->ffn.norm);
         // Cache has context. Do not clear it.
-        // tensor_zero_grad(&L->cache.Wk);
-        // tensor_zero_grad(&L->cache.Wv);
     }
+
+    // clear embeddings
     tensor_zero_grad(&v->e.token);
     tensor_zero_grad(&v->e.norm);
+
+    // clear state
     tensor_zero_grad(&v->s.x);
     tensor_zero_grad(&v->s.x_norm);
     tensor_zero_grad(&v->s.q);
-    // Cache has context. Do not clear it.
     // key is in cache
     // value is in cache
     tensor_zero_grad(&v->s.attn_scores);
@@ -1271,6 +1273,15 @@ void zero(Valerie* v) {
     tensor_zero_grad(&v->s.mlp_in);
     tensor_zero_grad(&v->s.mlp_gate);
     tensor_zero_grad(&v->s.logits);
+}
+
+void zero_cache(Valerie* v) {
+    // clear the cache every epoch
+    for (int i = 0; i < v->d.layers; i++) {
+        Layer* L = &v->l[i];
+        tensor_zero_grad(&L->cache.Wk);
+        tensor_zero_grad(&L->cache.Wv);
+    }
 }
 
 /** logging */
