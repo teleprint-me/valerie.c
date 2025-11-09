@@ -1254,6 +1254,7 @@ void zero(Valerie* v) {
         tensor_zero_grad(&L->ffn.W2);
         tensor_zero_grad(&L->ffn.W3);
         tensor_zero_grad(&L->ffn.norm);
+        // Clearing cache grads is okay?
         tensor_zero_grad(&L->cache.Wk);
         tensor_zero_grad(&L->cache.Wv);
     }
@@ -1262,8 +1263,9 @@ void zero(Valerie* v) {
     tensor_zero_grad(&v->s.x);
     tensor_zero_grad(&v->s.x_norm);
     tensor_zero_grad(&v->s.q);
-    // key cache is already cleared
-    // value cache is already cleared
+    // maybe just clear registered kv cache state?
+    // key is in cache
+    // value is in cache
     tensor_zero_grad(&v->s.attn_scores);
     tensor_zero_grad(&v->s.attn_out);
     tensor_zero_grad(&v->s.mlp_in);
