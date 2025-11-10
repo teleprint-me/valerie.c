@@ -1288,6 +1288,10 @@ void zero_cache(Valerie* v) {
         tensor_zero_grad(&L->cache.Wk);
         tensor_zero_grad(&L->cache.Wv);
     }
+
+    // state is aliased by cache
+    // v->s.k is in cache
+    // v->s.v is in cache
 }
 
 /** logging */
