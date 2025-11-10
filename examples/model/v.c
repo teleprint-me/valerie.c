@@ -649,7 +649,7 @@ void softmax_forward(float* y, const float* x, size_t len) {
         sum += y[i];
     }
 
-    float denom = fmaxf(sum, 1e-6f);  // epsilon for stability
+    float denom = sum + 1e-8f;
     for (size_t i = 0; i < len; ++i) {
         y[i] /= denom;
     }
@@ -663,7 +663,7 @@ void softmax_backward(float* dx, const float* dy, const float* y, size_t len) {
     }
 
     for (size_t i = 0; i < len; ++i) {
-        dx[i] = (dy[i] - dot) * fmaxf(y[i], 1e-6f);
+        dx[i] = (dy[i] - dot) * y[i];
     }
 }
 
@@ -689,7 +689,7 @@ void rmsnorm_forward(Tensor* y, Tensor* w, Tensor* x) {
     }
 
     // Normalize and scale
-    float norm = sqrtf(fmaxf(sum / (float) len, 1e-6f));
+    float norm = sqrtf((sum / (float) len) + 1e-8f);
     float inv = 1.0f / norm;
     for (size_t i = 0; i < len; i++) {
         y->d[i] = w->d[i] * (x->d[i] * inv);
@@ -715,7 +715,7 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
         sum += x->d[i] * x->d[i];
     }
 
-    float norm = sqrtf(fmaxf(sum / (float) len, 1e-6f));
+    float norm = sqrtf((sum / (float) len) + 1e-8f);
     float inv = 1.0f / norm;
     float denom = len * norm * norm * norm;  // d * norm^3
 
@@ -1182,7 +1182,7 @@ float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     float loss = 0.0f;
     for (size_t i = 0; i < len; ++i) {
         if (y_true->d[i] > 0.0f) {
-            loss -= y_true->d[i] * logf(fmaxf(softmax[i], 1e-6f));
+            loss -= y_true->d[i] * logf(softmax[i] + 1e-8f);
         }
     }
     return loss;
