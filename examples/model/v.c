@@ -1345,8 +1345,8 @@ int main(void) {
     int* target_ids = tokenizer_encode(&t, target, &target_len, false, false);
     log_tokens(&t, target_ids, target_len);
 
-    int epochs = 20;
-    float lr = 1e-3f;  // learning rate
+    int epochs = 1000;
+    float lr = 1e-5f;  // learning rate
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int epoch = 0; epoch < epochs; epoch++) {
         // do a single epoch for now
@@ -1371,10 +1371,11 @@ int main(void) {
                 break;
             }
 
-            zero(&v);  // zero gradients
-            cross_entropy_backward(&v.s.logits, &target_class);
-            backward(&v, id, pos);  // compute gradients
-            update(&v, lr);  // apply gradients
+            // gradients
+            cross_entropy_backward(&v.s.logits, &target_class);  // initialize
+            backward(&v, id, pos);  // compute
+            update(&v, lr);  // apply
+            zero(&v);  // zero
 
             if (pos + 1 < source_len) {
                 id = source_ids[pos];
