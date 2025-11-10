@@ -350,12 +350,12 @@ typedef struct Valerie {
 // Create a micro-model (intentionally small)
 Param param_new(int vocab_size) {
     Param param = {0};
-    param.model = 256;  // model width (hidden size)
-    param.heads = 16;  // number of attention heads
-    param.kv_heads = 4;  // number of key/value heads (for GQA/MQA)
-    param.hid_mul = 4;  // FFN hidden multiplier
-    param.layers = 3;  // number of transformer blocks
-    param.seq_len = 128;  // maximum context length
+    param.model = 8;  // model width (hidden size)
+    param.heads = 2;  // number of attention heads
+    param.kv_heads = 2;  // number of key/value heads (for GQA/MQA)
+    param.hid_mul = 2;  // FFN hidden multiplier
+    param.layers = 2;  // number of transformer blocks
+    param.seq_len = 16;  // maximum context length
     param.vocab_size = vocab_size;
     param.theta = 10000.0f;
     return param;
@@ -732,6 +732,10 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
         // ∂L/∂w_i
         w->g[i] = y->g[i] * x->d[i] * inv;
     }
+
+    tensor_print(y, true);
+    tensor_print(w, true);
+    tensor_print(x, true);
 }
 
 /**
@@ -1351,7 +1355,7 @@ int main(void) {
     log_tokens(&t, target_ids, target_len);
 
     int epochs = 100;
-    float lr = 1e-3f;  // learning rate
+    float lr = 1e-2f;  // learning rate
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int epoch = 0; epoch < epochs; epoch++) {
         int steps = 0;
