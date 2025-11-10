@@ -1345,46 +1345,52 @@ int main(void) {
     int* target_ids = tokenizer_encode(&t, target, &target_len, false, false);
     log_tokens(&t, target_ids, target_len);
 
-    // do a single epoch for now
-    float total_loss = 0.0f;
+    int epochs = 20;
     float lr = 1e-3f;  // learning rate
-    int id = source_ids[0];  // V : 44 -> "H"
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
-    for (int pos = 0; pos + 1 < target_len && pos < v.d.seq_len; pos++) {
-        forward(&v, id, pos);  // compute log-odds
-        // tensor_print(&v.s.logits, /** use_grad */ false);
+    for (int epoch = 0; epoch < epochs; epoch++) {
+        // do a single epoch for now
+        float total_loss = 0.0f;
+        int id = source_ids[0];  // V : 44 -> "H"
+        for (int pos = 0; pos + 1 < target_len && pos < v.d.seq_len; pos++) {
+            forward(&v, id, pos);  // compute log-odds
+            // tensor_print(&v.s.logits, /** use_grad */ false);
 
-        // create next token prediction
-        one_hot(&target_class, target_ids[pos + 1]);  // encode target label
-        // tensor_print(&target_class, /** use_grad */ false);
+            // create next token prediction
+            one_hot(&target_class, target_ids[pos + 1]);  // encode target label
+            // tensor_print(&target_class, /** use_grad */ false);
 
-        // compute loss and log-odds derivatives
-        float loss = cross_entropy_forward(&v.s.logits, &target_class);
-        total_loss += loss;
-        printf("Loss: %.5f\n", (double) loss);
+            // compute loss and log-odds derivatives
+            float loss = cross_entropy_forward(&v.s.logits, &target_class);
+            total_loss += loss;
+            // printf("Loss: %.5f\n", (double) loss);  // per token loss
 
-        // Stop loss
-        if (loss < 1e-3f) {  // stop loss (tolerance)
-            printf("pos[%d] (loss < %.5f)\n", pos, (double) 1e-3f);
-            break;
+            // Stop loss
+            if (loss < 1e-3f) {  // stop loss (tolerance)
+                printf("pos[%d] (loss < %.5f)\n", pos, (double) 1e-3f);
+                break;
+            }
+
+            zero(&v);  // zero gradients
+            cross_entropy_backward(&v.s.logits, &target_class);
+            backward(&v, id, pos);  // compute gradients
+            update(&v, lr);  // apply gradients
+
+            if (pos + 1 < source_len) {
+                id = source_ids[pos];
+            } else {
+                id = target_ids[pos];
+            }
         }
 
-        zero(&v);  // zero gradients
-        cross_entropy_backward(&v.s.logits, &target_class);
-        backward(&v, id, pos);  // compute gradients
-        update(&v, lr);  // apply gradients
+        zero_cache(&v);  // reset cache
 
-        if (pos + 1 < source_len) {
-            id = source_ids[pos];
-        } else {
-            id = target_ids[pos];
-        }
+        // note that this is for a single epoch.
+        int steps = target_len - 1;  // number of tokens in input sequence
+        float average_loss = total_loss / steps;  // overall loss
+        printf("Total loss of %.5f over %d steps\n", (double) total_loss, steps);
+        printf("Epoch %d: Average Loss = %.6f\n", epoch, (double) average_loss);
     }
-    // note that this is for a single epoch.
-    int steps = target_len - 1;
-    float average_loss = total_loss / steps;
-    printf("Total loss of %.5f over %d steps\n", (double) total_loss, steps);
-    printf("Average Loss: %.5f\n", (double) average_loss);
 
     // clean up
     tensor_free(&target_class);
