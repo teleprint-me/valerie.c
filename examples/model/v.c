@@ -980,7 +980,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     matmul_backward(&s->x_norm, &L->attn.Wo, &s->attn_out);
     // x_norm, attn.Wo, and attn_out have data and grad.
 
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (int h = 0; h < d->heads; h++) {
         int group = h / d->kv_mul;
         int kv_group = group * d->head_dim;
@@ -991,7 +991,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         float* qhd = s->q.d + h * d->head_dim;
         float* qhg = s->q.g + h * d->head_dim;
 
-        // Softmax (in-place)
+        // Softmax
         size_t len = pos + 1;
 
         // Recompute softmax
@@ -1001,8 +1001,8 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         // Context vector
         // attn_out.g (incoming gradient), scores, vt, and their .g buffers
         for (int t = 0; t <= pos; t++) {
-            float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
             float* wvd = L->cache.Wv.d + t * d->kv_dim + kv_group;
+            float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
 
             float sum = 0.0f;
             for (int k = 0; k < d->head_dim; k++) {
@@ -1015,12 +1015,16 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         // Compute softmax jacobian
         float grad_softmax[len];
         softmax_backward(grad_softmax, grad_scores, softmax, len);
+        // initial softmax gradients are unstable and
+        // propagate 0 and eventually nan
 
         // Dot product
         for (int t = 0; t <= pos; t++) {
             float* wkd = L->cache.Wk.d + t * d->kv_dim + kv_group;
             float* wkg = L->cache.Wk.g + t * d->kv_dim + kv_group;
 
+            // qg = 0 * k / head-dim = 0
+            // kg = 0 * k / head-dim = 0
             for (int k = 0; k < d->head_dim; k++) {
                 qhg[k] += grad_softmax[t] * wkd[k] / sqrtf((float) d->head_dim);
                 wkg[k] += grad_softmax[t] * qhd[k] / sqrtf((float) d->head_dim);
