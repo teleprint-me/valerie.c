@@ -141,7 +141,7 @@ Tensor tensor_new(const char* name, Shape shape, bool use_grad) {
     t.shape = shape;
     size_t len = tensor_count(&t);
 
-    t.d = malloc(len * sizeof(float));
+    t.d = calloc(len, sizeof(float));
     if (use_grad) {
         t.g = calloc(len, sizeof(float));
         t.v = calloc(len, sizeof(float));
@@ -730,9 +730,9 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
         w->g[i] = y->g[i] * x->d[i] * inv;
     }
 
-    tensor_print(y, true);
-    tensor_print(w, true);
-    tensor_print(x, true);
+    // tensor_print(y, true);
+    // tensor_print(w, true);
+    // tensor_print(x, true);
 }
 
 /**
@@ -797,6 +797,10 @@ void matmul_backward(Tensor* y, Tensor* W, Tensor* x) {
         }
         x->g[j] += grad;  // accumulate
     }
+
+    // tensor_print(y, true);
+    // tensor_print(W, true);
+    // tensor_print(x, true);
 }
 
 /**
@@ -1024,8 +1028,23 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         }
     }
 
+    // both q and k are zero for the first few iterations
+    printf("before gqa\n");
+    tensor_print(&s->q, false);
+    tensor_print(&s->k, false);
+    tensor_print(&s->q, true);
+    tensor_print(&s->k, true);
+    fflush(stderr);
+
     // Grouped query attention
     gqa_backward(&s->q, &s->k, d, r, pos);
+
+    printf("after gqa\n");
+    tensor_print(&s->q, false);
+    tensor_print(&s->k, false);
+    tensor_print(&s->q, true);
+    tensor_print(&s->k, true);
+    fflush(stderr);
 
     // Projections
     matmul_backward(&s->q, &L->attn.Wq, &s->x_norm);
@@ -1231,7 +1250,7 @@ void sgd(Tensor* t, float lr) {
 
 void update(Valerie* v, float lr) {
     // update layers
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (int i = 0; i < v->d.layers; i++) {
         Layer* L = &v->l[i];
         sgd(&L->attn.Wq, lr);
@@ -1252,7 +1271,7 @@ void update(Valerie* v, float lr) {
 
 void zero(Valerie* v) {
     // clear layers
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (int i = 0; i < v->d.layers; i++) {
         Layer* L = &v->l[i];
         tensor_zero_grad(&L->attn.Wq);
@@ -1264,7 +1283,7 @@ void zero(Valerie* v) {
         tensor_zero_grad(&L->ffn.W2);
         tensor_zero_grad(&L->ffn.W3);
         tensor_zero_grad(&L->ffn.norm);
-        // Cache has context. Do not clear it.
+        // Clear cache
         tensor_zero_grad(&L->cache.Wk);
         tensor_zero_grad(&L->cache.Wv);
     }
@@ -1277,27 +1296,14 @@ void zero(Valerie* v) {
     tensor_zero_grad(&v->s.x);
     tensor_zero_grad(&v->s.x_norm);
     tensor_zero_grad(&v->s.q);
-    tensor_zero_grad(&v->s.k);
-    tensor_zero_grad(&v->s.v);
+    // k and v are cache aliases
+    // tensor_zero_grad(&v->s.k);
+    // tensor_zero_grad(&v->s.v);
     tensor_zero_grad(&v->s.attn_scores);
     tensor_zero_grad(&v->s.attn_out);
     tensor_zero_grad(&v->s.mlp_in);
     tensor_zero_grad(&v->s.mlp_gate);
     tensor_zero_grad(&v->s.logits);
-}
-
-void zero_cache(Valerie* v) {
-    // clear the cache every epoch
-#pragma omp parallel for
-    for (int i = 0; i < v->d.layers; i++) {
-        Layer* L = &v->l[i];
-        tensor_zero_grad(&L->cache.Wk);
-        tensor_zero_grad(&L->cache.Wv);
-    }
-
-    // state is aliased by cache
-    // v->s.k is in cache
-    // v->s.v is in cache
 }
 
 /** logging */
@@ -1393,8 +1399,6 @@ int main(void) {
                 id = target_ids[pos];
             }
         }
-
-        // zero_cache(&v);  // reset cache
 
         float mean = total_loss / steps;
         float mean2 = total_loss2 / steps;
