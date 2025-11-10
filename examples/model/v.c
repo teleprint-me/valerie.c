@@ -1034,7 +1034,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     tensor_print(&s->q, true);
     tensor_print(&s->k, false);
     tensor_print(&s->k, true);
-    tensor_print(&s->v, true);
+    tensor_print(&s->v, false);
     tensor_print(&s->v, true);
     fflush(stderr);
 
@@ -1047,7 +1047,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     tensor_print(&s->q, true);
     tensor_print(&s->k, false);
     tensor_print(&s->k, true);
-    tensor_print(&s->v, true);
+    tensor_print(&s->v, false);
     tensor_print(&s->v, true);
     fflush(stderr);
 
