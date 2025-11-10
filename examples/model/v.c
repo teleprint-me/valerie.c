@@ -1349,8 +1349,10 @@ int main(void) {
     float lr = 1e-5f;  // learning rate
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int epoch = 0; epoch < epochs; epoch++) {
-        // do a single epoch for now
+        int steps = 0;
         float total_loss = 0.0f;
+        float total_loss2 = 0.0f;
+
         int id = source_ids[0];  // V : 44 -> "H"
         for (int pos = 0; pos + 1 < target_len && pos < v.d.seq_len; pos++) {
             forward(&v, id, pos);  // compute log-odds
@@ -1363,6 +1365,8 @@ int main(void) {
             // compute loss and log-odds derivatives
             float loss = cross_entropy_forward(&v.s.logits, &target_class);
             total_loss += loss;
+            total_loss2 += loss * loss;
+            steps++;
             // printf("Loss: %.5f\n", (double) loss);  // per token loss
 
             // Stop loss
@@ -1386,11 +1390,13 @@ int main(void) {
 
         zero_cache(&v);  // reset cache
 
-        // note that this is for a single epoch.
-        int steps = target_len - 1;  // number of tokens in input sequence
-        float average_loss = total_loss / steps;  // overall loss
-        printf("Total loss of %.5f over %d steps\n", (double) total_loss, steps);
-        printf("Epoch %d: Average Loss = %.6f\n", epoch, (double) average_loss);
+        float mean = total_loss / steps;
+        float mean2 = total_loss2 / steps;
+        float variance = mean2 - mean * mean;
+        float stddev = sqrtf(fmaxf(variance, 0.0f));
+        printf(
+            "Epoch %d: Mean Loss = %.6f, Stddev = %.6f\n", epoch, (double) mean, (double) stddev
+        );
     }
 
     // clean up
