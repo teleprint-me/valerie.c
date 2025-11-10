@@ -1031,19 +1031,24 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     // both q and k are zero for the first few iterations
     printf("before gqa\n");
     tensor_print(&s->q, false);
-    tensor_print(&s->k, false);
     tensor_print(&s->q, true);
+    tensor_print(&s->k, false);
     tensor_print(&s->k, true);
+    tensor_print(&s->v, true);
+    tensor_print(&s->v, true);
     fflush(stderr);
 
     // Grouped query attention
     gqa_backward(&s->q, &s->k, d, r, pos);
 
+    // gqa works if q and k and are non-zero inputs.
     printf("after gqa\n");
     tensor_print(&s->q, false);
-    tensor_print(&s->k, false);
     tensor_print(&s->q, true);
+    tensor_print(&s->k, false);
     tensor_print(&s->k, true);
+    tensor_print(&s->v, true);
+    tensor_print(&s->v, true);
     fflush(stderr);
 
     // Projections
