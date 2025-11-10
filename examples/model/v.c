@@ -649,7 +649,7 @@ void softmax_forward(float* y, const float* x, size_t len) {
         sum += y[i];
     }
 
-    float denom = sum + 1e-6f;  // epsilon for stability
+    float denom = fmaxf(sum, 1e-6f);  // epsilon for stability
     for (size_t i = 0; i < len; ++i) {
         y[i] /= denom;
     }
@@ -689,7 +689,7 @@ void rmsnorm_forward(Tensor* y, Tensor* w, Tensor* x) {
     }
 
     // Normalize and scale
-    float norm = sqrtf((sum / (float) len) + 1e-6f);
+    float norm = sqrtf(fmaxf(sum / (float) len, 1e-6f));
     float inv = 1.0f / norm;
     for (size_t i = 0; i < len; i++) {
         y->d[i] = w->d[i] * (x->d[i] * inv);
@@ -715,7 +715,7 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
         sum += x->d[i] * x->d[i];
     }
 
-    float norm = sqrtf((sum / (float) len) + 1e-6f);
+    float norm = sqrtf(fmaxf(sum / (float) len, 1e-6f));
     float inv = 1.0f / norm;
     float denom = len * norm * norm * norm;  // d * norm^3
 
@@ -1214,12 +1214,15 @@ void sgd(Tensor* t, float lr) {
         abort();
     }
 
-    size_t len = tensor_count(t);
-    for (size_t i = 0; i < len; i++) {
-        assert(!isnan(t->g[i]) && "Gradient is NAN");
-        assert(!isinf(t->g[i]) && "Gradient is INF");
-        // assert(t->g[i] > 1e-6f && "Gradient vanished");
-        // assert(t->g[i] < 1e+6f && "Gradient exploded");
+    for (size_t i = 0; i < tensor_count(t); i++) {
+        if (isnan(t->d[i]) || isinf(t->d[i])) {
+            printf("NaN/Inf in %s.data at i=%zu val=%f\n", t->name, i, (double) t->d[i]);
+            abort();
+        }
+        if (isnan(t->g[i]) || isinf(t->g[i])) {
+            printf("NaN/Inf in %s.grad at i=%zu val=%f\n", t->name, i, (double) t->g[i]);
+            abort();
+        }
 
         t->d[i] -= lr * t->g[i];  // update the weight
     }
@@ -1261,6 +1264,8 @@ void zero(Valerie* v) {
         tensor_zero_grad(&L->ffn.W3);
         tensor_zero_grad(&L->ffn.norm);
         // Cache has context. Do not clear it.
+        tensor_zero_grad(&L->cache.Wk);
+        tensor_zero_grad(&L->cache.Wv);
     }
 
     // clear embeddings
@@ -1271,8 +1276,8 @@ void zero(Valerie* v) {
     tensor_zero_grad(&v->s.x);
     tensor_zero_grad(&v->s.x_norm);
     tensor_zero_grad(&v->s.q);
-    // key is in cache
-    // value is in cache
+    tensor_zero_grad(&v->s.k);
+    tensor_zero_grad(&v->s.v);
     tensor_zero_grad(&v->s.attn_scores);
     tensor_zero_grad(&v->s.attn_out);
     tensor_zero_grad(&v->s.mlp_in);
@@ -1345,8 +1350,8 @@ int main(void) {
     int* target_ids = tokenizer_encode(&t, target, &target_len, false, false);
     log_tokens(&t, target_ids, target_len);
 
-    int epochs = 1000;
-    float lr = 1e-5f;  // learning rate
+    int epochs = 100;
+    float lr = 1e-3f;  // learning rate
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int epoch = 0; epoch < epochs; epoch++) {
         int steps = 0;
@@ -1388,7 +1393,7 @@ int main(void) {
             }
         }
 
-        zero_cache(&v);  // reset cache
+        // zero_cache(&v);  // reset cache
 
         float mean = total_loss / steps;
         float mean2 = total_loss2 / steps;
