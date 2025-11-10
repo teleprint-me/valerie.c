@@ -694,9 +694,6 @@ void rmsnorm_forward(Tensor* y, Tensor* w, Tensor* x) {
     for (size_t i = 0; i < len; i++) {
         y->d[i] = w->d[i] * (x->d[i] * inv);
     }
-
-    // Optionally store inv/norm for backward
-    // (e.g., x->v[0] = inv;)
 }
 
 // backward
