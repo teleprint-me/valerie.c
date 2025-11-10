@@ -636,6 +636,8 @@ void silu_backward(Tensor* y, const Tensor* x) {
 // Softmax: in-place and does not require a backward pass
 // https://www.deeplearningbook.org/contents/mlp.html#pf11
 void softmax_forward(float* y, const float* x, size_t len) {
+    memset(y, 0, len * sizeof(float));
+
     float max = x[0];
     for (size_t i = 1; i < len; ++i) {
         if (x[i] > max) {
@@ -656,12 +658,26 @@ void softmax_forward(float* y, const float* x, size_t len) {
 }
 
 // https://brandonrohrer.com/softmax
+// @note At the very first position of a causal attention block
+// (i.e., position 0), the attention "can only attend to itself"
+// so the only thing the gradient can do is nothing. It can’t move
+// probability mass around because there’s only one thing to attend to.
+// so far, all the math checks out for all activations.
+// e.g. softmax, rmsnorm, sigmoid, silu, etc.
+// something else is creating numerical instability.
 void softmax_backward(float* dx, const float* dy, const float* y, size_t len) {
+    memset(dx, 0, len * sizeof(float));
+
     float dot = 0.0f;
     for (size_t i = 0; i < len; ++i) {
         dot += dy[i] * y[i];
     }
 
+    // we could stabalize initial dot computes,
+    // but it offsets the chain. It would need to be at least 1e-4f
+    // to be able to emulate a contribution, but it would be a
+    // false contribution non-the-less.
+    // https://en.wikipedia.org/wiki/Chain_rule#Multivariable_case
     for (size_t i = 0; i < len; ++i) {
         dx[i] = (dy[i] - dot) * y[i];
     }
@@ -997,9 +1013,9 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         // Recompute softmax
         float softmax[len];
         softmax_forward(softmax, scores, len);
+        // values are successfully computed and propagated.
 
         // Context vector
-        // attn_out.g (incoming gradient), scores, vt, and their .g buffers
         for (int t = 0; t <= pos; t++) {
             float* wvd = L->cache.Wv.d + t * d->kv_dim + kv_group;
             float* wvg = L->cache.Wv.g + t * d->kv_dim + kv_group;
@@ -1015,8 +1031,7 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         // Compute softmax jacobian
         float grad_softmax[len];
         softmax_backward(grad_softmax, grad_scores, softmax, len);
-        // initial softmax gradients are unstable and
-        // propagate 0 and eventually nan
+        // values are successfully computed and propagated.
 
         // Dot product
         for (int t = 0; t <= pos; t++) {
@@ -1033,27 +1048,27 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
     }
 
     // both q and k are zero for the first few iterations
-    printf("before gqa\n");
-    tensor_print(&s->q, false);
-    tensor_print(&s->q, true);
-    tensor_print(&s->k, false);
-    tensor_print(&s->k, true);
-    tensor_print(&s->v, false);
-    tensor_print(&s->v, true);
-    fflush(stderr);
+    // printf("before gqa\n");
+    // tensor_print(&s->q, false);
+    // tensor_print(&s->q, true);
+    // tensor_print(&s->k, false);
+    // tensor_print(&s->k, true);
+    // tensor_print(&s->v, false);
+    // tensor_print(&s->v, true);
+    // fflush(stderr);
 
     // Grouped query attention
     gqa_backward(&s->q, &s->k, d, r, pos);
+    // gqa is operating as expected. math checks out.
 
-    // gqa works if q and k and are non-zero inputs.
-    printf("after gqa\n");
-    tensor_print(&s->q, false);
-    tensor_print(&s->q, true);
-    tensor_print(&s->k, false);
-    tensor_print(&s->k, true);
-    tensor_print(&s->v, false);
-    tensor_print(&s->v, true);
-    fflush(stderr);
+    // printf("after gqa\n");
+    // tensor_print(&s->q, false);
+    // tensor_print(&s->q, true);
+    // tensor_print(&s->k, false);
+    // tensor_print(&s->k, true);
+    // tensor_print(&s->v, false);
+    // tensor_print(&s->v, true);
+    // fflush(stderr);
 
     // Projections
     matmul_backward(&s->q, &L->attn.Wq, &s->x_norm);
