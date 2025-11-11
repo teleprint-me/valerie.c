@@ -1248,6 +1248,7 @@ void cross_entropy_backward(Tensor* y_pred, const Tensor* y_true) {
 
 // just focus on stochastic gradient descent for now.
 // adamw can be implemented later on.
+// @note regularization and clipping might be necessary to contain gradients.
 void sgd(Tensor* t, float lr) {
     if (!t || !t->d || !t->g) {
         abort();
