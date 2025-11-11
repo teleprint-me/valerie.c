@@ -668,7 +668,9 @@ void softmax_forward(float* y, const float* x, size_t len) {
         sum += y[i];
     }
 
-    float denom = sum + 1e-5f;
+    // @note Adding epsilon creates false contributions.
+    // maybe just assert sum is non-zero?
+    float denom = sum + 1e-8f;
     for (size_t i = 0; i < len; ++i) {
         y[i] /= denom;
     }
@@ -1219,7 +1221,7 @@ float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     float loss = 0.0f;
     for (size_t i = 0; i < len; ++i) {
         if (y_true->d[i] > 0.0f) {
-            loss -= y_true->d[i] * logf(softmax[i] + 1e-5f);
+            loss -= y_true->d[i] * logf(softmax[i] + 1e-8f);
         }
     }
     return loss;
