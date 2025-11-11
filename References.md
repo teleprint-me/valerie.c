@@ -27,6 +27,7 @@ transformer implementation.
 
 ## Wikipedia
 
+- [Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution)
 - [Chain Rule](https://en.wikipedia.org/wiki/Chain_rule) `[wiki-chain-rule]`
 - [Logistic Regression](https://en.wikipedia.org/wiki/Logistic_regression)
   `[wiki-logreg]`
