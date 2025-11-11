@@ -22,14 +22,28 @@
 
 /** psuedo-random number generation */
 
-float random_normal(void) {
-    return (float) rand() / (float) RAND_MAX;
+int coin_toss(void) {
+    return rand() & 1;
+}
+
+float random_uniform(void) {
+    return (float) rand() / (RAND_MAX + 1.0f);
+}
+
+// Box–Muller transform
+float random_normal(float mu, float sigma) {
+    float u1 = random_uniform();
+    float u2 = random_uniform();
+    float two_pi = 2.0f * (float) M_PI;
+    float m = sigma * sqrtf(-2.0f * logf(u1));
+    float z0 = m * cosf(two_pi * u2) + mu;
+    float z1 = m * sinf(two_pi * u2) + mu;
+    return coin_toss() ? z0 : z1;
 }
 
 float random_xavier(size_t rows, size_t cols) {
-    float a = sqrtf(6.0f / (rows + cols));
-    float ud = 2.0f * random_normal() - 1.0f;
-    return ud * a;
+    float std = sqrtf(1.0f / (rows + cols));
+    return random_normal(0.0f, std);
 }
 
 /** tensors */
@@ -193,7 +207,7 @@ void tensor_random(Tensor* t) {
     size_t rows = tensor_rows(t);
     size_t cols = tensor_cols(t);
     for (size_t i = 0; i < tensor_count(t); i++) {
-        t->d[i] = (rows > 1 && cols > 1) ? random_xavier(rows, cols) : random_normal();
+        t->d[i] = (rows > 1 && cols > 1) ? random_xavier(rows, cols) : random_uniform();
     }
 }
 
