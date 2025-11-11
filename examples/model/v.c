@@ -41,8 +41,11 @@ float random_normal(float mu, float sigma) {
     return coin_toss() ? z0 : z1;
 }
 
+// xavier: https://proceedings.mlr.press/v9/glorot10a.html
+// kumar: https://arxiv.org/abs/1704.08863
+// he: https://arxiv.org/abs/1502.01852
 float random_xavier(size_t rows, size_t cols) {
-    float std = sqrtf(1.0f / (rows + cols));
+    float std = sqrtf(2.0f / (rows + cols));
     return random_normal(0.0f, std);
 }
 
@@ -207,7 +210,7 @@ void tensor_random(Tensor* t) {
     size_t rows = tensor_rows(t);
     size_t cols = tensor_cols(t);
     for (size_t i = 0; i < tensor_count(t); i++) {
-        t->d[i] = (rows > 1 && cols > 1) ? random_xavier(rows, cols) : random_uniform();
+        t->d[i] = (rows > 1 && cols > 1) ? random_xavier(rows, cols) : random_normal(0.0f, 1.0f);
     }
 }
 
