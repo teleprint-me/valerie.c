@@ -651,7 +651,7 @@ void softmax_forward(float* y, const float* x, size_t len) {
         sum += y[i];
     }
 
-    float denom = sum + 1e-8f;
+    float denom = sum + 1e-5f;
     for (size_t i = 0; i < len; ++i) {
         y[i] /= denom;
     }
@@ -689,6 +689,7 @@ void softmax_backward(float* dx, const float* dy, const float* y, size_t len) {
  */
 
 // forward
+// @note The sqrt of a number must be non-negative.
 void rmsnorm_forward(Tensor* y, Tensor* w, Tensor* x) {
     assert(tensor_is_vector(y));
     assert(tensor_is_vector(w));
@@ -705,7 +706,7 @@ void rmsnorm_forward(Tensor* y, Tensor* w, Tensor* x) {
     }
 
     // Normalize and scale
-    float norm = sqrtf((sum / (float) len) + 1e-8f);
+    float norm = sqrtf((fabsf(sum) / (float) len) + 1e-5f);
     float inv = 1.0f / norm;
     for (size_t i = 0; i < len; i++) {
         y->d[i] = w->d[i] * (x->d[i] * inv);
@@ -728,7 +729,7 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
         sum += x->d[i] * x->d[i];
     }
 
-    float norm = sqrtf((sum / (float) len) + 1e-8f);
+    float norm = sqrtf((fabsf(sum) / (float) len) + 1e-5f);
     float inv = 1.0f / norm;
     float denom = len * norm * norm * norm;  // d * norm^3
 
@@ -745,10 +746,6 @@ void rmsnorm_backward(Tensor* y, Tensor* w, Tensor* x) {
         // ∂L/∂w_i
         w->g[i] = y->g[i] * x->d[i] * inv;
     }
-
-    // tensor_print(y, true);
-    // tensor_print(w, true);
-    // tensor_print(x, true);
 }
 
 /**
@@ -813,10 +810,6 @@ void matmul_backward(Tensor* y, Tensor* W, Tensor* x) {
         }
         x->g[j] += grad;  // accumulate
     }
-
-    // tensor_print(y, true);
-    // tensor_print(W, true);
-    // tensor_print(x, true);
 }
 
 /**
@@ -1047,28 +1040,11 @@ void attn_backward(Valerie* v, Layer* L, int pos) {
         }
     }
 
-    // both q and k are zero for the first few iterations
-    // printf("before gqa\n");
-    // tensor_print(&s->q, false);
-    // tensor_print(&s->q, true);
-    // tensor_print(&s->k, false);
-    // tensor_print(&s->k, true);
-    // tensor_print(&s->v, false);
-    // tensor_print(&s->v, true);
-    // fflush(stderr);
+    // @note both q and k are zero for the first position
 
     // Grouped query attention
     gqa_backward(&s->q, &s->k, d, r, pos);
     // gqa is operating as expected. math checks out.
-
-    // printf("after gqa\n");
-    // tensor_print(&s->q, false);
-    // tensor_print(&s->q, true);
-    // tensor_print(&s->k, false);
-    // tensor_print(&s->k, true);
-    // tensor_print(&s->v, false);
-    // tensor_print(&s->v, true);
-    // fflush(stderr);
 
     // Projections
     matmul_backward(&s->q, &L->attn.Wq, &s->x_norm);
@@ -1226,7 +1202,7 @@ float cross_entropy_forward(Tensor* y_pred, Tensor* y_true) {
     float loss = 0.0f;
     for (size_t i = 0; i < len; ++i) {
         if (y_true->d[i] > 0.0f) {
-            loss -= y_true->d[i] * logf(softmax[i] + 1e-8f);
+            loss -= y_true->d[i] * logf(softmax[i] + 1e-5f);
         }
     }
     return loss;
@@ -1258,6 +1234,9 @@ void sgd(Tensor* t, float lr) {
         abort();
     }
 
+    tensor_print(t, /** use grad */ false);
+    tensor_print(t, /** use grad */ true);
+
     for (size_t i = 0; i < tensor_count(t); i++) {
         if (isnan(t->d[i]) || isinf(t->d[i])) {
             printf("NaN/Inf in %s.data at i=%zu val=%f\n", t->name, i, (double) t->d[i]);
@@ -1268,7 +1247,7 @@ void sgd(Tensor* t, float lr) {
             abort();
         }
 
-        t->d[i] -= lr * t->g[i];  // update the weight
+        t->d[i] -= lr * fabsf(t->g[i]);  // update the weight
     }
 }
 
@@ -1382,7 +1361,7 @@ int main(void) {
     log_tokens(&t, target_ids, target_len);
 
     int epochs = 100;
-    float lr = 1e-2f;  // learning rate
+    float lr = 1e-1f;  // learning rate
     Tensor target_class = tensor_new("target.class", shape_vector(t.vocab_size), false);
     for (int epoch = 0; epoch < epochs; epoch++) {
         int steps = 0;
