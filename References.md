@@ -33,6 +33,7 @@ transformer implementation.
 - [One-hot](https://en.wikipedia.org/wiki/One-hot) `[wiki-onehot]`
 - [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function)
   `[wiki-sigmoid]`
+- [Floating-point Precision](https://en.wikipedia.org/wiki/IEEE_754)
 
 ---
 
@@ -65,8 +66,11 @@ transformer implementation.
   `[egalitarian2024]`
 - [Embed (Mikolov et al., 2016)](https://arxiv.org/abs/1607.04606)
   `[mikolov2016-embed]`
+- [FP8 Formats](https://arxiv.org/abs/2209.05433)
 - [GQA: Grouped Query Attention](https://arxiv.org/pdf/2305.13245) `[gqa2023]`
 - [He Initialization](https://arxiv.org/abs/1502.01852) `[he2015-init]`
+- [IEEE 754-2019](https://standards.ieee.org/ieee/754/6210/)
+  `[2019-arithmetic]`
 - [Kumar Weight Initialization](https://arxiv.org/abs/1704.08863)
   `[kumar2017-init]`
 - [Language Model Tokenizers Introduce Unfairness](https://arxiv.org/abs/2305.15425)
@@ -75,6 +79,8 @@ transformer implementation.
   `[lcm-parkmiller1988]`
 - [Mersenne Twister](https://dl.acm.org/doi/10.1145/272991.272995)
   `[mersenne-mt1998]`
+- [Microscaling](https://arxiv.org/abs/2510.01863) `[mxfp8-2025]`
+- [Mixed Precision](https://arxiv.org/abs/1710.03740) `[bf16-2017]`
 - [Momentum (Sutskever, 2013)](https://proceedings.mlr.press/v28/sutskever13.html)
   `[sutskever2013-momentum]`
 - [Neural Machine Translation with Subword Units](https://arxiv.org/abs/1508.07909)
