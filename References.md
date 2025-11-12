@@ -2,9 +2,7 @@
 
 This is a curated, evolving list of sources for the Valerie decoder-only
 transformer implementation.  
-**Last updated:** 2025-11-11
-
----
+**Last updated:** 2025-11-12
 
 ## Web Articles
 
@@ -23,8 +21,6 @@ transformer implementation.
 - [Regularization Visualized (Daniel Kunin)](https://rawgit.com/danielkunin/Deeplearning-Visualizations/master/regularization/index.html)
   `[kunin-regularization]`
 
----
-
 ## Wikipedia
 
 - [Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution)
@@ -35,8 +31,6 @@ transformer implementation.
 - [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function)
   `[wiki-sigmoid]`
 - [Floating-point Precision](https://en.wikipedia.org/wiki/IEEE_754)
-
----
 
 ## Academic Papers
 
@@ -109,8 +103,6 @@ transformer implementation.
 - [Algorithms in Large Language Models](https://arxiv.org/abs/2207.09238)
   `[llm-algorithms2022]`
 
----
-
 ## Textbooks
 
 - **Calculus**
@@ -123,6 +115,9 @@ transformer implementation.
     `[goodfellow2016-dlbook]`
   - [Understanding Deep Learning](https://udlbook.github.io/udlbook/)
     `[udlbook2020]`
+- **Digital Signal Processing**
+    - [Digital Signals Theory](https://brianmcfee.net/) `[mcfee-2023]`
+    - [Smith, S.: Scientist & Engineer’s Guide to DSP](https://www.analog.com/en/resources/technical-books/scientist_engineers_guide.html) `[smith-dsp]`
 - **Discrete Mathematics**
   - [OpenDiscrete](https://discrete.openmathbooks.org/dmoi3.html)
     `[opendiscrete2023]`
@@ -137,21 +132,10 @@ transformer implementation.
   - [Probability Course](https://www.probabilitycourse.com/)
     `[probabilitycourse2023]`
 
----
-
-## Digital Signal Processing
-
-- [Smith, S.: Scientist & Engineer’s Guide to DSP](https://www.analog.com/en/resources/technical-books/scientist_engineers_guide.html)
-  `[smith-dsp]`
-
----
-
 ## Source Code
 
 - [qwen3.c (adriancable)](https://github.com/adriancable/qwen3.c)
   `[adriancable-qwen3c]`
-
----
 
 ## **Notes / TODO**
 
