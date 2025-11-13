@@ -153,6 +153,69 @@ Curated, evolving list of sources for the Valerie decoder-only transformer imple
   Kian Katanforoosh & Daniel Kunin, 2018  
   `[katanforoosh2018-regularization]`
 
+## Textbooks
+
+- [Elementary Calculus: An Infinitesimal Approach](https://people.math.wisc.edu/~hkeisler)  
+  H. Jerome Keisler, 2024  
+  _Creative Commons_  
+  `[keisler2024-elementary-calculus]`
+
+- [Single and Multivariable Calculus: Early Transcendentals](https://www.whitman.edu/mathematics/multivariable/)  
+  Guichard & Keisler, 2025  
+  _Creative Commons_  
+  `[guichard2025-multivariable]`
+
+- [Deep Learning](https://www.deeplearningbook.org/)  
+  Goodfellow et al., 2016  
+  _Proprietary, web-only_  
+  `[goodfellow2016-deep-learning]`
+
+- [Understanding Deep Learning](https://udlbook.github.io/udlbook/)  
+  Simon J.D. Prince, 2023  
+  _Creative Commons_  
+  `[prince2023-udl]`
+
+- [Discrete Mathematics: An Open Introduction (3rd Edition)](https://discrete.openmathbooks.org/dmoi3.html)  
+  Oscar Levin, 2021  
+  _Creative Commons_  
+  `[levin2021-discrete]`
+
+- [Understanding Linear Algebra](https://understandinglinearalgebra.org/home.html)  
+  David Austin, 2023  
+  _Creative Commons_  
+  `[austin2023-ula]`
+
+- [Linear Algebra: Done Right](https://link.springer.com/book/10.1007/978-3-031-41026-0)  
+  Sheldon Axler, 2024  
+  _Creative Commons_  
+  `[axler2024-ladr]`
+
+- [The Elements of Statistical Learning: Data Mining, Inference, and Prediction](https://hastie.su.domains/ElemStatLearn/)  
+  Hastie et al., 2017  
+  _(Accessibility in progress)_  
+  `[hastie2017-esl]`
+
+- [Introduction to Probability, Statistics, and Random Processes](https://www.probabilitycourse.com/)  
+  Hossein Pishro-Nik, 2014  
+  _Proprietary, web-only_  
+  `[pishronik2014-ipsrp]`
+
+- [Digital Signals Theory](https://brianmcfee.net/)
+  Brian McFee, 2023  
+  _Proprietary, web-only_  
+  `[mcfee2023-dst]`
+
+- [The Scientist & Engineer's Guide to Digital Signal Processing](https://www.analog.com/en/resources/technical-books/scientist_engineers_guide.html)  
+  Steven W. Smith, 1999  
+  _(Proprietary - research needed)_  
+  `[smith1999-dsp]`
+
+## Open Educational Resources (OER) / Creative Commons
+
+- [OpenStax: Math Textbooks](https://openstax.org/subjects/math) `[openstax-math]`
+- [Open Textbook Library: Mathematics (UMN)](https://open.umn.edu/opentextbooks/subjects/mathematics) `[umn-math-open]`
+- [LibreTexts: Mathematics](https://math.libretexts.org/)
+
 ## Wikipedia
 
 - [Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution) `[wiki-normal]`
@@ -162,39 +225,18 @@ Curated, evolving list of sources for the Valerie decoder-only transformer imple
 - [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function) `[wiki-sigmoid]`
 - [IEEE 754 (Floating-point Precision)](https://en.wikipedia.org/wiki/IEEE_754) `[wiki-ieee754]`
 
-## Textbooks
-
-- **Calculus**
-  - [Keisler, H.: Elementary Calculus](https://people.math.wisc.edu/~hkeisler) `[keisler-calculus]`
-  - [Whitman, D.: Multivariable Calculus](https://www.whitman.edu/mathematics/multivariable) `[whitman-multivariable]`
-- **Deep Learning**
-  - [Goodfellow, I. et al.: Deep Learning](https://www.deeplearningbook.org) `[goodfellow2016-dlbook]`
-  - [Understanding Deep Learning](https://udlbook.github.io/udlbook/) `[udlbook2020]`
-- **Discrete Mathematics**
-  - [OpenDiscrete (Open Math Books)](https://discrete.openmathbooks.org/dmoi3.html) `[opendiscrete2023]`
-- **Linear Algebra**
-  - [Understanding Linear Algebra (Paul Penfield)](https://understandinglinearalgebra.org) `[ula2020]`
-  - [Springer: Linear Algebra](https://link.springer.com/book/10.1007/978-3-031-41026-0) `[springer-la2023]`
-- **Statistics**
-  - [Hastie et al.: Elements of Statistical Learning](https://hastie.su.domains/ElemStatLearn/) `[hastie2009-elemstat]`
-  - [Probability Course](https://www.probabilitycourse.com/) `[probabilitycourse2023]`
-- **Digital Signal Processing**
-  - [Digital Signals Theory (Brian McFee)](https://brianmcfee.net/) `[mcfee-2023]`
-  - [Smith, S.: Scientist & Engineer’s Guide to DSP](https://www.analog.com/en/resources/technical-books/scientist_engineers_guide.html) `[smith-dsp]`
-
 ## Source Code
 
 - [adriancable/qwen3.c](https://github.com/adriancable/qwen3.c) `[adriancable-qwen3c]`
-
-## Open Educational Resources (OER) / Creative Commons
-
-- [OpenStax: Math Textbooks](https://openstax.org/subjects/math) `[openstax-math]`
-- [Open Textbook Library: Mathematics (UMN)](https://open.umn.edu/opentextbooks/subjects/mathematics) `[umn-math-open]`
+- [karpathy/llama2.c](https://github.com/karpathy/llama2.c) `[karpathy-llama2c]`
+- [karpathy/micrograd](https://github.com/karpathy/micrograd) `[karpathy-micrograd]`
+- [ggerganov/llama.cpp](https://github.com/ggml-org/llama.cpp) `[ggerganov-llamacpp]`
 
 ## Notes / TODO
 
 - **Reference only**: public domain, creative commons, or FOSS-licensed materials.
 - **Avoid**: proprietary, patented, or otherwise restricted materials. This is easier said than done.
+- Sift out the difference between private and public materials and subtitute if needed.
 - Expand with subcategories (_Tokenization_, _Initialization_, _Regularization_) as needed.
 - Add author/year for lookup.
 - Optionally map `[citation-key]` to usage in code/docs.
