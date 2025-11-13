@@ -200,14 +200,14 @@ Curated, evolving list of sources for the Valerie decoder-only transformer imple
   _Proprietary, web-only_  
   `[pishronik2014-ipsrp]`
 
-- [Digital Signals Theory](https://brianmcfee.net/)
+- [Digital Signals Theory](https://brianmcfee.net/)  
   Brian McFee, 2023  
   _Proprietary, web-only_  
   `[mcfee2023-dst]`
 
-- [The Scientist & Engineer's Guide to Digital Signal Processing](https://www.analog.com/en/resources/technical-books/scientist_engineers_guide.html)  
+- [The Scientist & Engineer's Guide to Digital Signal Processing](https://www.dspguide.com)  
   Steven W. Smith, 1999  
-  _(Proprietary - research needed)_  
+  _Proprietary, web-only_  
   `[smith1999-dsp]`
 
 ## Open Educational Resources (OER) / Creative Commons
