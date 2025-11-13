@@ -234,11 +234,10 @@ Curated, evolving list of sources for the Valerie decoder-only transformer imple
 
 ## Notes / TODO
 
-- **Reference only**: public domain, creative commons, or FOSS-licensed materials.
-- **Avoid**: proprietary, patented, or otherwise restricted materials. This is easier said than done.
-- Sift out the difference between private and public materials and subtitute if needed.
-- Expand with subcategories (_Tokenization_, _Initialization_, _Regularization_) as needed.
-- Add author/year for lookup.
+- Reference only: public domain, creative commons, or FOSS-licensed materials.
+- Avoid: proprietary, patented, or otherwise restricted materials where possible.
+- Sift out the difference between private and public materials and substitute if needed.
+- Expand with subcategories (Tokenization, Initialization, Regularization) as needed.
 - Optionally map `[citation-key]` to usage in code/docs.
 - Maintain deduplication and alphabetization.
 - Digital signal processing is a subtopic of mathematics and engineering, not a standalone field for citation purposes. Kept here for thematic relevance.
