@@ -88,41 +88,60 @@ Encode and decode text with a trained model:
 
 ## Model
 
-### What is Valerie?
+### What Is Valerie?
 
-Valerie is a derivation of GPT, Llama, Mistral, and Qwen.
+Valerie is a **decoder-only transformer** inspired by architectures like **GPT**, **Llama**, **Mistral**, and **Qwen**.
+Its design closely follows [Adrian Cable’s Qwen3 C implementation](https://github.com/adriancable/qwen3.c/blob/main/runq.c), which provided an excellent reference for inference behavior. Valerie extends this concept beyond inference, toward a complete training and fine-tuning framework.
 
-Valeries architecture primarily mirrors the Qwen3 model which is based off of [Adrian Cable's Qwen3 implementation in C](https://github.com/adriancable/qwen3.c/blob/main/runq.c). While this is really cool and I had a lot of fun playing with the code, it is inference only.
+At its core, Valerie is an experiment in understanding and re-implementing large language model mechanics from first principles: every layer, tensor operation, and gradient is written manually, with full transparency and zero abstraction bloat.
 
-As a result, Valerie is a decoder-only transformer model for generating and predicting natural language.
+### Why Build From Scratch?
 
-### Why not Transformers and Tokenizers?
+I wanted to **understand** how a transformer truly works, not just use one.
+That meant rebuilding every component from the ground up: tokenizer, model, optimizer, and serialization. Valerie depends only on minimal, transparent libraries like **PCRE2**, **OpenMP**, and (eventually) **Vulkan**, keeping the codebase small, portable, and easy to inspect.
 
-I wanted to learn about and comprehend how a language model operates from the ground up. This meant rewriting the majority of the code because I had to consider every component from inference to back-propagation. This meant writing not only the tokenizer completely from scratch, but the model itself as well. As a result, Valerie has no external dependencies aside from a few helper libraries like PCRE2, OpenMP, and Vulkan (planned, but not implemented for simplicity).
+Transformers are intricate systems grounded in **algebra**, **geometry**, **calculus**, and **statistics**. Each layer (attention, feed-forward, normalization) is a self-contained “computable block.” Valerie exposes these blocks directly, allowing the entire forward and backward pipeline to be followed line-by-line.
 
-Modern architectures are extremely complicated and have a lot of moving parts. The forward pass computes the predictions while the backward pass computes the errors within those predictions. This is a combination of Algebra (Basic, Set, and Discrete), Geometry, Trigonometry, Calculus, and Statistics. The models are composed of computable units which could be referenced as "blocks". Each block accepts an input and produces an output.
+### Why Not PyTorch?
 
-### Why not PyTorch?
+**PyTorch** is powerful but highly abstracted and optimized for NVIDIA hardware.
+Its heavy CUDA focus, dependency footprint, and dynamic graph system hide too much of what I want to see, especially for low-level experimentation. While I appreciate Python’s flexibility, it isn’t well-suited for understanding the mechanics of transformers at the memory or numeric level.
 
-PyTorch mostly focuses on CUDA. NVIDIA GPU's are expensive and AMD GPU's are cheaper, but ROCm has a lot left to be desired, which is unfortunate. PyTorch is extremely slow on operations which are typically O(n^3) at worst with the attention mechanism being a quadradic complexity and has limted support as a result. Since PyTorch focuses on specific hardward vendors, the code is not as portable or flexible. I love Python as a language, but it is far from perfect. I have years of experience using this language, and the dependencies for PyTorch can end up being gigabytes in size. This doesn't include the added libraries from Meta and HuggingFace.
+By contrast, Valerie’s C implementation is **explicit and predictable**, running close to the metal and relying on a small, disciplined build.
 
-### Why not GGML?
+### Why Not GGML?
 
-GGML is primarily an inference engine and does support optimization, but is incredibly complex due to the fact that it supports many architectures. This is not a bad thing. In fact, I think there are many amazing libraries that exist, but they all use something known as a Computation Graph, (aka a Directed Acyclic Graph or DAG for short). As a result, the DAG ends up obfuscating a lot of the core operations. C++ is also an incredibly complex language. There are multiple ways to do the same thing and I often find the features of the language to be more of a burden than a gift.
+**GGML** is an excellent inference framework supporting many architectures.
+However, its computation-graph-based design (a Directed Acyclic Graph or **DAG**) makes it difficult to trace the fundamental operations without stepping through layers of abstraction. Valerie takes the opposite approach: a **linear, transparent, and manually written** execution path that prioritizes understanding over optimization.
 
 ### Why in C?
 
-I quite like C. It's simple, fast, and gives users complete control. I have no problem filling in the gaps of the language. While memory safety is not as robust as other languages, it is a language that I prefer due to years of familiarity with it. C was my first real programming language as I only had exposure to scripting languages like PHP, Python, and JavaScript up until that point. Employing ASAN in the development build helps catch common issues early, though, it is far from perfect and does not always work. As a result, C requires equal levels of discipline, patience, and vigilance.
+C offers the right balance of **simplicity, speed, and control**.
+There’s no hidden allocation, no garbage collector, and no surprise abstractions, just raw access to the system. That control comes at a cost: safety and patience are required.
+Valerie relies on **AddressSanitizer (ASAN)** during development to catch common memory issues early, but careful engineering discipline remains essential.
 
-### Where can I find the model?
+C has been my language of choice for years, and Valerie reflects my belief that with care, C can still serve as a foundation for modern, high-performance machine learning research.
 
-Valerie is currently a work in progress. The model is nearly complete, but there are some outstanding issues I'm currently facing. I've narrowed it down to 3 potential areas: Initialization, gradient accumulation, and buffer management. Buffer management is a low priority until single precision is completely ironed out. Currently, the gradients explode, which leads to the model failing to learn or generalize. There are a bunch of reasons why this might be the case and I'm currently working towards a solution.
+### Current Status
 
-You can [see the model here](examples/model/v.c). The code does execute, but the model fails to learn.
+Valerie is a **work in progress**.
+The architecture, forward pass, and training loop are nearly complete, but issues remain in three main areas:
 
-### Are you open to contributions?
+* **Initialization** – potential scaling or variance imbalance
+* **Gradient accumulation** – instability during backpropagation
+* **Buffer management** – cleanup and consistency for precision variants
 
-Yes. I am open to contributions. Solutions must be simple, transparent, and clear. I prioritize code clarity above all else. I usually consider optimization last. Currently, basic functionality is a priority for me. 
+Currently, gradients tend to explode, preventing the model from converging or generalizing. Single-precision (FP32) debugging is the primary focus before expanding to mixed and quantized formats.
+
+You can view the model implementation here:
+[`examples/model/v.c`](examples/model/v.c)
+
+The code runs, but training stability is still under investigation.
+
+### Contributions
+
+Contributions are welcome, clarity and simplicity are the guiding principles.
+Before optimizing for performance, Valerie aims to **work correctly, read clearly, and explain itself**.
 
 ## License
 
