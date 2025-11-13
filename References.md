@@ -231,6 +231,8 @@ Curated, evolving list of sources for the Valerie decoder-only transformer imple
 - [karpathy/llama2.c](https://github.com/karpathy/llama2.c) `[karpathy-llama2c]`
 - [karpathy/micrograd](https://github.com/karpathy/micrograd) `[karpathy-micrograd]`
 - [ggerganov/llama.cpp](https://github.com/ggml-org/llama.cpp) `[ggerganov-llamacpp]`
+- [QwenLM/Qwen3](https://github.com/QwenLM/Qwen3) `[QwenLM-Qwen3]`
+- [openai/gpt-2](https://github.com/openai/gpt-2) `[openai-gpt-2]`
 
 ## Notes / TODO
 
