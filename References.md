@@ -60,8 +60,9 @@ Curated, evolving list of sources for the Valerie decoder-only transformer imple
   `[he2015-init]`
 
 - [What every computer scientist should know about floating-point arithmetic](https://dl.acm.org/doi/10.1145/103162.103163)  
-  David Goldberg, 1991
+  David Goldberg, 1991  
   _Publicly accessible_  
+  `[gold-float]`  
 
 - [IEEE Standard for Floating-Point Arithmetic](https://standards.ieee.org/ieee/754/6210/)  
   IEEE, 2019  
